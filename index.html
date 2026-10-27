@@ -855,7 +855,30 @@
       </div>
 
       <p class="text-xs text-slate-600">Exporte cópia de segurança dos dados locais ou restaure quando desejar.</p>
-
+<!-- CONFIGURAÇÃO DA CHAVE DE ACESSO -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+        <label for="inputSecurityToken" class="block text-xs font-bold text-slate-700">
+          Chave de Acesso da Planilha
+        </label>
+        <p class="text-[11px] text-slate-500 leading-tight">
+          Esta chave fica salva apenas neste aparelho e nunca sobe para o GitHub.
+        </p>
+        <div class="flex items-center space-x-2">
+          <input 
+            type="password" 
+            id="inputSecurityToken" 
+            placeholder="Cole aqui o token definido no Apps Script..." 
+            class="flex-1 text-xs py-2 px-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          >
+          <button 
+            type="button" 
+            onclick="salvarChaveSeguranca()" 
+            class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all"
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
       <div class="space-y-2.5 pt-1">
         <button type="button" onclick="exportBackupJSON()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
           <span>Exportar Dados (Arquivo JSON)</span>
@@ -991,13 +1014,20 @@
     }
 
     // SINCRONIZAÇÃO BIDIRECIONAL COM GOOGLE SHEETS
-    async function sincronizarComPlanilha() {
+   async function sincronizarComPlanilha() {
+      const token = getSecurityToken();
+      if (!token) {
+        showAppToast('Configure a chave de acesso no menu de Backup antes de sincronizar.', 'info');
+        return;
+      }
+
       const btn = document.getElementById('btnSyncPlanilha');
       if (btn) btn.classList.add('animate-spin');
       showAppToast('Sincronizando com a planilha...', 'info');
 
       try {
-        const res = await fetch(API_GOOGLE_SHEETS_URL);
+        const urlComToken = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}`;
+        const res = await fetch(urlComToken);
         const json = await res.json();
 
         if (json.status === 'success' && Array.isArray(json.produtos)) {
@@ -1017,7 +1047,7 @@
           renderCartUI();
           showAppToast(`${json.produtos.length} produtos sincronizados!`, 'success');
         } else {
-          throw new Error(json.message || 'Formato inválido retornado');
+          throw new Error(json.message || 'Falha na resposta da API');
         }
       } catch (err) {
         showAppToast('Erro ao sincronizar: ' + err.message, 'error');
@@ -1027,6 +1057,9 @@
     }
 
     async function enviarProdutoParaPlanilha(produto, marketId, preco) {
+      const token = getSecurityToken();
+      if (!token) return;
+
       const colunasMercados = {
         'm-max': 4,
         'm-goes': 5,
@@ -1039,6 +1072,7 @@
       };
 
       const payload = {
+        token: token,
         name: produto.name,
         unit: produto.unit,
         quantity: produto.quantity || 1,
@@ -1057,6 +1091,7 @@
         console.error('Falha ao enviar registro para a planilha:', err);
       }
     }
+    
 
     // FORMATAÇÃO E PARSERS
     function parseNumberInput(val) {
@@ -2337,9 +2372,10 @@
     });
 
     // HISTÓRICO, BACKUP E DIÁLOGOS
-    document.getElementById('btnOpenHistoryModal').addEventListener('click', () => {
-      renderHistoryModal();
-      document.getElementById('modalHistory').classList.remove('hidden');
+    document.getElementById('btnOpenBackupModal').addEventListener('click', () => {
+     const input = document.getElementById('inputSecurityToken');
+      if (input) input.value = getSecurityToken();
+     document.getElementById('modalBackup').classList.remove('hidden');
     });
 
     function renderHistoryModal() {
@@ -2384,7 +2420,23 @@
         }
       );
     }
+function getSecurityToken() {
+      return localStorage.getItem('sc_security_token') || '';
+    }
 
+    function salvarChaveSeguranca() {
+      const input = document.getElementById('inputSecurityToken');
+      const val = (input.value || '').trim();
+      
+      if (!val) {
+        showAppToast('Informe uma chave válida.', 'error');
+        return;
+      }
+      
+      localStorage.setItem('sc_security_token', val);
+      showAppToast('Chave salva com sucesso neste aparelho!', 'success');
+      document.getElementById('modalBackup').classList.add('hidden');
+    }
     document.getElementById('btnOpenBackupModal').addEventListener('click', () => {
       document.getElementById('modalBackup').classList.remove('hidden');
     });
