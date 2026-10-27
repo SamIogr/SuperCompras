@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SuperCompras - Lista Inteligente</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Touch optimization */
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Hide number arrows */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col font-sans pb-32 select-none md:select-auto">
+
+  <!-- Header Fixo Superior -->
+  <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="bg-emerald-600 p-2 rounded-xl shadow-inner">
+          <svg class="w-6 h-6 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-none">SuperCompras</h1>
+          <p class="text-xs text-emerald-200 mt-0.5">Calculadora & Carrinho em Tempo Real</p>
+        </div>
+      </div>
+
+      <!-- Ações do topo -->
+      <div class="flex items-center space-x-2">
+        <button id="btnOpenCatalog" class="flex items-center space-x-1 bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-xs font-semibold px-3 py-2 rounded-lg transition-all shadow-sm">
+          <svg class="w-4 h-4 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          <span class="hidden sm:inline">Catálogo</span>
+          <span class="bg-emerald-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold" id="catalogCountBadge">86</span>
+        </button>
+
+        <button id="btnToggleSound" title="Ligar/Desligar som" class="p-2 bg-emerald-800 hover:bg-emerald-900 rounded-lg text-emerald-200 active:scale-95 transition-all">
+          <svg id="soundIconOn" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+          </svg>
+          <svg id="soundIconOff" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container Central -->
+  <main class="max-w-4xl w-full mx-auto px-3 sm:px-4 pt-4 space-y-4 flex-grow">
+
+    <!-- Card de Adicionar Produto à Lista -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 transition-all">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+        <h2 class="font-bold text-slate-800 flex items-center space-x-2 text-sm sm:text-base">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Adicionar Produto à Compra</span>
+        </h2>
+        <span class="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">Preenchimento Ágil</span>
+      </div>
+
+      <form id="formAddItem" class="space-y-3">
+        <!-- Campo de Busca / Nome com Autocomplete inteligente -->
+        <div class="relative">
+          <label class="block text-xs font-semibold text-slate-600 mb-1" for="inputProductName">
+            Produto ou Item <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <input 
+              type="text" 
+              id="inputProductName" 
+              placeholder="Digite para buscar (ex: Fraldinha, Leite, Café)..." 
+              autocomplete="off" 
+              required
+              class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
+            >
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <button 
+              type="button" 
+              id="btnClearProductInput" 
+              class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Sugestões Dropdown Autocomplete -->
+          <div 
+            id="autocompleteDropdown" 
+            class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto divide-y divide-slate-100"
+          >
+            <!-- Injetado dinamicamente -->
+          </div>
+        </div>
+
+        <!-- Grade de Entradas Numéricas (Preço, Unidade, Quantidade) -->
+        <div class="grid grid-cols-12 gap-2.5">
+          <!-- Unidade -->
+          <div class="col-span-4 sm:col-span-3">
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="inputUnit">
+              Unidade
+            </label>
+            <select 
+              id="inputUnit" 
+              class="w-full py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
+            >
+              <option value="un">un (Unidade)</option>
+              <option value="kg">kg (Quilo)</option>
+              <option value="cx">cx (Caixa)</option>
+              <option value="pct">pct (Pacote)</option>
+              <option value="pt">pt (Pote)</option>
+              <option value="lt">lt (Lata)</option>
+              <option value="gf">gf (Garrafa)</option>
+              <option value="dz">dz (Dúzia)</option>
+            </select>
+          </div>
+
+          <!-- Preço Unitário -->
+          <div class="col-span-4 sm:col-span-4">
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="inputUnitPrice">
+              Preço Unit. (R$) <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
+              <input 
+                type="number" 
+                id="inputUnitPrice" 
+                step="0.01" 
+                min="0" 
+                inputmode="decimal" 
+                placeholder="0,00" 
+                required
+                class="w-full pl-8 pr-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
+              >
+            </div>
+          </div>
+
+          <!-- Quantidade -->
+          <div class="col-span-4 sm:col-span-5">
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="inputQuantity">
+              Quantidade <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <input 
+                type="number" 
+                id="inputQuantity" 
+                step="any" 
+                min="0.001" 
+                inputmode="decimal" 
+                placeholder="1" 
+                value="1" 
+                required
+                class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all text-center sm:text-left"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Atalhos rápidos para quantidade de balança ou unidades -->
+        <div id="quickQtyShortcuts" class="flex flex-wrap gap-1.5 pt-1 text-xs">
+          <span class="text-[11px] text-slate-600 self-center mr-1 font-medium">Atalhos:</span>
+          <button type="button" onclick="setQuickQty(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold active:scale-95 transition-all">1</button>
+          <button type="button" onclick="setQuickQty(2)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold active:scale-95 transition-all">2</button>
+          <button type="button" onclick="setQuickQty(3)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold active:scale-95 transition-all">3</button>
+          <button type="button" onclick="setQuickQty(6)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold active:scale-95 transition-all">6</button>
+          <button type="button" onclick="setQuickQty(12)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 font-semibold active:scale-95 transition-all">12</button>
+          <span class="border-r border-slate-300 mx-1"></span>
+          <button type="button" onclick="setQuickQty(0.500)" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-semibold active:scale-95 transition-all">500g</button>
+          <button type="button" onclick="setQuickQty(1.000)" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-semibold active:scale-95 transition-all">1 kg</button>
+          <button type="button" onclick="setQuickQty(1.500)" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-semibold active:scale-95 transition-all">1,5 kg</button>
+        </div>
+
+        <!-- Sanfona / Toggle de Condição Especial (Desconto & Atacado) -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+          <button 
+            type="button" 
+            id="btnTogglePromoSection" 
+            class="w-full px-3 py-2 text-left flex items-center justify-between text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <div class="flex items-center space-x-1.5">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+              <span>Condições Especiais: Desconto ou Atacado</span>
+              <span id="promoBadge" class="hidden text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded">Ativo</span>
+            </div>
+            <svg id="promoChevron" class="w-4 h-4 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <div id="promoDetailsSection" class="hidden p-3 border-t border-slate-200 space-y-3 bg-white">
+            <!-- Tipo de condição -->
+            <div class="flex gap-2 text-xs font-semibold">
+              <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+                <input type="radio" name="promoType" value="none" checked class="hidden" onchange="togglePromoType(this.value)">
+                Sem Desconto
+              </label>
+              <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+                <input type="radio" name="promoType" value="discount" class="hidden" onchange="togglePromoType(this.value)">
+                Desconto (% ou R$)
+              </label>
+              <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+                <input type="radio" name="promoType" value="wholesale" class="hidden" onchange="togglePromoType(this.value)">
+                Regra Atacado
+              </label>
+            </div>
+
+            <!-- Opções de Desconto Simples -->
+            <div id="subSectionDiscount" class="hidden grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo de Abatimento</label>
+                <select id="discountMode" class="w-full text-xs font-semibold py-2 px-2 bg-slate-50 border border-slate-300 rounded-lg">
+                  <option value="percent">Porcentagem (%)</option>
+                  <option value="fixed">Valor fixo no unitário (R$)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Valor do Abatimento</label>
+                <input type="number" id="discountValue" step="any" min="0" placeholder="Ex: 10" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+              </div>
+            </div>
+
+            <!-- Opções de Regra de Atacado (Pague Menos levando Mais) -->
+            <div id="subSectionWholesale" class="hidden space-y-2 pt-1">
+              <p class="text-[11px] text-slate-500">A partir de qual quantidade o preço baixa?</p>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Qtd Mínima (Ex: 3)</label>
+                  <input type="number" id="wholesaleMinQty" step="any" min="1" placeholder="Ex: 3" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Preço no Atacado (R$)</label>
+                  <input type="number" id="wholesalePrice" step="0.01" min="0" placeholder="Ex: 12.90" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview em Tempo Real do Subtotal & Botão de Inserção -->
+        <div class="pt-2 flex items-center justify-between gap-3">
+          <div class="leading-tight">
+            <span class="text-[11px] font-semibold text-slate-600 uppercase tracking-wider block">Subtotal Calculado</span>
+            <div class="flex items-baseline space-x-1">
+              <span id="previewSubtotal" class="text-xl font-extrabold text-emerald-700">R$ 0,00</span>
+              <span id="previewSavings" class="text-xs text-rose-600 font-semibold hidden"></span>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            id="btnAddToList"
+            class="touch-target flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex-1 max-w-[220px]"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span id="btnAddBtnLabel">Adicionar</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Controles da Lista de Compras: Filtros, Pesquisa & Ordenação -->
+    <section class="space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <!-- Abas de Filtro de visualização -->
+        <div class="flex items-center space-x-1 bg-slate-200/70 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto">
+          <button type="button" onclick="setCartFilter('all')" id="filterBtnAll" class="px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all">Todos (<span id="countAll">0</span>)</button>
+          <button type="button" onclick="setCartFilter('pending')" id="filterBtnPending" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all">No Corredor (<span id="countPending">0</span>)</button>
+          <button type="button" onclick="setCartFilter('checked')" id="filterBtnChecked" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all">No Carrinho (<span id="countChecked">0</span>)</button>
+        </div>
+
+        <!-- Busca no carrinho -->
+        <div class="relative w-full sm:w-56">
+          <input 
+            type="text" 
+            id="searchCartInput" 
+            placeholder="Filtrar na lista..." 
+            class="w-full text-xs py-2 pl-8 pr-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          >
+          <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de Itens do Carrinho -->
+      <div id="cartItemsList" class="space-y-2.5">
+        <!-- Renderizado dinamicamente -->
+      </div>
+
+      <!-- Estado Vazio -->
+      <div id="cartEmptyState" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+        <div class="w-16 h-16 mx-auto mb-3 text-slate-300 bg-slate-50 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+          </svg>
+        </div>
+        <h3 class="font-bold text-slate-700 text-sm">Sua lista de compras está vazia</h3>
+        <p class="text-xs text-slate-600 mt-1 max-w-xs mx-auto">Busque produtos no catálogo acima para adicionar e acompanhar o total da sua compra em tempo real.</p>
+        <button onclick="document.getElementById('inputProductName').focus()" class="mt-4 px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition-all">
+          Começar a Comprar
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Rodapé / Barra Financeira Fixa Inferior -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-30">
+    <div class="max-w-4xl mx-auto px-4 py-3">
+      <div class="flex items-center justify-between gap-3">
+        
+        <!-- Totais e Economia -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-2 text-[11px] text-slate-600">
+            <span id="footerCartCount" class="font-semibold text-slate-700">0 itens</span>
+            <span>•</span>
+            <span id="footerCheckedRatio" class="font-medium text-emerald-700">0 pegos</span>
+            <span id="footerSavingsBadge" class="hidden font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded text-[10px]">
+              Econ. R$ 0,00
+            </span>
+          </div>
+
+          <div class="flex items-baseline space-x-1.5 mt-0.5">
+            <span class="text-xs font-semibold text-slate-600">Total:</span>
+            <span id="footerGrandTotal" class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">R$ 0,00</span>
+          </div>
+        </div>
+
+        <!-- Botões de Ação do Rodapé -->
+        <div class="flex items-center space-x-1.5">
+          <!-- Botão Opções / Exportar -->
+          <button 
+            type="button" 
+            id="btnShareMenu" 
+            title="Exportar ou Copiar lista"
+            class="touch-target p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl transition-all font-semibold flex items-center space-x-1.5 text-xs"
+          >
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+            </svg>
+            <span class="hidden sm:inline">Exportar</span>
+          </button>
+
+          <!-- Botão Limpar Carrinho -->
+          <button 
+            type="button" 
+            id="btnClearCart" 
+            title="Limpar itens da lista"
+            class="touch-target p-2.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 rounded-xl transition-all font-semibold flex items-center space-x-1 text-xs"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span class="hidden sm:inline">Limpar</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: Gerenciador do Catálogo Mestre (86 Itens) -->
+  <div id="catalogModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 bg-emerald-700 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          <h3 class="font-bold text-base">Catálogo de Produtos & Preços Base</h3>
+        </div>
+        <button type="button" onclick="closeCatalogModal()" class="text-emerald-100 hover:text-white p-1 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Barra de Pesquisa e Novo Item do Catálogo -->
+      <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-2.5">
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            id="catalogSearchInput" 
+            placeholder="Filtrar por nome ou categoria..." 
+            class="flex-1 text-xs py-2 px-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          >
+          <button 
+            type="button" 
+            id="btnToggleNewProductForm"
+            class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center space-x-1"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Novo</span>
+          </button>
+        </div>
+
+        <!-- Formulário recolhível para Adicionar Novo Produto ao Catálogo -->
+        <div id="newProductCatalogForm" class="hidden p-3 bg-white border border-slate-200 rounded-xl space-y-2">
+          <h4 class="text-xs font-bold text-slate-700">Cadastrar Novo Produto no Catálogo</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <input type="text" id="newProdName" placeholder="Nome (ex: Pão de Queijo)" class="text-xs p-2 border border-slate-300 rounded-lg sm:col-span-2">
+            <select id="newProdUnit" class="text-xs p-2 border border-slate-300 rounded-lg font-semibold">
+              <option value="un">un</option>
+              <option value="kg">kg</option>
+              <option value="cx">cx</option>
+              <option value="pct">pct</option>
+              <option value="pt">pt</option>
+              <option value="lt">lt</option>
+            </select>
+            <input type="number" id="newProdPrice" step="0.01" min="0" placeholder="Preço (R$)" class="text-xs p-2 border border-slate-300 rounded-lg font-bold">
+          </div>
+          <div class="flex justify-end space-x-2 pt-1">
+            <button type="button" onclick="document.getElementById('newProductCatalogForm').classList.add('hidden')" class="px-3 py-1.5 text-xs text-slate-600 font-semibold">Cancelar</button>
+            <button type="button" onclick="saveNewCatalogProduct()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg">Salvar Produto</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista do Catálogo com scroll -->
+      <div id="catalogItemsContainer" class="flex-1 overflow-y-auto p-3 space-y-1.5 divide-y divide-slate-100">
+        <!-- Itens inseridos dinamicamente -->
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="px-5 py-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs">
+        <button type="button" onclick="resetCatalogToDefaults()" class="text-rose-600 hover:underline font-medium">Restaurar 86 Itens Originais</button>
+        <button type="button" onclick="closeCatalogModal()" class="px-4 py-2 bg-slate-800 text-white font-bold rounded-xl">Concluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Exportação & Compartilhamento -->
+  <div id="exportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-base">Exportar Lista de Compras</h3>
+        <button onclick="document.getElementById('exportModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-600">Escolha o formato que deseja para enviar ou salvar sua lista de compras:</p>
+
+      <div class="space-y-2">
+        <button onclick="copyListToWhatsApp()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+          <span>Copiar Formatado (WhatsApp / Bloco de Notas)</span>
+        </button>
+
+        <button onclick="exportCartToCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+          <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <span>Baixar Planilha CSV (Compatível com Excel)</span>
+        </button>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button onclick="document.getElementById('exportModal').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmação Customizada (Sem usar alert/confirm) -->
+  <div id="confirmModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-center">
+      <div id="confirmIconBox" class="w-12 h-12 mx-auto rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <div>
+        <h4 id="confirmModalTitle" class="font-bold text-slate-800 text-base">Limpar Carrinho?</h4>
+        <p id="confirmModalText" class="text-xs text-slate-600 mt-1">Deseja remover todos os itens ou apenas os que já foram marcados no carrinho?</p>
+      </div>
+      <div class="flex flex-col gap-2 pt-2">
+        <button id="btnConfirmActionPrimary" class="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-all">Limpar Tudo</button>
+        <button id="btnConfirmActionSecondary" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Limpar Apenas Conferidos</button>
+        <button id="btnConfirmCancel" class="w-full py-2 px-4 text-slate-600 text-xs font-semibold hover:bg-slate-100 rounded-xl transition-all">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none">
+    <!-- Toasts gerados dinamicamente via JS -->
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // ==========================================
+    // 1. BASE DE DADOS MESTRE (86 ITENS DA PLANILHA)
+    // ==========================================
+    const DEFAULT_CATALOG = [
+      // Carnes & Aves (Açougue / Peixaria)
+      { id: 'cat-1', name: 'Fraldinha', unit: 'kg', price: 39.90, category: 'Açougue' },
+      { id: 'cat-2', name: 'Cupim Bovino', unit: 'kg', price: 38.50, category: 'Açougue' },
+      { id: 'cat-3', name: 'Alcatra com Maminha', unit: 'kg', price: 42.90, category: 'Açougue' },
+      { id: 'cat-4', name: 'Picanha Bovina', unit: 'kg', price: 69.90, category: 'Açougue' },
+      { id: 'cat-5', name: 'Patinho Moído', unit: 'kg', price: 36.90, category: 'Açougue' },
+      { id: 'cat-6', name: 'Peito de Frango Filé', unit: 'kg', price: 19.90, category: 'Açougue' },
+      { id: 'cat-7', name: 'Coxa e Sobrecoxa de Frango', unit: 'kg', price: 14.50, category: 'Açougue' },
+      { id: 'cat-8', name: 'Costela Bovina', unit: 'kg', price: 28.90, category: 'Açougue' },
+      { id: 'cat-9', name: 'Lombo Suíno', unit: 'kg', price: 22.90, category: 'Açougue' },
+      { id: 'cat-10', name: 'Linguiça Toscana Churrasco', unit: 'kg', price: 21.90, category: 'Açougue' },
+      { id: 'cat-11', name: 'Bacon Defumado em Pedaço', unit: 'kg', price: 32.00, category: 'Açougue' },
+      { id: 'cat-12', name: 'Filé de Tilápia Fresco', unit: 'kg', price: 45.90, category: 'Açougue' },
+
+      // Laticínios & Frios
+      { id: 'cat-13', name: 'Leite Líquido Integral', unit: 'cx', price: 3.99, category: 'Laticínios' },
+      { id: 'cat-14', name: 'Leite Desnatado', unit: 'cx', price: 4.19, category: 'Laticínios' },
+      { id: 'cat-15', name: 'Margarina com Sal 500g', unit: 'un', price: 14.90, category: 'Laticínios' },
+      { id: 'cat-16', name: 'Manteiga Extra com Sal 200g', unit: 'un', price: 11.50, category: 'Laticínios' },
+      { id: 'cat-17', name: 'Queijo Mussarela Fatiado', unit: 'kg', price: 44.90, category: 'Frios' },
+      { id: 'cat-18', name: 'Queijo Prato Fatiado', unit: 'kg', price: 47.90, category: 'Frios' },
+      { id: 'cat-19', name: 'Presunto Cozido sem Capa', unit: 'kg', price: 29.90, category: 'Frios' },
+      { id: 'cat-20', name: 'Peito de Peru Defumado', unit: 'kg', price: 62.00, category: 'Frios' },
+      { id: 'cat-21', name: 'Iogurte Natural Integral 170g', unit: 'un', price: 3.49, category: 'Laticínios' },
+      { id: 'cat-22', name: 'Creme de Leite TP 200g', unit: 'cx', price: 3.29, category: 'Laticínios' },
+      { id: 'cat-23', name: 'Leite Condensado 395g', unit: 'cx', price: 5.49, category: 'Laticínios' },
+      { id: 'cat-24', name: 'Requeijão Cremoso 200g', unit: 'pt', price: 7.89, category: 'Laticínios' },
+      { id: 'cat-25', name: 'Queijo Ralado Parmesão 50g', unit: 'pct', price: 4.90, category: 'Laticínios' },
+
+      // Mercearia & Cereais
+      { id: 'cat-26', name: 'Café Torrado e Moído 500g', unit: 'pct', price: 16.79, category: 'Mercearia' },
+      { id: 'cat-27', name: 'Arroz Tipo 1 Agulhinha 5kg', unit: 'pct', price: 29.90, category: 'Mercearia' },
+      { id: 'cat-28', name: 'Feijão Carioca Novo 1kg', unit: 'pct', price: 7.89, category: 'Mercearia' },
+      { id: 'cat-29', name: 'Feijão Preto 1kg', unit: 'pct', price: 8.20, category: 'Mercearia' },
+      { id: 'cat-30', name: 'Açúcar Refinado 1kg', unit: 'pct', price: 4.49, category: 'Mercearia' },
+      { id: 'cat-31', name: 'Açúcar Cristal 5kg', unit: 'pct', price: 18.50, category: 'Mercearia' },
+      { id: 'cat-32', name: 'Óleo de Soja Refinado 900ml', unit: 'un', price: 6.49, category: 'Mercearia' },
+      { id: 'cat-33', name: 'Azeite de Oliva Extra Virgem 500ml', unit: 'un', price: 38.90, category: 'Mercearia' },
+      { id: 'cat-34', name: 'Macarrão Espaguete Semola 500g', unit: 'pct', price: 4.29, category: 'Mercearia' },
+      { id: 'cat-35', name: 'Macarrão Parafuso 500g', unit: 'pct', price: 4.29, category: 'Mercearia' },
+      { id: 'cat-36', name: 'Molho de Tomate Tradicional 300g', unit: 'pct', price: 2.19, category: 'Mercearia' },
+      { id: 'cat-37', name: 'Extrato de Tomate 340g', unit: 'lt', price: 4.39, category: 'Mercearia' },
+      { id: 'cat-38', name: 'Farinha de Trigo Especial 1kg', unit: 'pct', price: 4.89, category: 'Mercearia' },
+      { id: 'cat-39', name: 'Farinha de Mandioca Torrada 1kg', unit: 'pct', price: 5.90, category: 'Mercearia' },
+      { id: 'cat-40', name: 'Sal Refinado Iodado 1kg', unit: 'pct', price: 2.29, category: 'Mercearia' },
+      { id: 'cat-41', name: 'Maionese Tradicional 500g', unit: 'pt', price: 7.49, category: 'Mercearia' },
+      { id: 'cat-42', name: 'Ketchup Tradicional 400g', unit: 'un', price: 8.20, category: 'Mercearia' },
+      { id: 'cat-43', name: 'Mostarda Amarela 200g', unit: 'un', price: 5.60, category: 'Mercearia' },
+      { id: 'cat-44', name: 'Milho Verde em Conserva 170g', unit: 'lt', price: 3.79, category: 'Mercearia' },
+      { id: 'cat-45', name: 'Ervilha em Conserva 170g', unit: 'lt', price: 3.79, category: 'Mercearia' },
+      { id: 'cat-46', name: 'Sardinha em Óleo 125g', unit: 'lt', price: 4.99, category: 'Mercearia' },
+      { id: 'cat-47', name: 'Atum Ralado em Óleo 170g', unit: 'lt', price: 6.89, category: 'Mercearia' },
+      { id: 'cat-48', name: 'Biscoito Cream Cracker 400g', unit: 'pct', price: 4.50, category: 'Mercearia' },
+      { id: 'cat-49', name: 'Biscoito Recheado Chocolate 130g', unit: 'pct', price: 3.20, category: 'Mercearia' },
+      { id: 'cat-50', name: 'Aveia em Flocos Finos 170g', unit: 'cx', price: 4.50, category: 'Mercearia' },
+      { id: 'cat-51', name: 'Achocolatado em Pó 400g', unit: 'lt', price: 8.90, category: 'Mercearia' },
+      { id: 'cat-52', name: 'Fermento Químico em Pó 100g', unit: 'pt', price: 3.50, category: 'Mercearia' },
+
+      // Hortifrúti (Feira / Balança)
+      { id: 'cat-53', name: 'Banana Prata', unit: 'kg', price: 6.99, category: 'Hortifrúti' },
+      { id: 'cat-54', name: 'Maçã Gala Nacional', unit: 'kg', price: 9.90, category: 'Hortifrúti' },
+      { id: 'cat-55', name: 'Laranja Pêra', unit: 'kg', price: 4.99, category: 'Hortifrúti' },
+      { id: 'cat-56', name: 'Tomate Italiano', unit: 'kg', price: 8.49, category: 'Hortifrúti' },
+      { id: 'cat-57', name: 'Cebola Nacional', unit: 'kg', price: 5.89, category: 'Hortifrúti' },
+      { id: 'cat-58', name: 'Batata Inglesa Especial', unit: 'kg', price: 6.49, category: 'Hortifrúti' },
+      { id: 'cat-59', name: 'Cenoura Fresca', unit: 'kg', price: 5.20, category: 'Hortifrúti' },
+      { id: 'cat-60', name: 'Alho Roxo a Granel', unit: 'kg', price: 34.90, category: 'Hortifrúti' },
+      { id: 'cat-61', name: 'Alface Crespa Hidropônica', unit: 'un', price: 3.50, category: 'Hortifrúti' },
+      { id: 'cat-62', name: 'Limão Taiti', unit: 'kg', price: 4.99, category: 'Hortifrúti' },
+      { id: 'cat-63', name: 'Melancia Inteira / Pedaço', unit: 'kg', price: 2.99, category: 'Hortifrúti' },
+      { id: 'cat-64', name: 'Mamão Papaya', unit: 'un', price: 4.80, category: 'Hortifrúti' },
+      { id: 'cat-65', name: 'Abacaxi Pérola', unit: 'un', price: 7.90, category: 'Hortifrúti' },
+      { id: 'cat-66', name: 'Pimentão Verde', unit: 'kg', price: 7.80, category: 'Hortifrúti' },
+      { id: 'cat-67', name: 'Ovos Brancos Grandes c/ 30 un', unit: 'cx', price: 19.90, category: 'Hortifrúti' },
+
+      // Padaria & Matinais
+      { id: 'cat-68', name: 'Pão Francês', unit: 'kg', price: 16.90, category: 'Padaria' },
+      { id: 'cat-69', name: 'Pão de Forma Tradicional 500g', unit: 'pct', price: 7.49, category: 'Padaria' },
+      { id: 'cat-70', name: 'Torrada Multigrãos 140g', unit: 'pct', price: 5.90, category: 'Padaria' },
+      { id: 'cat-71', name: 'Bolo Simples Caseiro', unit: 'un', price: 12.00, category: 'Padaria' },
+
+      // Bebidas
+      { id: 'cat-72', name: 'Água Mineral sem Gás 500ml', unit: 'un', price: 2.00, category: 'Bebidas' },
+      { id: 'cat-73', name: 'Água Mineral Galão 5 Litros', unit: 'un', price: 9.50, category: 'Bebidas' },
+      { id: 'cat-74', name: 'Refrigerante Cola 2 Litros', unit: 'un', price: 8.99, category: 'Bebidas' },
+      { id: 'cat-75', name: 'Cerveja Puro Malte 350ml', unit: 'un', price: 3.79, category: 'Bebidas' },
+      { id: 'cat-76', name: 'Suco Integral de Uva 1,5L', unit: 'gf', price: 14.90, category: 'Bebidas' },
+
+      // Limpeza da Casa
+      { id: 'cat-77', name: 'Sabão em Pó Lavagem 1,6kg', unit: 'cx', price: 16.90, category: 'Limpeza' },
+      { id: 'cat-78', name: 'Amaciante Concentrado 1 Litro', unit: 'un', price: 14.50, category: 'Limpeza' },
+      { id: 'cat-79', name: 'Detergente Líquido Neutro 500ml', unit: 'un', price: 2.39, category: 'Limpeza' },
+      { id: 'cat-80', name: 'Desinfetante Floral 1 Litro', unit: 'un', price: 5.90, category: 'Limpeza' },
+      { id: 'cat-81', name: 'Água Sanitária Alvejante 1L', unit: 'un', price: 4.20, category: 'Limpeza' },
+      { id: 'cat-82', name: 'Esponja Multiuso Dupla Face c/ 3', unit: 'pct', price: 4.50, category: 'Limpeza' },
+      { id: 'cat-83', name: 'Saco de Lixo Reforçado 50L c/ 10', unit: 'pct', price: 8.90, category: 'Limpeza' },
+      { id: 'cat-84', name: 'Papel Toalha Folha Dupla c/ 2 rolos', unit: 'pct', price: 5.40, category: 'Limpeza' },
+
+      // Higiene Pessoal
+      { id: 'cat-85', name: 'Papel Higiênico Folha Dupla 12 rolos', unit: 'pct', price: 18.90, category: 'Higiene' },
+      { id: 'cat-86', name: 'Creme Dental Proteção Anticárie 90g', unit: 'un', price: 4.50, category: 'Higiene' }
+    ];
+
+    // ==========================================
+    // 2. ESTADO GLOBAL DA APLICAÇÃO
+    // ==========================================
+    let catalog = [];
+    let cart = [];
+    let currentFilter = 'all'; // 'all', 'pending', 'checked'
+    let soundEnabled = true;
+
+    // Configuração de Som (Web Audio API nativo, sem URLs externas)
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playBeep(type = 'add') {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'add') {
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.1);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'check') {
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(660, now + 0.12);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'delete') {
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(160, now + 0.15);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        }
+      } catch (e) {
+        // Audio falhou silenciosamente
+      }
+    }
+
+    // ==========================================
+    // 3. PERSISTÊNCIA EM LOCALSTORAGE
+    // ==========================================
+    function loadSavedData() {
+      // Carregar catálogo
+      try {
+        const savedCatalog = localStorage.getItem('supercompras_catalog_v1');
+        if (savedCatalog) {
+          catalog = JSON.parse(savedCatalog);
+        } else {
+          catalog = [...DEFAULT_CATALOG];
+          saveCatalog();
+        }
+      } catch (e) {
+        catalog = [...DEFAULT_CATALOG];
+      }
+
+      // Carregar carrinho
+      try {
+        const savedCart = localStorage.getItem('supercompras_cart_v1');
+        if (savedCart) {
+          cart = JSON.parse(savedCart);
+        } else {
+          // Pre-carrega itens de exemplo da planilha se carrinho estiver limpo
+          cart = [
+            {
+              id: 'cart-init-1',
+              name: 'Leite Líquido Integral',
+              unit: 'cx',
+              unitPrice: 3.99,
+              quantity: 12,
+              checked: false,
+              promo: { type: 'none' },
+              subtotal: 47.88,
+              savings: 0
+            },
+            {
+              id: 'cart-init-2',
+              name: 'Margarina com Sal 500g',
+              unit: 'un',
+              unitPrice: 14.90,
+              quantity: 2,
+              checked: false,
+              promo: { type: 'none' },
+              subtotal: 29.80,
+              savings: 0
+            },
+            {
+              id: 'cart-init-3',
+              name: 'Fraldinha',
+              unit: 'kg',
+              unitPrice: 39.90,
+              quantity: 1.132,
+              checked: false,
+              promo: { type: 'none' },
+              subtotal: 45.17,
+              savings: 0
+            },
+            {
+              id: 'cart-init-4',
+              name: 'Café Torrado e Moído 500g',
+              unit: 'pct',
+              unitPrice: 16.79,
+              quantity: 3,
+              checked: false,
+              promo: { type: 'none' },
+              subtotal: 50.37,
+              savings: 0
+            }
+          ];
+          saveCart();
+        }
+      } catch (e) {
+        cart = [];
+      }
+
+      updateCatalogBadge();
+    }
+
+    function saveCatalog() {
+      localStorage.setItem('supercompras_catalog_v1', JSON.stringify(catalog));
+      updateCatalogBadge();
+    }
+
+    function saveCart() {
+      localStorage.setItem('supercompras_cart_v1', JSON.stringify(cart));
+      renderCart();
+      updateTotals();
+    }
+
+    function updateCatalogBadge() {
+      document.getElementById('catalogCountBadge').innerText = catalog.length;
+    }
+
+    // ==========================================
+    // 4. CÁLCULO DE PREÇO COM DESCONTOS & ATACADO
+    // ==========================================
+    function calculateItemValues(qty, price, promo) {
+      qty = parseFloat(qty) || 0;
+      price = parseFloat(price) || 0;
+      let regularTotal = qty * price;
+      let effectiveSubtotal = regularTotal;
+      let savings = 0;
+      let appliedRule = '';
+
+      if (promo && promo.type === 'discount') {
+        const val = parseFloat(promo.value) || 0;
+        if (promo.mode === 'percent' && val > 0) {
+          const discountFactor = Math.min(val, 100) / 100;
+          savings = regularTotal * discountFactor;
+          effectiveSubtotal = regularTotal - savings;
+          appliedRule = `Desconto ${val}%`;
+        } else if (promo.mode === 'fixed' && val > 0) {
+          const unitDiscount = Math.min(val, price);
+          savings = qty * unitDiscount;
+          effectiveSubtotal = regularTotal - savings;
+          appliedRule = `Desc. R$ ${formatMoney(val)}/un`;
+        }
+      } else if (promo && promo.type === 'wholesale') {
+        const minQty = parseFloat(promo.minQty) || 0;
+        const wholesalePrice = parseFloat(promo.wholesalePrice) || 0;
+        if (minQty > 0 && wholesalePrice > 0 && qty >= minQty) {
+          const wholesaleTotal = qty * wholesalePrice;
+          if (wholesaleTotal < regularTotal) {
+            savings = regularTotal - wholesaleTotal;
+            effectiveSubtotal = wholesaleTotal;
+            appliedRule = `Atacado (≥${minQty} ${promo.unit || 'un'}) a R$ ${formatMoney(wholesalePrice)}`;
+          }
+        }
+      }
+
+      return {
+        regularTotal: Math.max(0, regularTotal),
+        effectiveSubtotal: Math.max(0, effectiveSubtotal),
+        savings: Math.max(0, savings),
+        appliedRule: appliedRule
+      };
+    }
+
+    function formatMoney(num) {
+      return (Number(num) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatQuantity(num) {
+      const n = Number(num) || 0;
+      return n % 1 === 0 ? n.toString() : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+    }
+
+    // ==========================================
+    // 5. AUTOCOMPLETE INTELIGENTE & FORMULÁRIO
+    // ==========================================
+    const inputProductName = document.getElementById('inputProductName');
+    const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+    const inputUnitPrice = document.getElementById('inputUnitPrice');
+    const inputQuantity = document.getElementById('inputQuantity');
+    const inputUnit = document.getElementById('inputUnit');
+    const btnClearProductInput = document.getElementById('btnClearProductInput');
+    const previewSubtotal = document.getElementById('previewSubtotal');
+    const previewSavings = document.getElementById('previewSavings');
+
+    inputProductName.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      btnClearProductInput.classList.toggle('hidden', query.length === 0);
+
+      if (query.length < 1) {
+        autocompleteDropdown.classList.add('hidden');
+        autocompleteDropdown.innerHTML = '';
+        return;
+      }
+
+      const matches = catalog.filter(item => 
+        item.name.toLowerCase().includes(query) || 
+        (item.category && item.category.toLowerCase().includes(query))
+      ).slice(0, 7);
+
+      if (matches.length > 0) {
+        autocompleteDropdown.innerHTML = matches.map(item => `
+          <div 
+            class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs" 
+            onclick="selectProductFromCatalog('${item.id}')"
+          >
+            <div>
+              <span class="font-bold text-slate-800">${item.name}</span>
+              <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded ml-1 font-medium">${item.category || 'Geral'}</span>
+            </div>
+            <div class="text-right">
+              <span class="font-bold text-emerald-700">R$ ${formatMoney(item.price)}</span>
+              <span class="text-[11px] text-slate-600"> / ${item.unit}</span>
+            </div>
+          </div>
+        `).join('');
+        autocompleteDropdown.classList.remove('hidden');
+      } else {
+        autocompleteDropdown.innerHTML = `
+          <div class="px-3 py-2 text-xs text-slate-600 italic">
+            Produto novo. Preencha a unidade e o valor.
+          </div>
+        `;
+        autocompleteDropdown.classList.remove('hidden');
+      }
+      updatePreview();
+    });
+
+    btnClearProductInput.addEventListener('click', () => {
+      inputProductName.value = '';
+      btnClearProductInput.classList.add('hidden');
+      autocompleteDropdown.classList.add('hidden');
+      inputProductName.focus();
+      updatePreview();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!inputProductName.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+        autocompleteDropdown.classList.add('hidden');
+      }
+    });
+
+    function selectProductFromCatalog(id) {
+      const item = catalog.find(p => p.id === id);
+      if (item) {
+        inputProductName.value = item.name;
+        inputUnit.value = item.unit || 'un';
+        inputUnitPrice.value = item.price.toFixed(2);
+        autocompleteDropdown.classList.add('hidden');
+        btnClearProductInput.classList.remove('hidden');
+        
+        // Foca na quantidade
+        inputQuantity.focus();
+        inputQuantity.select();
+        updatePreview();
+      }
+    }
+
+    function setQuickQty(val) {
+      inputQuantity.value = val;
+      updatePreview();
+    }
+
+    // Toggle Promo Accordion
+    const btnTogglePromoSection = document.getElementById('btnTogglePromoSection');
+    const promoDetailsSection = document.getElementById('promoDetailsSection');
+    const promoChevron = document.getElementById('promoChevron');
+    const promoBadge = document.getElementById('promoBadge');
+
+    btnTogglePromoSection.addEventListener('click', () => {
+      const isHidden = promoDetailsSection.classList.contains('hidden');
+      promoDetailsSection.classList.toggle('hidden', !isHidden);
+      promoChevron.classList.toggle('rotate-180', isHidden);
+    });
+
+    function togglePromoType(type) {
+      document.getElementById('subSectionDiscount').classList.toggle('hidden', type !== 'discount');
+      document.getElementById('subSectionWholesale').classList.toggle('hidden', type !== 'wholesale');
+      promoBadge.classList.toggle('hidden', type === 'none');
+      updatePreview();
+    }
+
+    function getCurrentPromoConfig() {
+      const selectedType = document.querySelector('input[name="promoType"]:checked')?.value || 'none';
+      if (selectedType === 'discount') {
+        return {
+          type: 'discount',
+          mode: document.getElementById('discountMode').value,
+          value: parseFloat(document.getElementById('discountValue').value) || 0
+        };
+      } else if (selectedType === 'wholesale') {
+        return {
+          type: 'wholesale',
+          minQty: parseFloat(document.getElementById('wholesaleMinQty').value) || 0,
+          wholesalePrice: parseFloat(document.getElementById('wholesalePrice').value) || 0,
+          unit: inputUnit.value
+        };
+      }
+      return { type: 'none' };
+    }
+
+    function updatePreview() {
+      const qty = parseFloat(inputQuantity.value) || 0;
+      const price = parseFloat(inputUnitPrice.value) || 0;
+      const promo = getCurrentPromoConfig();
+
+      const result = calculateItemValues(qty, price, promo);
+      previewSubtotal.innerText = `R$ ${formatMoney(result.effectiveSubtotal)}`;
+
+      if (result.savings > 0) {
+        previewSavings.innerText = `(-R$ ${formatMoney(result.savings)})`;
+        previewSavings.classList.remove('hidden');
+      } else {
+        previewSavings.classList.add('hidden');
+      }
+    }
+
+    [inputUnitPrice, inputQuantity, inputUnit, 
+     document.getElementById('discountMode'), 
+     document.getElementById('discountValue'),
+     document.getElementById('wholesaleMinQty'),
+     document.getElementById('wholesalePrice')
+    ].forEach(el => {
+      el.addEventListener('input', updatePreview);
+      el.addEventListener('change', updatePreview);
+    });
+
+    // Submissão do Formulário de Adição
+    const formAddItem = document.getElementById('formAddItem');
+    formAddItem.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = inputProductName.value.trim();
+      const unit = inputUnit.value;
+      const unitPrice = parseFloat(inputUnitPrice.value);
+      const quantity = parseFloat(inputQuantity.value);
+
+      if (!name || isNaN(unitPrice) || isNaN(quantity) || quantity <= 0) {
+        showToast('Preencha nome, preço e quantidade válidos', 'error');
+        return;
+      }
+
+      const promo = getCurrentPromoConfig();
+      const calc = calculateItemValues(quantity, unitPrice, promo);
+
+      // Verifica se o item já existe na lista
+      const existingIndex = cart.findIndex(it => it.name.toLowerCase() === name.toLowerCase() && it.unit === unit);
+
+      if (existingIndex > -1) {
+        // Incrementa o produto existente
+        cart[existingIndex].quantity += quantity;
+        cart[existingIndex].unitPrice = unitPrice;
+        if (promo.type !== 'none') cart[existingIndex].promo = promo;
+        const newCalc = calculateItemValues(cart[existingIndex].quantity, cart[existingIndex].unitPrice, cart[existingIndex].promo);
+        cart[existingIndex].subtotal = newCalc.effectiveSubtotal;
+        cart[existingIndex].savings = newCalc.savings;
+        showToast(`Quantidade de "${name}" atualizada!`, 'success');
+      } else {
+        // Novo item no carrinho
+        const newItem = {
+          id: 'cart-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+          name: name,
+          unit: unit,
+          unitPrice: unitPrice,
+          quantity: quantity,
+          checked: false,
+          promo: promo,
+          subtotal: calc.effectiveSubtotal,
+          savings: calc.savings
+        };
+        cart.unshift(newItem);
+        showToast(`"${name}" adicionado à lista!`, 'success');
+      }
+
+      // Adiciona também ao catálogo se não existir
+      const existsInCatalog = catalog.some(p => p.name.toLowerCase() === name.toLowerCase());
+      if (!existsInCatalog) {
+        catalog.push({
+          id: 'cat-custom-' + Date.now(),
+          name: name,
+          unit: unit,
+          price: unitPrice,
+          category: 'Personalizado'
+        });
+        saveCatalog();
+      }
+
+      playBeep('add');
+      saveCart();
+
+      // Limpar formulário mantendo foco para próxima digitação
+      inputProductName.value = '';
+      inputUnitPrice.value = '';
+      inputQuantity.value = '1';
+      btnClearProductInput.classList.add('hidden');
+      document.querySelector('input[name="promoType"][value="none"]').checked = true;
+      togglePromoType('none');
+      document.getElementById('discountValue').value = '';
+      document.getElementById('wholesaleMinQty').value = '';
+      document.getElementById('wholesalePrice').value = '';
+      updatePreview();
+
+      inputProductName.focus();
+    });
+
+    // ==========================================
+    // 6. RENDERIZAÇÃO DO CARRINHO & INTERAÇÕES
+    // ==========================================
+    const cartItemsList = document.getElementById('cartItemsList');
+    const cartEmptyState = document.getElementById('cartEmptyState');
+    const searchCartInput = document.getElementById('searchCartInput');
+
+    searchCartInput.addEventListener('input', () => renderCart());
+
+    function setCartFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('#filterBtnAll, #filterBtnPending, #filterBtnChecked').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+
+      if (filter === 'all') {
+        document.getElementById('filterBtnAll').classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        document.getElementById('filterBtnAll').classList.remove('text-slate-600');
+      } else if (filter === 'pending') {
+        document.getElementById('filterBtnPending').classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        document.getElementById('filterBtnPending').classList.remove('text-slate-600');
+      } else if (filter === 'checked') {
+        document.getElementById('filterBtnChecked').classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        document.getElementById('filterBtnChecked').classList.remove('text-slate-600');
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const searchTerm = searchCartInput.value.toLowerCase().trim();
+
+      // Contadores
+      const totalCount = cart.length;
+      const checkedCount = cart.filter(i => i.checked).length;
+      const pendingCount = totalCount - checkedCount;
+
+      document.getElementById('countAll').innerText = totalCount;
+      document.getElementById('countPending').innerText = pendingCount;
+      document.getElementById('countChecked').innerText = checkedCount;
+
+      let filtered = cart.filter(item => {
+        if (currentFilter === 'pending' && item.checked) return false;
+        if (currentFilter === 'checked' && !item.checked) return false;
+        if (searchTerm && !item.name.toLowerCase().includes(searchTerm)) return false;
+        return true;
+      });
+
+      if (cart.length === 0) {
+        cartItemsList.innerHTML = '';
+        cartEmptyState.classList.remove('hidden');
+        return;
+      }
+
+      cartEmptyState.classList.add('hidden');
+
+      if (filtered.length === 0) {
+        cartItemsList.innerHTML = `
+          <div class="text-center py-8 text-xs text-slate-600 bg-white rounded-xl border border-slate-200">
+            Nenhum produto encontrado neste filtro.
+          </div>
+        `;
+        return;
+      }
+
+      cartItemsList.innerHTML = filtered.map(item => {
+        const isChecked = item.checked;
+        const calc = calculateItemValues(item.quantity, item.unitPrice, item.promo);
+
+        return `
+          <div 
+            class="bg-white rounded-xl p-3 border transition-all ${
+              isChecked 
+                ? 'border-emerald-200 bg-emerald-50/40 opacity-75' 
+                : 'border-slate-200 hover:border-slate-300 shadow-sm'
+            }"
+          >
+            <div class="flex items-center justify-between gap-2.5">
+              
+              <!-- Checkbox & Título -->
+              <div class="flex items-center space-x-3 flex-1 min-w-0">
+                <button 
+                  type="button" 
+                  onclick="toggleItemCheck('${item.id}')"
+                  class="touch-target w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${
+                    isChecked 
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm' 
+                      : 'border-slate-300 bg-slate-50 hover:border-emerald-400'
+                  }"
+                  title="${isChecked ? 'Marcar como pendente' : 'Marcar como pego no carrinho'}"
+                >
+                  <svg class="w-4 h-4 ${isChecked ? 'block' : 'hidden'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </button>
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-1.5 flex-wrap">
+                    <h3 class="font-bold text-sm text-slate-800 truncate ${isChecked ? 'line-through text-slate-600' : ''}">
+                      ${item.name}
+                    </h3>
+                    <span class="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                      ${item.unit}
+                    </span>
+                  </div>
+
+                  <!-- Detalhe do Preço Unitário e Regras -->
+                  <div class="text-xs text-slate-600 flex items-center space-x-1.5 mt-0.5 flex-wrap">
+                    <span>${formatQuantity(item.quantity)} ${item.unit} × R$ ${formatMoney(item.unitPrice)}</span>
+                    ${
+                      calc.appliedRule 
+                        ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.2 rounded">🏷️ ${calc.appliedRule}</span>` 
+                        : ''
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Subtotal & Ações de Quantidade -->
+              <div class="flex items-center space-x-2.5">
+                <div class="text-right">
+                  <div class="text-sm font-extrabold text-slate-900 leading-tight">
+                    R$ ${formatMoney(calc.effectiveSubtotal)}
+                  </div>
+                  ${
+                    calc.savings > 0 
+                      ? `<div class="text-[10px] font-bold text-emerald-600">-R$ ${formatMoney(calc.savings)}</div>` 
+                      : ''
+                  }
+                </div>
+
+                <!-- Botões de Ajuste Rápido de Qtd -->
+                <div class="flex items-center bg-slate-100 rounded-lg p-0.5">
+                  <button 
+                    onclick="adjustItemQty('${item.id}', -1)" 
+                    class="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded font-bold text-xs"
+                    title="Diminuir"
+                  >
+                    –
+                  </button>
+                  <button 
+                    onclick="adjustItemQty('${item.id}', 1)" 
+                    class="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded font-bold text-xs"
+                    title="Aumentar"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <!-- Botão Excluir -->
+                <button 
+                  onclick="deleteCartItem('${item.id}')" 
+                  class="p-1.5 text-slate-600 hover:text-rose-600 rounded-lg transition-colors"
+                  title="Remover produto"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleItemCheck(id) {
+      const item = cart.find(i => i.id === id);
+      if (item) {
+        item.checked = !item.checked;
+        playBeep('check');
+        saveCart();
+      }
+    }
+
+    function adjustItemQty(id, delta) {
+      const item = cart.find(i => i.id === id);
+      if (!item) return;
+
+      let step = 1;
+      if (item.unit === 'kg') {
+        step = 0.25; // ajuste fino de 250g em carnes/feiras
+      }
+
+      let newQty = item.quantity + (delta * step);
+      if (newQty <= 0) {
+        deleteCartItem(id);
+        return;
+      }
+
+      item.quantity = Number(newQty.toFixed(3));
+      const calc = calculateItemValues(item.quantity, item.unitPrice, item.promo);
+      item.subtotal = calc.effectiveSubtotal;
+      item.savings = calc.savings;
+      saveCart();
+    }
+
+    function deleteCartItem(id) {
+      const idx = cart.findIndex(i => i.id === id);
+      if (idx > -1) {
+        const removed = cart.splice(idx, 1)[0];
+        playBeep('delete');
+        saveCart();
+        showToast(`"${removed.name}" removido`, 'info');
+      }
+    }
+
+    // ==========================================
+    // 7. TOTAIS E RESUMO FINANCEIRO FIXO
+    // ==========================================
+    function updateTotals() {
+      let grandTotal = 0;
+      let totalSavings = 0;
+      let checkedItems = 0;
+
+      cart.forEach(item => {
+        const calc = calculateItemValues(item.quantity, item.unitPrice, item.promo);
+        grandTotal += calc.effectiveSubtotal;
+        totalSavings += calc.savings;
+        if (item.checked) checkedItems++;
+      });
+
+      document.getElementById('footerGrandTotal').innerText = `R$ ${formatMoney(grandTotal)}`;
+      document.getElementById('footerCartCount').innerText = `${cart.length} ${cart.length === 1 ? 'item' : 'itens'}`;
+      document.getElementById('footerCheckedRatio').innerText = `${checkedItems}/${cart.length} no carrinho`;
+
+      const footerSavingsBadge = document.getElementById('footerSavingsBadge');
+      if (totalSavings > 0) {
+        footerSavingsBadge.innerText = `Econ. R$ ${formatMoney(totalSavings)}`;
+        footerSavingsBadge.classList.remove('hidden');
+      } else {
+        footerSavingsBadge.classList.add('hidden');
+      }
+    }
+
+    // ==========================================
+    // 8. GERENCIAMENTO DO CATÁLOGO DE PRODUTOS
+    // ==========================================
+    const catalogModal = document.getElementById('catalogModal');
+    const catalogSearchInput = document.getElementById('catalogSearchInput');
+    const catalogItemsContainer = document.getElementById('catalogItemsContainer');
+    const btnOpenCatalog = document.getElementById('btnOpenCatalog');
+    const btnToggleNewProductForm = document.getElementById('btnToggleNewProductForm');
+    const newProductCatalogForm = document.getElementById('newProductCatalogForm');
+
+    btnOpenCatalog.addEventListener('click', () => {
+      catalogModal.classList.remove('hidden');
+      renderCatalogList();
+      catalogSearchInput.focus();
+    });
+
+    function closeCatalogModal() {
+      catalogModal.classList.add('hidden');
+      newProductCatalogForm.classList.add('hidden');
+    }
+
+    btnToggleNewProductForm.addEventListener('click', () => {
+      newProductCatalogForm.classList.toggle('hidden');
+    });
+
+    catalogSearchInput.addEventListener('input', () => renderCatalogList());
+
+    function renderCatalogList() {
+      const q = catalogSearchInput.value.toLowerCase().trim();
+      const filtered = catalog.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        (p.category && p.category.toLowerCase().includes(q))
+      );
+
+      if (filtered.length === 0) {
+        catalogItemsContainer.innerHTML = `
+          <div class="py-8 text-center text-xs text-slate-600">
+            Nenhum produto cadastrado corresponde à busca.
+          </div>
+        `;
+        return;
+      }
+
+      catalogItemsContainer.innerHTML = filtered.map(item => `
+        <div class="py-2 px-1.5 flex items-center justify-between gap-2 hover:bg-slate-50 rounded-lg">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center space-x-1.5">
+              <span class="font-bold text-xs text-slate-800 truncate">${item.name}</span>
+              <span class="text-[10px] text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded font-medium">${item.category || 'Geral'}</span>
+            </div>
+            <div class="text-[11px] text-slate-600">
+              Unidade: <span class="font-semibold text-slate-700">${item.unit}</span> • Preço ref: 
+              <span class="font-bold text-emerald-700">R$ ${formatMoney(item.price)}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-1.5">
+            <button 
+              type="button" 
+              onclick="addFromCatalogDirectly('${item.id}')"
+              class="px-2.5 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-bold rounded-lg active:scale-95 transition-all flex items-center space-x-1"
+              title="Adicionar ao carrinho"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              <span>Carrinho</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addFromCatalogDirectly(id) {
+      const item = catalog.find(p => p.id === id);
+      if (!item) return;
+
+      selectProductFromCatalog(id);
+      closeCatalogModal();
+      showToast(`"${item.name}" selecionado! Insira a quantidade.`, 'info');
+    }
+
+    function saveNewCatalogProduct() {
+      const name = document.getElementById('newProdName').value.trim();
+      const unit = document.getElementById('newProdUnit').value;
+      const price = parseFloat(document.getElementById('newProdPrice').value);
+
+      if (!name || isNaN(price) || price < 0) {
+        showToast('Informe o nome e um preço válido', 'error');
+        return;
+      }
+
+      catalog.unshift({
+        id: 'cat-custom-' + Date.now(),
+        name: name,
+        unit: unit,
+        price: price,
+        category: 'Personalizado'
+      });
+
+      saveCatalog();
+      renderCatalogList();
+      showToast('Produto adicionado ao catálogo!', 'success');
+
+      document.getElementById('newProdName').value = '';
+      document.getElementById('newProdPrice').value = '';
+      newProductCatalogForm.classList.add('hidden');
+    }
+
+    function resetCatalogToDefaults() {
+      showCustomConfirm(
+        'Restaurar Catálogo?',
+        'Isso irá restaurar os 86 produtos originais da sua planilha com os preços base padrão.',
+        'Restaurar Originais',
+        null,
+        () => {
+          catalog = JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+          saveCatalog();
+          renderCatalogList();
+          showToast('Catálogo restaurado com 86 itens!', 'info');
+        }
+      );
+    }
+
+    // ==========================================
+    // 9. AÇÕES DO RODAPÉ (LIMPAR & EXPORTAR)
+    // ==========================================
+    const btnClearCart = document.getElementById('btnClearCart');
+    const btnShareMenu = document.getElementById('btnShareMenu');
+
+    btnClearCart.addEventListener('click', () => {
+      if (cart.length === 0) {
+        showToast('A lista já está vazia!', 'info');
+        return;
+      }
+
+      showCustomConfirm(
+        'Limpar Lista de Compras',
+        'Escolha como deseja esvaziar sua lista:',
+        'Limpar Tudo',
+        'Limpar Só Conferidos',
+        () => {
+          cart = [];
+          saveCart();
+          showToast('Lista totalmente limpa!', 'info');
+        },
+        () => {
+          cart = cart.filter(it => !it.checked);
+          saveCart();
+          showToast('Itens conferidos removidos!', 'info');
+        }
+      );
+    });
+
+    btnShareMenu.addEventListener('click', () => {
+      if (cart.length === 0) {
+        showToast('Adicione produtos antes de exportar.', 'info');
+        return;
+      }
+      document.getElementById('exportModal').classList.remove('hidden');
+    });
+
+    // Copiar para WhatsApp formatado
+    function copyListToWhatsApp() {
+      let text = `🛒 *LISTA DE COMPRAS - SUPERMERCADO*\n`;
+      text += `📅 Data: ${new Date().toLocaleDateString('pt-BR')}\n`;
+      text += `------------------------------------\n`;
+
+      let total = 0;
+      cart.forEach((it, idx) => {
+        const calc = calculateItemValues(it.quantity, it.unitPrice, it.promo);
+        total += calc.effectiveSubtotal;
+        const checkMark = it.checked ? '✅' : '⬜';
+        text += `${checkMark} *${it.name}*\n   ${formatQuantity(it.quantity)} ${it.unit} × R$ ${formatMoney(it.unitPrice)} = *R$ ${formatMoney(calc.effectiveSubtotal)}*\n`;
+      });
+
+      text += `------------------------------------\n`;
+      text += `💰 *TOTAL: R$ ${formatMoney(total)}* (${cart.length} itens)\n`;
+      text += `Criado com SuperCompras App`;
+
+      // Fallback seguro de cópia compatível com iframe e navegadores móveis
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Lista copiada com sucesso para WhatsApp!', 'success');
+      } catch (err) {
+        showToast('Erro ao copiar lista', 'error');
+      }
+      document.body.removeChild(textarea);
+      document.getElementById('exportModal').classList.add('hidden');
+    }
+
+    // Exportar CSV compatível com Excel / Google Planilhas
+    function exportCartToCSV() {
+      let csvContent = 'data:text/csv;charset=utf-8,\uFEFF'; // BOM para acentuação correta
+      csvContent += 'Produto;Unidade;Preco_Unitario;Quantidade;Subtotal;No_Carrinho\n';
+
+      cart.forEach(it => {
+        const calc = calculateItemValues(it.quantity, it.unitPrice, it.promo);
+        const row = [
+          `"${it.name.replace(/"/g, '""')}"`,
+          it.unit,
+          it.unitPrice.toFixed(2).replace('.', ','),
+          it.quantity.toString().replace('.', ','),
+          calc.effectiveSubtotal.toFixed(2).replace('.', ','),
+          it.checked ? 'SIM' : 'NÃO'
+        ].join(';');
+        csvContent += row + '\n';
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Compras_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('Download da planilha CSV concluído!', 'success');
+      document.getElementById('exportModal').classList.add('hidden');
+    }
+
+    // ==========================================
+    // 10. MODAL DE CONFIRMAÇÃO & TOASTS
+    // ==========================================
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalTitle = document.getElementById('confirmModalTitle');
+    const confirmModalText = document.getElementById('confirmModalText');
+    const btnConfirmActionPrimary = document.getElementById('btnConfirmActionPrimary');
+    const btnConfirmActionSecondary = document.getElementById('btnConfirmActionSecondary');
+    const btnConfirmCancel = document.getElementById('btnConfirmCancel');
+
+    function showCustomConfirm(title, text, primaryLabel, secondaryLabel, onPrimary, onSecondary) {
+      confirmModalTitle.innerText = title;
+      confirmModalText.innerText = text;
+      btnConfirmActionPrimary.innerText = primaryLabel;
+
+      if (secondaryLabel && onSecondary) {
+        btnConfirmActionSecondary.innerText = secondaryLabel;
+        btnConfirmActionSecondary.classList.remove('hidden');
+        btnConfirmActionSecondary.onclick = () => {
+          confirmModal.classList.add('hidden');
+          onSecondary();
+        };
+      } else {
+        btnConfirmActionSecondary.classList.add('hidden');
+      }
+
+      btnConfirmActionPrimary.onclick = () => {
+        confirmModal.classList.add('hidden');
+        if (onPrimary) onPrimary();
+      };
+
+      btnConfirmCancel.onclick = () => {
+        confirmModal.classList.add('hidden');
+      };
+
+      confirmModal.classList.remove('hidden');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-800 text-white';
+      if (type === 'success') bg = 'bg-emerald-600 text-white';
+      if (type === 'error') bg = 'bg-rose-600 text-white';
+      if (type === 'info') bg = 'bg-sky-700 text-white';
+
+      toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Animação de entrada
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Remoção automática
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2600);
+    }
+
+    // Toggle de Som
+    const btnToggleSound = document.getElementById('btnToggleSound');
+    const soundIconOn = document.getElementById('soundIconOn');
+    const soundIconOff = document.getElementById('soundIconOff');
+
+    btnToggleSound.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      soundIconOn.classList.toggle('hidden', !soundEnabled);
+      soundIconOff.classList.toggle('hidden', soundEnabled);
+      showToast(soundEnabled ? 'Sons ativados' : 'Sons silenciados', 'info');
+    });
+
+    // ==========================================
+    // INICIALIZAÇÃO
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedData();
+      updatePreview();
+    });
+  </script>
+</body>
+</html>
