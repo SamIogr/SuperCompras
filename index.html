@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SuperCompras Pro - Gestor de Compras & Mercados</title>
+  <title>SuperCompras Pro (Sincronizado com Google Sheets)</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -36,7 +36,6 @@
   </script>
 
   <style>
-    /* Estilização suave de rolagem */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -68,7 +67,7 @@
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col font-sans pb-36 select-none md:select-auto">
 
   <!-- ============================================================ -->
-  <!-- TOPO FIXO: LOGO, MERCADO ATIVO E BACKUP                      -->
+  <!-- TOPO FIXO: LOGO, MERCADO ATIVO E AÇÕES                      -->
   <!-- ============================================================ -->
   <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-40">
     <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
@@ -83,12 +82,25 @@
             <h1 class="text-base font-extrabold tracking-tight leading-none">SuperCompras</h1>
             <span class="bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-bold">PRO</span>
           </div>
-          <p id="topMarketSubtitle" class="text-[11px] text-emerald-200 mt-0.5 truncate max-w-[200px] sm:max-w-xs">Muffato (Linha Verde)</p>
+          <p id="topMarketSubtitle" class="text-[11px] text-emerald-200 mt-0.5 truncate max-w-[200px] sm:max-w-xs">Carregando mercados...</p>
         </div>
       </div>
 
       <!-- Ações rápidas no cabeçalho -->
       <div class="flex items-center space-x-1.5">
+        <!-- Botão Sincronizar com Google Sheets -->
+        <button 
+          id="btnSyncPlanilha"
+          type="button" 
+          onclick="sincronizarComPlanilha()" 
+          title="Sincronizar com a Planilha Google" 
+          class="p-2 bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-emerald-200 rounded-xl transition-all"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
         <button 
           id="btnOpenHistoryModal" 
           title="Histórico de Compras"
@@ -130,9 +142,7 @@
   <!-- ============================================================ -->
   <main class="max-w-4xl w-full mx-auto px-3 sm:px-4 pt-3 flex-grow">
 
-    <!-- ========================================== -->
-    <!-- ABA 1: COMPRAS (CARRINHO ATIVO)            -->
-    <!-- ========================================== -->
+    <!-- ABA 1: COMPRAS -->
     <div id="viewCompras" class="space-y-3.5">
       
       <!-- Seletor do Supermercado Ativo -->
@@ -162,12 +172,12 @@
           <!-- Informações de Promoção do Mercado -->
           <div id="marketPromoTag" class="text-xs bg-amber-50 text-amber-800 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center space-x-1.5 self-start sm:self-auto">
             <span class="text-amber-500">🗓️</span>
-            <span id="marketPromoText" class="font-semibold">Quarta do Hortifrúti</span>
+            <span id="marketPromoText" class="font-semibold">Dia de Ofertas</span>
           </div>
         </div>
       </section>
 
-      <!-- Card de Entrada Ágil: Produto, Preço Unitário e Quantidade -->
+      <!-- Entrada de Produto no Carrinho -->
       <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4">
         <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-3">
           <div class="flex items-center space-x-2">
@@ -178,8 +188,6 @@
         </div>
 
         <form id="formAddCartItem" class="space-y-3">
-          
-          <!-- Autocomplete de Produto -->
           <div class="relative">
             <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputProductName">
               Buscar Produto no Catálogo <span class="text-rose-500">*</span>
@@ -188,7 +196,7 @@
               <input 
                 type="text" 
                 id="cartInputProductName" 
-                placeholder="Digite para buscar (ex: Fraldinha, Lysoform, Leite, Café)..." 
+                placeholder="Digite para buscar (ex: Acém, Feijão, Arroz, Leite)..." 
                 autocomplete="off" 
                 required
                 class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
@@ -209,23 +217,17 @@
               </button>
             </div>
 
-            <!-- Dropdown do Autocomplete com Preço Vinculado -->
             <div 
               id="cartAutocompleteDropdown" 
               class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-60 overflow-y-auto divide-y divide-slate-100"
             >
-              <!-- Itens injetados via JS -->
+              <!-- Itens do autocomplete -->
             </div>
           </div>
 
-          <!-- Campos Numéricos: Unidade, Preço Unitário e Quantidade -->
           <div class="grid grid-cols-12 gap-2">
-            
-            <!-- Unidade de Medida -->
             <div class="col-span-4 sm:col-span-3">
-              <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnit">
-                Unidade
-              </label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnit">Unidade</label>
               <select 
                 id="cartInputUnit" 
                 class="w-full py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
@@ -241,7 +243,6 @@
               </select>
             </div>
 
-            <!-- Preço Unitário com suporte a vírgula/ponto -->
             <div class="col-span-4 sm:col-span-4">
               <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnitPrice">
                 Preço Unit. (R$) <span class="text-rose-500">*</span>
@@ -259,33 +260,29 @@
               </div>
             </div>
 
-            <!-- Quantidade (Decimal amigável para balança e inteiros) -->
             <div class="col-span-4 sm:col-span-5">
               <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputQuantity">
                 Qtd. / Peso <span class="text-rose-500">*</span>
               </label>
-              <div class="relative">
-                <input 
-                  type="text" 
-                  id="cartInputQuantity" 
-                  inputmode="decimal" 
-                  placeholder="Ex: 1,132" 
-                  value="1" 
-                  required
-                  class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all text-center sm:text-left"
-                >
-              </div>
+              <input 
+                type="text" 
+                id="cartInputQuantity" 
+                inputmode="decimal" 
+                placeholder="Ex: 1,132" 
+                value="1" 
+                required
+                class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all text-center sm:text-left"
+              >
             </div>
           </div>
 
-          <!-- Atalhos rápidos de quantidade / balança -->
+          <!-- Atalhos rápidos de quantidade -->
           <div class="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
             <span class="text-[11px] text-slate-600 font-medium mr-1">Atalhos:</span>
             <button type="button" onclick="setCartQuickQty('1')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">1</button>
             <button type="button" onclick="setCartQuickQty('2')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">2</button>
             <button type="button" onclick="setCartQuickQty('3')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">3</button>
             <button type="button" onclick="setCartQuickQty('6')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">6</button>
-            <button type="button" onclick="setCartQuickQty('12')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">12</button>
             <span class="border-r border-slate-300 h-4 mx-0.5"></span>
             <button type="button" onclick="setCartQuickQty('0.250')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">250g</button>
             <button type="button" onclick="setCartQuickQty('0.500')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">500g</button>
@@ -293,7 +290,7 @@
             <button type="button" onclick="setCartQuickQty('1.500')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1,5 kg</button>
           </div>
 
-          <!-- Módulo Opcional: Condição Comercial (Desconto & Atacado) -->
+          <!-- Condição Comercial Opcional -->
           <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
             <button 
               type="button" 
@@ -320,15 +317,14 @@
                 </label>
                 <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
                   <input type="radio" name="itemPromoType" value="discount" class="hidden" onchange="handleCartPromoTypeChange(this.value)">
-                  Desconto (%) ou (R$)
+                  Desconto
                 </label>
                 <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
                   <input type="radio" name="itemPromoType" value="wholesale" class="hidden" onchange="handleCartPromoTypeChange(this.value)">
-                  Regra de Atacado
+                  Atacado
                 </label>
               </div>
 
-              <!-- Opção Desconto -->
               <div id="cartPromoDiscountFields" class="hidden grid grid-cols-2 gap-2 pt-1">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo de Abatimento</label>
@@ -343,7 +339,6 @@
                 </div>
               </div>
 
-              <!-- Opção Atacado -->
               <div id="cartPromoWholesaleFields" class="hidden grid grid-cols-2 gap-2 pt-1">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-600 mb-1">A partir de (Qtd)</label>
@@ -380,18 +375,15 @@
         </form>
       </section>
 
-      <!-- Controles de Lista: Filtros, Pesquisa interna e Itens do Carrinho -->
+      <!-- Lista do Carrinho -->
       <section class="space-y-2.5">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          
-          <!-- Filtro de status -->
           <div class="flex items-center space-x-1 bg-slate-200/80 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto">
             <button type="button" onclick="setCartFilterMode('all')" id="tabFilterAll" class="px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all">Todos (<span id="cartBadgeAll">0</span>)</button>
             <button type="button" onclick="setCartFilterMode('pending')" id="tabFilterPending" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all">No Corredor (<span id="cartBadgePending">0</span>)</button>
             <button type="button" onclick="setCartFilterMode('checked')" id="tabFilterChecked" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all">No Carrinho (<span id="cartBadgeChecked">0</span>)</button>
           </div>
 
-          <!-- Busca interna no carrinho -->
           <div class="relative w-full sm:w-56">
             <input 
               type="text" 
@@ -407,12 +399,8 @@
           </div>
         </div>
 
-        <!-- Lista dinâmica dos produtos no carrinho -->
-        <div id="cartItemsContainer" class="space-y-2">
-          <!-- Renderizado via JavaScript -->
-        </div>
+        <div id="cartItemsContainer" class="space-y-2"></div>
 
-        <!-- Estado vazio do carrinho -->
         <div id="cartEmptyCard" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
           <div class="w-14 h-14 mx-auto mb-2 text-slate-300 bg-slate-50 rounded-full flex items-center justify-center">
             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,26 +408,22 @@
             </svg>
           </div>
           <h3 class="font-bold text-slate-700 text-sm">Seu carrinho está vazio</h3>
-          <p class="text-xs text-slate-600 mt-1 max-w-xs mx-auto">Adicione produtos pelo formulário acima para acompanhar os subtotais e os preços do mercado.</p>
+          <p class="text-xs text-slate-600 mt-1 max-w-xs mx-auto">Adicione produtos pelo formulário acima para acompanhar os subtotais.</p>
         </div>
       </section>
 
     </div>
 
-    <!-- ========================================== -->
-    <!-- ABA 2: PRODUTOS (BANCO DE DADOS DE 86 ITENS)-->
-    <!-- ========================================== -->
+    <!-- ABA 2: CATÁLOGO DE PRODUTOS -->
     <div id="viewProdutos" class="hidden space-y-3.5">
-      
-      <!-- Cabeçalho do Catálogo com Ação de Novo Produto -->
       <section class="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-200">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 class="font-bold text-slate-800 text-base flex items-center space-x-2">
               <span>Catálogo Mestre de Produtos</span>
-              <span id="catalogTotalCountBadge" class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-extrabold">86</span>
+              <span id="catalogTotalCountBadge" class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-extrabold">0</span>
             </h2>
-            <p class="text-xs text-slate-600 mt-0.5">Base com os produtos da sua planilha. Registre preços e compare mercados.</p>
+            <p class="text-xs text-slate-600 mt-0.5">Sincronizado diretamente com a sua folha de cálculo no Google Drive.</p>
           </div>
 
           <button 
@@ -454,13 +438,12 @@
           </button>
         </div>
 
-        <!-- Busca e Filtros de Categoria do Catálogo -->
         <div class="mt-3.5 space-y-2.5">
           <div class="relative">
             <input 
               type="text" 
               id="catalogSearchInput" 
-              placeholder="Buscar por nome (ex: Fraldinha, Lysoform, Leite, Café)..." 
+              placeholder="Buscar por nome (ex: Acém, Feijão, Arroz, Ovos)..." 
               class="w-full text-xs sm:text-sm py-2.5 pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none"
             >
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -470,34 +453,23 @@
             </div>
           </div>
 
-          <!-- Categorias com rolagem horizontal no mobile -->
-          <div id="catalogCategoryTabs" class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs font-semibold no-scrollbar">
-            <!-- Injetado via JS -->
-          </div>
+          <div id="catalogCategoryTabs" class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs font-semibold no-scrollbar"></div>
         </div>
       </section>
 
-      <!-- Lista / Grid de Produtos Cadastrados -->
-      <section id="catalogProductList" class="space-y-2">
-        <!-- Injetado via JS -->
-      </section>
-
+      <section id="catalogProductList" class="space-y-2"></section>
     </div>
 
-    <!-- ========================================== -->
-    <!-- ABA 3: SUPERMERCADOS (BANCO DE DADOS)      -->
-    <!-- ========================================== -->
+    <!-- ABA 3: SUPERMERCADOS -->
     <div id="viewSupermercados" class="hidden space-y-3.5">
-      
-      <!-- Cabeçalho do Módulo de Mercados -->
       <section class="bg-white rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-200">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 class="font-bold text-slate-800 text-base flex items-center space-x-2">
               <span>Supermercados Cadastrados</span>
-              <span id="marketTotalCountBadge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-extrabold">4</span>
+              <span id="marketTotalCountBadge" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-extrabold">8</span>
             </h2>
-            <p class="text-xs text-slate-600 mt-0.5">Gerencie as redes, unidades, dias de promoção e histórico de compras.</p>
+            <p class="text-xs text-slate-600 mt-0.5">Redes mapeadas com as colunas da sua folha de cálculo.</p>
           </div>
 
           <button 
@@ -513,30 +485,20 @@
         </div>
       </section>
 
-      <!-- Lista de Cards de Supermercados -->
-      <section id="marketsListContainer" class="space-y-3">
-        <!-- Injetado via JS -->
-      </section>
-
+      <section id="marketsListContainer" class="space-y-3"></section>
     </div>
 
   </main>
 
-  <!-- ============================================================ -->
-  <!-- BARRA DE TOTAL E FINALIZAÇÃO (SÓ ATIVA NA ABA COMPRAS)       -->
-  <!-- ============================================================ -->
+  <!-- BARRA DE TOTAL E FINALIZAÇÃO FIXA -->
   <div id="cartFloatingCheckoutBar" class="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-30 transition-all">
     <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2.5">
-      
-      <!-- Resumo Financeiro -->
       <div class="flex-1 min-w-0">
         <div class="flex items-center space-x-2 text-[11px] text-slate-600">
           <span id="checkoutTotalItemsLabel" class="font-bold text-slate-700">0 itens</span>
           <span>•</span>
           <span id="checkoutCheckedRatioLabel" class="font-semibold text-emerald-700">0 pegos</span>
-          <span id="checkoutSavingsBadge" class="hidden font-extrabold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded text-[10px]">
-            Econ. R$ 0,00
-          </span>
+          <span id="checkoutSavingsBadge" class="hidden font-extrabold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded text-[10px]">Econ. R$ 0,00</span>
         </div>
 
         <div class="flex items-baseline space-x-1.5 mt-0.5">
@@ -545,9 +507,7 @@
         </div>
       </div>
 
-      <!-- Ações do Carrinho -->
       <div class="flex items-center space-x-1.5 shrink-0">
-        <!-- Exportar / Compartilhar -->
         <button 
           type="button" 
           onclick="openExportOptionsModal()" 
@@ -560,7 +520,6 @@
           <span class="hidden sm:inline">Exportar</span>
         </button>
 
-        <!-- Limpar Carrinho -->
         <button 
           type="button" 
           onclick="askClearCart()" 
@@ -572,7 +531,6 @@
           </svg>
         </button>
 
-        <!-- Finalizar Compra -->
         <button 
           type="button" 
           onclick="askFinishPurchase()" 
@@ -584,17 +542,12 @@
           <span>Finalizar</span>
         </button>
       </div>
-
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- BARRA DE NAVEGAÇÃO INFERIOR ERGONÔMICA (MOBILE-FIRST)        -->
-  <!-- ============================================================ -->
+  <!-- NAVEGAÇÃO INFERIOR -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 h-16 shadow-lg">
     <div class="max-w-4xl mx-auto h-full grid grid-cols-3">
-      
-      <!-- Botão Aba 1: Compras -->
       <button 
         type="button" 
         onclick="switchActiveTab('compras')" 
@@ -610,7 +563,6 @@
         <span class="text-[11px] leading-tight">Compras</span>
       </button>
 
-      <!-- Botão Aba 2: Produtos -->
       <button 
         type="button" 
         onclick="switchActiveTab('produtos')" 
@@ -623,7 +575,6 @@
         <span class="text-[11px] leading-tight">Produtos</span>
       </button>
 
-      <!-- Botão Aba 3: Supermercados -->
       <button 
         type="button" 
         onclick="switchActiveTab('supermercados')" 
@@ -635,13 +586,108 @@
         </svg>
         <span class="text-[11px] leading-tight">Mercados</span>
       </button>
-
     </div>
   </nav>
 
-  <!-- ============================================================ -->
-  <!-- MODAL: CADASTRAR / EDITAR PRODUTO NO CATÁLOGO                -->
-  <!-- ============================================================ -->
+  <!-- MODAL: EDITAR ITEM DO CARRINHO (LÁPIS) -->
+  <div id="modalEditCartItem" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 id="modalEditCartTitle" class="font-extrabold text-slate-800 text-base">Editar Item do Carrinho</h3>
+          <p id="modalEditCartSubtitle" class="text-xs text-emerald-700 font-bold mt-0.5"></p>
+        </div>
+        <button type="button" onclick="closeEditCartItemModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      </div>
+
+      <form id="formSaveCartItemEdit" class="space-y-3">
+        <input type="hidden" id="editCartItemId" value="">
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="editCartItemPrice">Preço Unit. (R$) <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
+              <input type="text" id="editCartItemPrice" inputmode="decimal" placeholder="0,00" required class="w-full pl-8 pr-2 py-2.5 text-sm font-extrabold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="editCartItemQty">Qtd. / Peso <span class="text-rose-500">*</span></label>
+            <input type="text" id="editCartItemQty" inputmode="decimal" placeholder="Ex: 1,132" required class="w-full px-3 py-2.5 text-sm font-extrabold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none text-center sm:text-left">
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5 text-xs pt-0.5">
+          <span class="text-[11px] text-slate-600 font-medium mr-1">Atalhos:</span>
+          <button type="button" onclick="setEditCartQuickQty('1')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">1</button>
+          <button type="button" onclick="setEditCartQuickQty('2')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">2</button>
+          <button type="button" onclick="setEditCartQuickQty('3')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">3</button>
+          <span class="border-r border-slate-300 h-4 mx-0.5"></span>
+          <button type="button" onclick="setEditCartQuickQty('0.250')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">250g</button>
+          <button type="button" onclick="setEditCartQuickQty('0.500')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">500g</button>
+          <button type="button" onclick="setEditCartQuickQty('1.000')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1 kg</button>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70 space-y-2.5">
+          <span class="block text-xs font-bold text-slate-700">Condição Comercial</span>
+          <div class="flex gap-2 text-xs font-semibold">
+            <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+              <input type="radio" name="editItemPromoType" value="none" checked class="hidden" onchange="handleEditItemPromoTypeChange(this.value)"> Nenhum
+            </label>
+            <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+              <input type="radio" name="editItemPromoType" value="discount" class="hidden" onchange="handleEditItemPromoTypeChange(this.value)"> Desconto
+            </label>
+            <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+              <input type="radio" name="editItemPromoType" value="wholesale" class="hidden" onchange="handleEditItemPromoTypeChange(this.value)"> Atacado
+            </label>
+          </div>
+
+          <div id="editPromoDiscountFields" class="hidden grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo</label>
+              <select id="editCartDiscountMode" class="w-full text-xs font-semibold py-2 px-2 bg-white border border-slate-300 rounded-lg">
+                <option value="percent">Porcentagem (%)</option>
+                <option value="fixed">Fixo por unidade (R$)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Valor</label>
+              <input type="text" id="editCartDiscountVal" inputmode="decimal" placeholder="Ex: 10" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg">
+            </div>
+          </div>
+
+          <div id="editPromoWholesaleFields" class="hidden grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">A partir de (Qtd)</label>
+              <input type="text" id="editCartWholesaleMin" inputmode="decimal" placeholder="Ex: 3" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Preço Atacado (R$)</label>
+              <input type="text" id="editCartWholesalePrice" inputmode="decimal" placeholder="Ex: 12,90" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <div>
+            <span class="text-[11px] text-slate-500 font-bold uppercase block">Novo Subtotal</span>
+            <div class="flex items-baseline space-x-1.5">
+              <span id="editCartPreviewSubtotal" class="text-lg font-black text-emerald-700">R$ 0,00</span>
+              <span id="editCartPreviewSavings" class="text-xs text-rose-600 font-bold hidden"></span>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="closeEditCartItemModal()" class="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+            <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all">Salvar Item</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRAR / EDITAR PRODUTO NO CATÁLOGO -->
   <div id="modalProductEdit" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -651,24 +697,21 @@
 
       <form id="formSaveProductCatalog" class="space-y-3">
         <input type="hidden" id="editProdId" value="">
-
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nome do Produto <span class="text-rose-500">*</span></label>
-          <input type="text" id="editProdName" required placeholder="Ex: Fraldinha, Lysoform 1L..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
+          <input type="text" id="editProdName" required placeholder="Ex: Acém, Sassami, Feijão..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Categoria</label>
             <select id="editProdCategory" class="w-full text-xs font-semibold py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-              <option value="Açougue">Açougue / Carnes</option>
+              <option value="Açougue">Açougue & Carnes</option>
               <option value="Laticínios">Laticínios & Frios</option>
-              <option value="Mercearia">Mercearia</option>
-              <option value="Hortifrúti">Hortifrúti / Feira</option>
-              <option value="Padaria">Padaria & Matinais</option>
-              <option value="Bebidas">Bebidas</option>
-              <option value="Limpeza">Limpeza</option>
-              <option value="Higiene">Higiene Pessoal</option>
+              <option value="Mercearia">Mercearia & Básicos</option>
+              <option value="Hortifrúti">Hortifrúti & Ovos</option>
+              <option value="Limpeza">Higiene & Limpeza</option>
+              <option value="Geral">Geral</option>
             </select>
           </div>
 
@@ -681,8 +724,6 @@
               <option value="pct">pct (Pacote)</option>
               <option value="pt">pt (Pote)</option>
               <option value="lt">lt (Lata)</option>
-              <option value="gf">gf (Garrafa)</option>
-              <option value="dz">dz (Dúzia)</option>
             </select>
           </div>
         </div>
@@ -690,7 +731,6 @@
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Preço Base de Referência (R$) <span class="text-rose-500">*</span></label>
           <input type="text" id="editProdBasePrice" required inputmode="decimal" placeholder="0,00" class="w-full text-xs font-bold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
-          <p class="text-[10px] text-slate-600 mt-1">Este valor é usado como base caso o mercado selecionado ainda não tenha preço registrado.</p>
         </div>
 
         <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
@@ -701,9 +741,7 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- MODAL: COMPARATIVO E CADASTRO DIRETO DE PREÇOS POR MERCADO  -->
-  <!-- ============================================================ -->
+  <!-- MODAL: COMPARATIVO E CADASTRO DIRETO DE PREÇOS POR MERCADO -->
   <div id="modalPriceCompare" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-5 space-y-4 max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -714,64 +752,37 @@
         <button onclick="document.getElementById('modalPriceCompare').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
       </div>
 
-      <!-- FORMULÁRIO DE CADASTRO DIRETO DE PREÇO NO MERCADO SELECIONADO -->
       <form id="formRegisterMarketPrice" class="bg-emerald-50/70 border border-emerald-200 p-3.5 rounded-xl space-y-2.5">
         <input type="hidden" id="compareTargetProdId" value="">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-emerald-900 flex items-center space-x-1">
-            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            <span>Cadastrar / Atualizar Preço Direto</span>
-          </span>
+          <span class="text-xs font-bold text-emerald-900">Atualizar Preço no Mercado</span>
           <span class="text-[10px] text-emerald-700 font-semibold">Salva na hora</span>
         </div>
 
         <div class="grid grid-cols-12 gap-2">
           <div class="col-span-7">
             <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Supermercado</label>
-            <select id="compareSelectMarket" class="w-full text-xs font-bold py-2 px-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-              <!-- Preenchido via JS -->
-            </select>
+            <select id="compareSelectMarket" class="w-full text-xs font-bold py-2 px-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"></select>
           </div>
           <div class="col-span-5">
             <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Preço Unit. (R$)</label>
             <div class="relative">
               <span class="absolute inset-y-0 left-0 pl-2 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
-              <input 
-                type="text" 
-                id="compareInputPrice" 
-                inputmode="decimal" 
-                placeholder="0,00" 
-                required 
-                class="w-full pl-7 pr-2 py-2 text-xs font-extrabold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              >
+              <input type="text" id="compareInputPrice" inputmode="decimal" placeholder="0,00" required class="w-full pl-7 pr-2 py-2 text-xs font-extrabold bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
             </div>
           </div>
         </div>
 
         <div class="flex items-center justify-end space-x-2 pt-1">
-          <button 
-            type="submit" 
-            class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center space-x-1.5"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <span>Salvar Preço no Mercado</span>
-          </button>
+          <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-sm transition-all">Salvar Preço</button>
         </div>
       </form>
 
-      <!-- TABELA COMPARATIVA DOS MERCADOS -->
       <div class="space-y-2">
         <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide flex items-center justify-between">
-          <span>Comparativo Atual</span>
-          <span class="text-[10px] text-slate-400 font-normal">Toque no lápis para editar</span>
+          <span>Comparativo na Região</span>
         </div>
-        <div id="comparePricesTable" class="space-y-2 max-h-60 overflow-y-auto pr-1">
-          <!-- Injetado dinamicamente via JS -->
-        </div>
+        <div id="comparePricesTable" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
       </div>
 
       <div class="pt-2 text-right border-t border-slate-100">
@@ -780,37 +791,34 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- MODAL: CADASTRAR / EDITAR SUPERMERCADO                       -->
-  <!-- ============================================================ -->
+  <!-- MODAL: CADASTRAR / EDITAR SUPERMERCADO -->
   <div id="modalMarketEdit" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 id="modalMarketEditTitle" class="font-extrabold text-slate-800 text-base">Cadastrar Supermercado</h3>
+        <h3 id="modalMarketEditTitle" class="font-extrabold text-slate-800 text-base">Supermercado</h3>
         <button onclick="closeMarketEditModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
       </div>
 
       <form id="formSaveMarket" class="space-y-3">
         <input type="hidden" id="editMarketId" value="">
-
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nome da Rede / Loja <span class="text-rose-500">*</span></label>
-          <input type="text" id="editMarketName" required placeholder="Ex: Muffato, Condor, Festval, Atacadão..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nome da Rede <span class="text-rose-500">*</span></label>
+          <input type="text" id="editMarketName" required placeholder="Ex: Jacomar, Condor, Max Atacadista..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Unidade / Bairro</label>
-          <input type="text" id="editMarketBranch" placeholder="Ex: Portão, Linha Verde, Champagnat..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
+          <input type="text" id="editMarketBranch" placeholder="Ex: Afonso Pena, São José dos Pinhais..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Dia / Destaque de Promoção</label>
-          <input type="text" id="editMarketPromoDay" placeholder="Ex: Quarta do Hortifrúti, Terça da Carne..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Dia de Ofertas</label>
+          <input type="text" id="editMarketPromoDay" placeholder="Ex: Quarta de Hortifrúti, Quinta da Carne..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Observações ou Dicas</label>
-          <textarea id="editMarketNotes" rows="2" placeholder="Ex: Melhor açougue, bons descontos no clube fidelidade..." class="w-full text-xs font-semibold py-2 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none"></textarea>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Observações</label>
+          <textarea id="editMarketNotes" rows="2" placeholder="Destaques de preços e setores fortes..." class="w-full text-xs font-semibold py-2 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none"></textarea>
         </div>
 
         <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
@@ -821,26 +829,15 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- MODAL: HISTÓRICO DE COMPRAS FINALIZADAS                     -->
-  <!-- ============================================================ -->
+  <!-- MODAL: HISTÓRICO DE COMPRAS -->
   <div id="modalHistory" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-5 space-y-4 max-h-[90vh] flex flex-col">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h3 class="font-extrabold text-slate-800 text-base">Histórico de Compras Finalizadas</h3>
-        </div>
+        <h3 class="font-extrabold text-slate-800 text-base">Histórico de Compras Finalizadas</h3>
         <button onclick="document.getElementById('modalHistory').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
       </div>
 
-      <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1">
-        <!-- Injetado via JS -->
-      </div>
+      <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
 
       <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
         <button onclick="askClearHistory()" class="text-rose-600 hover:underline font-semibold">Limpar Histórico</button>
@@ -849,43 +846,22 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- MODAL: BACKUP E RESTAURAÇÃO (JSON)                          -->
-  <!-- ============================================================ -->
+  <!-- MODAL: BACKUP E RESTAURAÇÃO (JSON) -->
   <div id="modalBackup" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-            </svg>
-          </div>
-          <h3 class="font-extrabold text-slate-800 text-base">Backup & Restauração</h3>
-        </div>
+        <h3 class="font-extrabold text-slate-800 text-base">Backup & Restauração</h3>
         <button onclick="document.getElementById('modalBackup').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
       </div>
 
-      <p class="text-xs text-slate-600 leading-relaxed">
-        Seus dados ficam 100% gravados localmente no seu aparelho. Exporte uma cópia de segurança em JSON ou restaure em outro celular quando desejar.
-      </p>
+      <p class="text-xs text-slate-600">Exporte cópia de segurança dos dados locais ou restaure quando desejar.</p>
 
       <div class="space-y-2.5 pt-1">
-        <button 
-          type="button" 
-          onclick="exportBackupJSON()" 
-          class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-          </svg>
-          <span>Exportar Dados (Baixar Arquivo JSON)</span>
+        <button type="button" onclick="exportBackupJSON()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+          <span>Exportar Dados (Arquivo JSON)</span>
         </button>
 
         <label class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 cursor-pointer transition-all border border-slate-300">
-          <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-          </svg>
           <span>Restaurar Backup (Carregar JSON)</span>
           <input type="file" id="inputRestoreJSON" accept=".json" class="hidden" onchange="handleRestoreJSON(event)">
         </label>
@@ -897,9 +873,7 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- MODAL: EXPORTAR E COMPARTILHAR COMPRAS (WHATSAPP / TEXTO)   -->
-  <!-- ============================================================ -->
+  <!-- MODAL: EXPORTAR (WHATSAPP / CSV) -->
   <div id="modalExportOptions" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-3.5">
       <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -907,19 +881,13 @@
         <button onclick="document.getElementById('modalExportOptions').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
       </div>
 
-      <p class="text-xs text-slate-600">Envie a lista formatada para o WhatsApp ou salve uma planilha CSV:</p>
-
       <div class="space-y-2">
         <button onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
           <span>Copiar Formatado para WhatsApp</span>
         </button>
 
         <button onclick="exportCartCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
-          <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-          <span>Baixar Planilha CSV (Excel)</span>
+          <span>Baixar Planilha CSV</span>
         </button>
       </div>
 
@@ -929,23 +897,16 @@
     </div>
   </div>
 
-  <!-- ============================================================ -->
-  <!-- MODAL DE DIÁLOGO CUSTOMIZADO (SEM USAR ALERT/CONFIRM)        -->
-  <!-- ============================================================ -->
+  <!-- MODAL DE DIÁLOGO CUSTOMIZADO -->
   <div id="dialogCustom" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
     <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-center">
-      <div id="dialogIconBox" class="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-      </div>
       <div>
-        <h4 id="dialogTitle" class="font-extrabold text-slate-800 text-base">Título do Diálogo</h4>
-        <p id="dialogMessage" class="text-xs text-slate-600 mt-1.5 leading-relaxed">Mensagem informativa ou de confirmação.</p>
+        <h4 id="dialogTitle" class="font-extrabold text-slate-800 text-base">Título</h4>
+        <p id="dialogMessage" class="text-xs text-slate-600 mt-1.5 leading-relaxed">Mensagem.</p>
       </div>
       <div class="flex flex-col gap-2 pt-2">
         <button id="dialogBtnPrimary" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all">Confirmar</button>
-        <button id="dialogBtnSecondary" class="hidden w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Opção Secundária</button>
+        <button id="dialogBtnSecondary" class="hidden w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Secundária</button>
         <button id="dialogBtnCancel" class="w-full py-2 px-4 text-slate-600 text-xs font-semibold hover:bg-slate-100 rounded-xl transition-all">Cancelar</button>
       </div>
     </div>
@@ -955,127 +916,34 @@
   <div id="toastStack" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <!-- ============================================================ -->
-  <!-- JAVASCRIPT: LÓGICA COMPLETA E PERSISTÊNCIA OFFLINE          -->
+  <!-- JAVASCRIPT: LÓGICA INTEGRADA E COMUNICAÇÃO COM O GOOGLE SHEETS-->
   <!-- ============================================================ -->
   <script>
-    // 1. BANCO DE DADOS INICIAL: 86 PRODUTOS REAIS DA PLANILHA
-    const DEFAULT_86_PRODUCTS = [
-      // Açougue & Carnes
-      { id: 'p-1', name: 'Fraldinha', category: 'Açougue', unit: 'kg', basePrice: 39.90, marketPrices: { 'm-1': 38.90, 'm-4': 37.50 } },
-      { id: 'p-2', name: 'Cupim Bovino', category: 'Açougue', unit: 'kg', basePrice: 38.50, marketPrices: { 'm-1': 37.90 } },
-      { id: 'p-3', name: 'Sassami de Frango', category: 'Açougue', unit: 'kg', basePrice: 21.90, marketPrices: { 'm-1': 19.90, 'm-4': 18.90 } },
-      { id: 'p-4', name: 'Alcatra com Maminha', category: 'Açougue', unit: 'kg', basePrice: 42.90, marketPrices: { 'm-3': 46.90 } },
-      { id: 'p-5', name: 'Picanha Bovina', category: 'Açougue', unit: 'kg', basePrice: 69.90, marketPrices: { 'm-3': 74.90 } },
-      { id: 'p-6', name: 'Patinho Moído', category: 'Açougue', unit: 'kg', basePrice: 36.90, marketPrices: { 'm-1': 35.90 } },
-      { id: 'p-7', name: 'Peito de Frango Filé', category: 'Açougue', unit: 'kg', basePrice: 19.90, marketPrices: { 'm-2': 19.50 } },
-      { id: 'p-8', name: 'Coxa e Sobrecoxa de Frango', category: 'Açougue', unit: 'kg', basePrice: 14.50, marketPrices: { 'm-4': 13.90 } },
-      { id: 'p-9', name: 'Costela Bovina', category: 'Açougue', unit: 'kg', basePrice: 28.90, marketPrices: { 'm-1': 27.90 } },
-      { id: 'p-10', name: 'Linguiça Toscana Churrasco', category: 'Açougue', unit: 'kg', basePrice: 21.90, marketPrices: { 'm-2': 21.00 } },
-      { id: 'p-11', name: 'Bacon Defumado em Pedaço', category: 'Açougue', unit: 'kg', basePrice: 32.00, marketPrices: { 'm-1': 31.50 } },
-      { id: 'p-12', name: 'Filé de Tilápia Fresco', category: 'Açougue', unit: 'kg', basePrice: 45.90, marketPrices: { 'm-3': 49.90 } },
+    // URL gerada pelo Google Apps Script
+    const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
 
-      // Laticínios & Frios
-      { id: 'p-13', name: 'Leite Líquido Integral', category: 'Laticínios', unit: 'cx', basePrice: 3.99, marketPrices: { 'm-1': 3.89, 'm-4': 3.69 } },
-      { id: 'p-14', name: 'Leite Desnatado', category: 'Laticínios', unit: 'cx', basePrice: 4.19, marketPrices: { 'm-2': 4.10 } },
-      { id: 'p-15', name: 'Margarina com Sal 500g', category: 'Laticínios', unit: 'un', basePrice: 14.90, marketPrices: { 'm-1': 14.50 } },
-      { id: 'p-16', name: 'Manteiga Extra com Sal 200g', category: 'Laticínios', unit: 'un', basePrice: 11.50, marketPrices: { 'm-3': 12.20 } },
-      { id: 'p-17', name: 'Queijo Mussarela Fatiado', category: 'Laticínios', unit: 'kg', basePrice: 44.90, marketPrices: { 'm-4': 41.90 } },
-      { id: 'p-18', name: 'Queijo Prato Fatiado', category: 'Laticínios', unit: 'kg', basePrice: 47.90, marketPrices: { 'm-1': 46.90 } },
-      { id: 'p-19', name: 'Presunto Cozido sem Capa', category: 'Laticínios', unit: 'kg', basePrice: 29.90, marketPrices: { 'm-2': 28.90 } },
-      { id: 'p-20', name: 'Peito de Peru Defumado', category: 'Laticínios', unit: 'kg', basePrice: 62.00, marketPrices: { 'm-3': 66.00 } },
-      { id: 'p-21', name: 'Iogurte Natural Integral 170g', category: 'Laticínios', unit: 'un', basePrice: 3.49, marketPrices: { 'm-1': 3.29 } },
-      { id: 'p-22', name: 'Creme de Leite TP 200g', category: 'Laticínios', unit: 'cx', basePrice: 3.29, marketPrices: { 'm-4': 2.99 } },
-      { id: 'p-23', name: 'Leite Condensado 395g', category: 'Laticínios', unit: 'cx', basePrice: 5.49, marketPrices: { 'm-1': 5.29 } },
-      { id: 'p-24', name: 'Requeijão Cremoso 200g', category: 'Laticínios', unit: 'pt', basePrice: 7.89, marketPrices: { 'm-2': 7.69 } },
-      { id: 'p-25', name: 'Queijo Ralado Parmesão 50g', category: 'Laticínios', unit: 'pct', basePrice: 4.90, marketPrices: { 'm-1': 4.75 } },
-      { id: 'p-26', name: 'Ricota Fresca', category: 'Laticínios', unit: 'kg', basePrice: 24.90, marketPrices: { 'm-3': 26.50 } },
-
-      // Mercearia & Cereais
-      { id: 'p-27', name: 'Café Torrado e Moído 500g', category: 'Mercearia', unit: 'pct', basePrice: 16.79, marketPrices: { 'm-1': 16.29, 'm-4': 15.89 } },
-      { id: 'p-28', name: 'Arroz Tipo 1 Agulhinha 5kg', category: 'Mercearia', unit: 'pct', basePrice: 29.90, marketPrices: { 'm-4': 27.90 } },
-      { id: 'p-29', name: 'Feijão Carioca Novo 1kg', category: 'Mercearia', unit: 'pct', basePrice: 7.89, marketPrices: { 'm-1': 7.49 } },
-      { id: 'p-30', name: 'Feijão Preto 1kg', category: 'Mercearia', unit: 'pct', basePrice: 8.20, marketPrices: { 'm-2': 7.99 } },
-      { id: 'p-31', name: 'Açúcar Refinado 1kg', category: 'Mercearia', unit: 'pct', basePrice: 4.49, marketPrices: { 'm-1': 4.29 } },
-      { id: 'p-32', name: 'Açúcar Cristal 5kg', category: 'Mercearia', unit: 'pct', basePrice: 18.50, marketPrices: { 'm-4': 17.50 } },
-      { id: 'p-33', name: 'Óleo de Soja Refinado 900ml', category: 'Mercearia', unit: 'un', basePrice: 6.49, marketPrices: { 'm-1': 6.29 } },
-      { id: 'p-34', name: 'Azeite de Oliva Extra Virgem 500ml', category: 'Mercearia', unit: 'un', basePrice: 38.90, marketPrices: { 'm-3': 41.90 } },
-      { id: 'p-35', name: 'Macarrão Espaguete Semola 500g', category: 'Mercearia', unit: 'pct', basePrice: 4.29, marketPrices: { 'm-2': 4.19 } },
-      { id: 'p-36', name: 'Macarrão Parafuso 500g', category: 'Mercearia', unit: 'pct', basePrice: 4.29, marketPrices: { 'm-1': 4.19 } },
-      { id: 'p-37', name: 'Molho de Tomate Tradicional 300g', category: 'Mercearia', unit: 'pct', basePrice: 2.19, marketPrices: { 'm-4': 1.99 } },
-      { id: 'p-38', name: 'Extrato de Tomate 340g', category: 'Mercearia', unit: 'lt', basePrice: 4.39, marketPrices: { 'm-1': 4.19 } },
-      { id: 'p-39', name: 'Farinha de Trigo Especial 1kg', category: 'Mercearia', unit: 'pct', basePrice: 4.89, marketPrices: { 'm-2': 4.79 } },
-      { id: 'p-40', name: 'Farinha de Mandioca Torrada 1kg', category: 'Mercearia', unit: 'pct', basePrice: 5.90, marketPrices: { 'm-1': 5.80 } },
-      { id: 'p-41', name: 'Sal Refinado Iodado 1kg', category: 'Mercearia', unit: 'pct', basePrice: 2.29, marketPrices: { 'm-4': 2.19 } },
-      { id: 'p-42', name: 'Maionese Tradicional 500g', category: 'Mercearia', unit: 'pt', basePrice: 7.49, marketPrices: { 'm-1': 7.29 } },
-      { id: 'p-43', name: 'Ketchup Tradicional 400g', category: 'Mercearia', unit: 'un', basePrice: 8.20, marketPrices: { 'm-2': 7.99 } },
-      { id: 'p-44', name: 'Mostarda Amarela 200g', category: 'Mercearia', unit: 'un', basePrice: 5.60, marketPrices: { 'm-1': 5.49 } },
-      { id: 'p-45', name: 'Milho Verde em Conserva 170g', category: 'Mercearia', unit: 'lt', basePrice: 3.79, marketPrices: { 'm-4': 3.49 } },
-      { id: 'p-46', name: 'Ervilha em Conserva 170g', category: 'Mercearia', unit: 'lt', basePrice: 3.79, marketPrices: { 'm-4': 3.49 } },
-      { id: 'p-47', name: 'Sardinha em Óleo 125g', category: 'Mercearia', unit: 'lt', basePrice: 4.99, marketPrices: { 'm-1': 4.89 } },
-      { id: 'p-48', name: 'Atum Ralado em Óleo 170g', category: 'Mercearia', unit: 'lt', basePrice: 6.89, marketPrices: { 'm-2': 6.79 } },
-      { id: 'p-49', name: 'Biscoito Cream Cracker 400g', category: 'Mercearia', unit: 'pct', basePrice: 4.50, marketPrices: { 'm-1': 4.39 } },
-      { id: 'p-50', name: 'Biscoito Recheado Chocolate 130g', category: 'Mercearia', unit: 'pct', basePrice: 3.20, marketPrices: { 'm-4': 2.99 } },
-      { id: 'p-51', name: 'Aveia em Flocos Finos 170g', category: 'Mercearia', unit: 'cx', basePrice: 4.50, marketPrices: { 'm-1': 4.29 } },
-      { id: 'p-52', name: 'Achocolatado em Pó 400g', category: 'Mercearia', unit: 'lt', basePrice: 8.90, marketPrices: { 'm-2': 8.60 } },
-      { id: 'p-53', name: 'Fermento Químico em Pó 100g', category: 'Mercearia', unit: 'pt', basePrice: 3.50, marketPrices: { 'm-1': 3.39 } },
-
-      // Hortifrúti
-      { id: 'p-54', name: 'Banana Prata', category: 'Hortifrúti', unit: 'kg', basePrice: 6.99, marketPrices: { 'm-1': 5.99 } },
-      { id: 'p-55', name: 'Maçã Gala Nacional', category: 'Hortifrúti', unit: 'kg', basePrice: 9.90, marketPrices: { 'm-3': 10.90 } },
-      { id: 'p-56', name: 'Laranja Pêra', category: 'Hortifrúti', unit: 'kg', basePrice: 4.99, marketPrices: { 'm-1': 4.49 } },
-      { id: 'p-57', name: 'Tomate Italiano', category: 'Hortifrúti', unit: 'kg', basePrice: 8.49, marketPrices: { 'm-1': 7.90 } },
-      { id: 'p-58', name: 'Cebola Nacional', category: 'Hortifrúti', unit: 'kg', basePrice: 5.89, marketPrices: { 'm-4': 4.99 } },
-      { id: 'p-59', name: 'Batata Inglesa Especial', category: 'Hortifrúti', unit: 'kg', basePrice: 6.49, marketPrices: { 'm-1': 5.89 } },
-      { id: 'p-60', name: 'Cenoura Fresca', category: 'Hortifrúti', unit: 'kg', basePrice: 5.20, marketPrices: { 'm-2': 4.99 } },
-      { id: 'p-61', name: 'Alho Roxo a Granel', category: 'Hortifrúti', unit: 'kg', basePrice: 34.90, marketPrices: { 'm-4': 31.90 } },
-      { id: 'p-62', name: 'Alface Crespa Hidropônica', category: 'Hortifrúti', unit: 'un', basePrice: 3.50, marketPrices: { 'm-3': 3.99 } },
-      { id: 'p-63', name: 'Limão Taiti', category: 'Hortifrúti', unit: 'kg', basePrice: 4.99, marketPrices: { 'm-1': 4.50 } },
-      { id: 'p-64', name: 'Melancia Inteira / Pedaço', category: 'Hortifrúti', unit: 'kg', basePrice: 2.99, marketPrices: { 'm-4': 2.69 } },
-      { id: 'p-65', name: 'Mamão Papaya', category: 'Hortifrúti', unit: 'un', basePrice: 4.80, marketPrices: { 'm-2': 4.50 } },
-      { id: 'p-66', name: 'Abacaxi Pérola', category: 'Hortifrúti', unit: 'un', basePrice: 7.90, marketPrices: { 'm-1': 6.99 } },
-      { id: 'p-67', name: 'Pimentão Verde', category: 'Hortifrúti', unit: 'kg', basePrice: 7.80, marketPrices: { 'm-1': 7.49 } },
-      { id: 'p-68', name: 'Ovos Brancos Grandes c/ 30 un', category: 'Hortifrúti', unit: 'cx', basePrice: 19.90, marketPrices: { 'm-4': 18.50 } },
-
-      // Padaria & Matinais
-      { id: 'p-69', name: 'Pão Francês', category: 'Padaria', unit: 'kg', basePrice: 16.90, marketPrices: { 'm-3': 18.90, 'm-1': 15.90 } },
-      { id: 'p-70', name: 'Pão de Forma Tradicional 500g', category: 'Padaria', unit: 'pct', basePrice: 7.49, marketPrices: { 'm-2': 7.29 } },
-      { id: 'p-71', name: 'Torrada Multigrãos 140g', category: 'Padaria', unit: 'pct', basePrice: 5.90, marketPrices: { 'm-3': 6.40 } },
-      { id: 'p-72', name: 'Bolo Simples Caseiro', category: 'Padaria', unit: 'un', basePrice: 12.00, marketPrices: { 'm-1': 11.50 } },
-      { id: 'p-73', name: 'Pão de Queijo Congelado 400g', category: 'Padaria', unit: 'pct', basePrice: 13.90, marketPrices: { 'm-4': 12.90 } },
-
-      // Bebidas
-      { id: 'p-74', name: 'Água Mineral sem Gás 500ml', category: 'Bebidas', unit: 'un', basePrice: 2.00, marketPrices: { 'm-1': 1.89 } },
-      { id: 'p-75', name: 'Água Mineral Galão 5 Litros', category: 'Bebidas', unit: 'un', basePrice: 9.50, marketPrices: { 'm-4': 8.90 } },
-      { id: 'p-76', name: 'Refrigerante Cola 2 Litros', category: 'Bebidas', unit: 'un', basePrice: 8.99, marketPrices: { 'm-2': 8.79 } },
-      { id: 'p-77', name: 'Cerveja Puro Malte 350ml', category: 'Bebidas', unit: 'un', basePrice: 3.79, marketPrices: { 'm-4': 3.59 } },
-      { id: 'p-78', name: 'Suco Integral de Uva 1,5L', category: 'Bebidas', unit: 'gf', basePrice: 14.90, marketPrices: { 'm-3': 15.90 } },
-
-      // Limpeza
-      { id: 'p-79', name: 'Desinfetante Lysoform 1L', category: 'Limpeza', unit: 'un', basePrice: 14.90, marketPrices: { 'm-1': 14.20, 'm-2': 13.90 } },
-      { id: 'p-80', name: 'Amaciante Concentrado Ypê 1L', category: 'Limpeza', unit: 'un', basePrice: 12.90, marketPrices: { 'm-2': 11.90 } },
-      { id: 'p-81', name: 'Sabão em Pó Lavagem 1,6kg', category: 'Limpeza', unit: 'cx', basePrice: 16.90, marketPrices: { 'm-4': 15.50 } },
-      { id: 'p-82', name: 'Lava-Roupas Líquido 3 Litros', category: 'Limpeza', unit: 'gf', basePrice: 28.90, marketPrices: { 'm-1': 27.90 } },
-      { id: 'p-83', name: 'Detergente Líquido Neutro 500ml', category: 'Limpeza', unit: 'un', basePrice: 2.39, marketPrices: { 'm-4': 2.19 } },
-      { id: 'p-84', name: 'Água Sanitária Alvejante 1L', category: 'Limpeza', unit: 'un', basePrice: 4.20, marketPrices: { 'm-2': 3.99 } },
-      { id: 'p-85', name: 'Esponja Multiuso Dupla Face c/ 3', category: 'Limpeza', unit: 'pct', basePrice: 4.50, marketPrices: { 'm-1': 4.19 } },
-      { id: 'p-86', name: 'Saco de Lixo Reforçado 50L c/ 10', category: 'Limpeza', unit: 'pct', basePrice: 8.90, marketPrices: { 'm-4': 8.20 } }
-    ];
-
-    // 2. BANCO DE SUPERMERCADOS INICIAIS
+    // 1. MAPEAMENTO DOS 8 SUPERMERCADOS DA PLANILHA (SÃO JOSÉ DOS PINHAIS)
     const DEFAULT_SUPERMARKETS = [
-      { id: 'm-1', name: 'Muffato', branch: 'Linha Verde / Portão', promoDay: 'Quarta de Hortifrúti e Terça da Carne', notes: 'Bons preços em carnes na terça e açougue rápido.' },
-      { id: 'm-2', name: 'Condor', branch: 'Champagnat', promoDay: 'Segunda e Terça da Limpeza', notes: 'Variedade forte de produtos de higiene e marcas próprias.' },
-      { id: 'm-3', name: 'Festval', branch: 'Batel / Água Verde', promoDay: 'Quinta dos Vinhos e Padaria', notes: 'Excelente hortifrúti selecionado e padaria artesanal.' },
-      { id: 'm-4', name: 'Atacadão', branch: 'BR-116 / Pinheirinho', promoDay: 'Sexta do Atacado', notes: 'Ideal para compras de fardos de leite, café e mercearia pesada.' }
+      { id: 'm-max', name: 'Max Atacadista', branch: 'Afonso Pena / SJP', promoDay: 'Terça e Quarta de Hortifrúti', notes: 'Destaque em atacado, mercearia e limpeza.' },
+      { id: 'm-goes', name: 'Supermercados Goes', branch: 'Afonso Pena / SJP', promoDay: 'Quinta da Carne e Terça da Feira', notes: 'Destaque em carnes e hortifrúti.' },
+      { id: 'm-local', name: 'Local Supermercado', branch: 'Afonso Pena / SJP', promoDay: 'Terça a Quinta de Laticínios', notes: 'Destaque em laticínios e frios.' },
+      { id: 'm-jacomar', name: 'Jacomar', branch: 'Afonso Pena / SJP', promoDay: 'Quinta da Carne e Terça da Feira', notes: 'Destaque em carnes, laticínios e hortifrúti.' },
+      { id: 'm-atac', name: 'Atacadão', branch: 'Afonso Pena / SJP', promoDay: 'Fim de Semana de Mercearia', notes: 'Preços agressivos em fardos e pacotes fechados.' },
+      { id: 'm-condor', name: 'Condor', branch: 'Afonso Pena / SJP', promoDay: 'Quarta de Hortifrúti e Quinta da Carne', notes: 'Destaque em carnes, laticínios e clube fidelidade.' },
+      { id: 'm-stall', name: 'Stall Supermercados', branch: 'Afonso Pena / SJP', promoDay: 'Ofertas Diárias', notes: 'Rede regional do bairro Afonso Pena.' },
+      { id: 'm-pgula', name: 'Ponto da Gula', branch: 'Afonso Pena / SJP', promoDay: 'Fim de Semana Básicos', notes: 'Destaque em itens básicos de mercearia.' }
     ];
 
-    const CATEGORIES = ['Todas', 'Açougue', 'Laticínios', 'Mercearia', 'Hortifrúti', 'Padaria', 'Bebidas', 'Limpeza'];
+    // Array estático de produtos enxugado para lista dinâmica vazia (alimentado pelo Sheets/LocalStorage)
+    const DEFAULT_86_PRODUCTS = [];
 
-    // 3. ESTADO DA APLICAÇÃO
+    const CATEGORIES = ['Todas', 'Açougue', 'Laticínios', 'Mercearia', 'Hortifrúti', 'Limpeza', 'Geral'];
+
+    // ESTADO DA APLICAÇÃO
     let products = [];
     let supermarkets = [];
     let cart = [];
-    let activeMarketId = 'm-1';
+    let activeMarketId = 'm-max';
     let purchaseHistory = [];
     let currentTab = 'compras';
     let cartFilterMode = 'all';
@@ -1122,7 +990,75 @@
       } catch (err) {}
     }
 
-    // 4. PARSERS E FORMATAÇÃO
+    // SINCRONIZAÇÃO BIDIRECIONAL COM GOOGLE SHEETS
+    async function sincronizarComPlanilha() {
+      const btn = document.getElementById('btnSyncPlanilha');
+      if (btn) btn.classList.add('animate-spin');
+      showAppToast('Sincronizando com a planilha...', 'info');
+
+      try {
+        const res = await fetch(API_GOOGLE_SHEETS_URL);
+        const json = await res.json();
+
+        if (json.status === 'success' && Array.isArray(json.produtos)) {
+          json.produtos.forEach(sp => {
+            const localIdx = products.findIndex(p => p.name.toLowerCase() === sp.name.toLowerCase());
+            if (localIdx > -1) {
+              products[localIdx].marketPrices = { ...products[localIdx].marketPrices, ...sp.marketPrices };
+              products[localIdx].basePrice = sp.basePrice || products[localIdx].basePrice;
+              products[localIdx].unit = sp.unit || products[localIdx].unit;
+            } else {
+              products.push(sp);
+            }
+          });
+
+          saveAllLocalData();
+          renderCatalogUI();
+          renderCartUI();
+          showAppToast(`${json.produtos.length} produtos sincronizados!`, 'success');
+        } else {
+          throw new Error(json.message || 'Formato inválido retornado');
+        }
+      } catch (err) {
+        showAppToast('Erro ao sincronizar: ' + err.message, 'error');
+      } finally {
+        if (btn) btn.classList.remove('animate-spin');
+      }
+    }
+
+    async function enviarProdutoParaPlanilha(produto, marketId, preco) {
+      const colunasMercados = {
+        'm-max': 4,
+        'm-goes': 5,
+        'm-local': 6,
+        'm-jacomar': 7,
+        'm-atac': 8,
+        'm-condor': 9,
+        'm-stall': 10,
+        'm-pgula': 11
+      };
+
+      const payload = {
+        name: produto.name,
+        unit: produto.unit,
+        quantity: produto.quantity || 1,
+        marketColIndex: colunasMercados[marketId] || null,
+        price: preco
+      };
+
+      try {
+        await fetch(API_GOOGLE_SHEETS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.error('Falha ao enviar registro para a planilha:', err);
+      }
+    }
+
+    // FORMATAÇÃO E PARSERS
     function parseNumberInput(val) {
       if (!val) return 0;
       const clean = String(val).trim().replace(',', '.');
@@ -1139,23 +1075,23 @@
       return n % 1 === 0 ? n.toString() : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
     }
 
-    // 5. CARREGAMENTO E PERSISTÊNCIA
+    // CARREGAMENTO E PERSISTÊNCIA LOCAL (OFFLINE FIRST)
     function loadApplicationData() {
       try {
-        const savedMarkets = localStorage.getItem('sc_supermarkets_v2');
+        const savedMarkets = localStorage.getItem('sc_supermarkets_v3');
         supermarkets = savedMarkets ? JSON.parse(savedMarkets) : [...DEFAULT_SUPERMARKETS];
       } catch (e) {
         supermarkets = [...DEFAULT_SUPERMARKETS];
       }
 
       try {
-        const savedProducts = localStorage.getItem('sc_products_v2');
-        products = savedProducts ? JSON.parse(savedProducts) : [...DEFAULT_86_PRODUCTS];
+        const savedProducts = localStorage.getItem('sc_products_v3');
+        products = savedProducts ? JSON.parse(savedProducts) : [];
       } catch (e) {
-        products = [...DEFAULT_86_PRODUCTS];
+        products = [];
       }
 
-      const savedActiveMarket = localStorage.getItem('sc_active_market_v2');
+      const savedActiveMarket = localStorage.getItem('sc_active_market_v3');
       if (savedActiveMarket && supermarkets.some(m => m.id === savedActiveMarket)) {
         activeMarketId = savedActiveMarket;
       } else if (supermarkets.length > 0) {
@@ -1163,14 +1099,14 @@
       }
 
       try {
-        const savedCart = localStorage.getItem('sc_cart_v2');
+        const savedCart = localStorage.getItem('sc_cart_v3');
         cart = savedCart ? JSON.parse(savedCart) : [];
       } catch (e) {
         cart = [];
       }
 
       try {
-        const savedHist = localStorage.getItem('sc_history_v2');
+        const savedHist = localStorage.getItem('sc_history_v3');
         purchaseHistory = savedHist ? JSON.parse(savedHist) : [];
       } catch (e) {
         purchaseHistory = [];
@@ -1184,26 +1120,24 @@
     }
 
     function saveAllLocalData() {
-      localStorage.setItem('sc_supermarkets_v2', JSON.stringify(supermarkets));
-      localStorage.setItem('sc_products_v2', JSON.stringify(products));
-      localStorage.setItem('sc_active_market_v2', activeMarketId);
-      localStorage.setItem('sc_cart_v2', JSON.stringify(cart));
-      localStorage.setItem('sc_history_v2', JSON.stringify(purchaseHistory));
+      localStorage.setItem('sc_supermarkets_v3', JSON.stringify(supermarkets));
+      localStorage.setItem('sc_products_v3', JSON.stringify(products));
+      localStorage.setItem('sc_active_market_v3', activeMarketId);
+      localStorage.setItem('sc_cart_v3', JSON.stringify(cart));
+      localStorage.setItem('sc_history_v3', JSON.stringify(purchaseHistory));
     }
 
     function saveCartData() {
-      localStorage.setItem('sc_cart_v2', JSON.stringify(cart));
+      localStorage.setItem('sc_cart_v3', JSON.stringify(cart));
       renderCartUI();
     }
 
-    // 6. NAVEGAÇÃO ENTRE ABAS
+    // NAVEGAÇÃO ENTRE ABAS
     function switchActiveTab(tabName) {
       currentTab = tabName;
-
       document.getElementById('viewCompras').classList.toggle('hidden', tabName !== 'compras');
       document.getElementById('viewProdutos').classList.toggle('hidden', tabName !== 'produtos');
       document.getElementById('viewSupermercados').classList.toggle('hidden', tabName !== 'supermercados');
-
       document.getElementById('cartFloatingCheckoutBar').classList.toggle('hidden', tabName !== 'compras');
 
       const navButtons = [
@@ -1226,16 +1160,16 @@
       if (tabName === 'supermercados') renderMarketsUI();
     }
 
-    // 7. SELETOR DE MERCADO
+    // SELETOR DO MERCADO ATIVO
     function refreshActiveMarketUI() {
       const select = document.getElementById('selectActiveMarket');
       select.innerHTML = supermarkets.map(m => `
-        <option value="${m.id}" ${m.id === activeMarketId ? 'selected' : ''}>${m.name} (${m.branch || 'Principal'})</option>
+        <option value="${m.id}" ${m.id === activeMarketId ? 'selected' : ''}>${m.name} (${m.branch || 'SJP'})</option>
       `).join('');
 
       const current = supermarkets.find(m => m.id === activeMarketId);
       if (current) {
-        document.getElementById('topMarketSubtitle').innerText = `${current.name} • ${current.branch || 'Matriz'}`;
+        document.getElementById('topMarketSubtitle').innerText = `${current.name} • ${current.branch || 'SJP'}`;
         const promoText = document.getElementById('marketPromoText');
         const promoTag = document.getElementById('marketPromoTag');
         if (current.promoDay) {
@@ -1251,7 +1185,7 @@
       activeMarketId = e.target.value;
       saveAllLocalData();
       refreshActiveMarketUI();
-      showAppToast(`Supermercado ativo alterado para ${getSelectedMarketName()}!`, 'info');
+      showAppToast(`Mercado ativo: ${getSelectedMarketName()}!`, 'info');
       updateCartItemPreview();
     });
 
@@ -1260,7 +1194,7 @@
       return m ? m.name : 'Supermercado';
     }
 
-    // 8. CÁLCULO DE REGRAS COMERCIAIS
+    // CÁLCULO DE REGRAS COMERCIAIS
     function computeItemFinancials(qty, unitPrice, promo = {}) {
       qty = Math.max(0, qty);
       unitPrice = Math.max(0, unitPrice);
@@ -1302,7 +1236,7 @@
       };
     }
 
-    // 9. AUTOCOMPLETE E ENTRADA NO CARRINHO
+    // AUTOCOMPLETE E INSERÇÃO NO CARRINHO
     const cartInputProductName = document.getElementById('cartInputProductName');
     const cartAutocompleteDropdown = document.getElementById('cartAutocompleteDropdown');
     const cartInputUnitPrice = document.getElementById('cartInputUnitPrice');
@@ -1335,7 +1269,7 @@
             >
               <div>
                 <span class="font-bold text-slate-800">${p.name}</span>
-                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-medium ml-1.5">${p.category}</span>
+                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-medium ml-1.5">${p.category || 'Geral'}</span>
               </div>
               <div class="text-right">
                 <span class="font-extrabold text-emerald-700">R$ ${formatBRL(marketPrice)}</span>
@@ -1348,7 +1282,7 @@
       } else {
         cartAutocompleteDropdown.innerHTML = `
           <div class="px-3 py-2 text-xs text-slate-600 italic">
-            Produto novo. Digite o preço e a unidade para cadastrá-lo.
+            Produto novo. Digite o preço e a unidade para registrá-lo.
           </div>
         `;
         cartAutocompleteDropdown.classList.remove('hidden');
@@ -1375,13 +1309,10 @@
       if (p) {
         cartInputProductName.value = p.name;
         cartInputUnit.value = p.unit || 'un';
-        
         const recordedPrice = (p.marketPrices && p.marketPrices[activeMarketId]) ? p.marketPrices[activeMarketId] : p.basePrice;
         cartInputUnitPrice.value = formatBRL(recordedPrice);
-        
         cartAutocompleteDropdown.classList.add('hidden');
         cartBtnClearProduct.classList.remove('hidden');
-
         cartInputQuantity.focus();
         cartInputQuantity.select();
         updateCartItemPreview();
@@ -1433,7 +1364,6 @@
       const qty = parseNumberInput(cartInputQuantity.value);
       const price = parseNumberInput(cartInputUnitPrice.value);
       const promo = getFormPromoConfig();
-
       const calc = computeItemFinancials(qty, price, promo);
       document.getElementById('cartItemPreviewSubtotal').innerText = `R$ ${formatBRL(calc.finalSubtotal)}`;
 
@@ -1452,8 +1382,10 @@
      document.getElementById('cartWholesaleMin'),
      document.getElementById('cartWholesalePrice')
     ].forEach(el => {
-      el.addEventListener('input', updateCartItemPreview);
-      el.addEventListener('change', updateCartItemPreview);
+      if (el) {
+        el.addEventListener('input', updateCartItemPreview);
+        el.addEventListener('change', updateCartItemPreview);
+      }
     });
 
     document.getElementById('formAddCartItem').addEventListener('submit', (e) => {
@@ -1469,13 +1401,12 @@
       }
 
       const promo = getFormPromoConfig();
-
       let masterProd = products.find(p => p.name.toLowerCase() === name.toLowerCase());
       if (!masterProd) {
         masterProd = {
           id: 'p-custom-' + Date.now(),
           name: name,
-          category: 'Mercearia',
+          category: 'Geral',
           unit: unit,
           basePrice: unitPrice,
           marketPrices: {}
@@ -1486,12 +1417,15 @@
       masterProd.marketPrices[activeMarketId] = unitPrice;
       saveAllLocalData();
 
+      // Envia silenciosamente para o Google Sheets em segundo plano
+      enviarProdutoParaPlanilha(masterProd, activeMarketId, unitPrice);
+
       const existingIdx = cart.findIndex(it => it.name.toLowerCase() === name.toLowerCase() && it.unit === unit);
       if (existingIdx > -1) {
         cart[existingIdx].quantity += quantity;
         cart[existingIdx].unitPrice = unitPrice;
         if (promo.type !== 'none') cart[existingIdx].promo = promo;
-        showAppToast(`"${name}" teve sua quantidade somada no carrinho!`, 'info');
+        showAppToast(`"${name}" teve sua quantidade somada!`, 'info');
       } else {
         cart.unshift({
           id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
@@ -1520,11 +1454,10 @@
       document.getElementById('cartWholesaleMin').value = '';
       document.getElementById('cartWholesalePrice').value = '';
       updateCartItemPreview();
-
       cartInputProductName.focus();
     });
 
-    // 10. RENDERIZAÇÃO DO CARRINHO
+    // RENDERIZAÇÃO DO CARRINHO COM BOTÃO DE EDIÇÃO
     const cartItemsContainer = document.getElementById('cartItemsContainer');
     const cartEmptyCard = document.getElementById('cartEmptyCard');
     const cartSearchFilter = document.getElementById('cartSearchFilter');
@@ -1548,7 +1481,6 @@
 
     function renderCartUI() {
       const q = (cartSearchFilter.value || '').toLowerCase().trim();
-
       const totalItems = cart.length;
       const checkedItems = cart.filter(i => i.checked).length;
       const pendingItems = totalItems - checkedItems;
@@ -1620,8 +1552,8 @@
                     </div>
                   </div>
 
-                  <div class="flex items-center space-x-2 shrink-0">
-                    <div class="text-right">
+                  <div class="flex items-center space-x-1.5 shrink-0">
+                    <div class="text-right mr-1">
                       <div class="text-sm font-black text-slate-900 leading-tight">
                         R$ ${formatBRL(calc.finalSubtotal)}
                       </div>
@@ -1629,22 +1561,28 @@
                     </div>
 
                     <div class="flex items-center bg-slate-100 rounded-lg p-0.5">
-                      <button 
-                        type="button" 
-                        onclick="stepCartQty('${item.id}', -1)" 
-                        class="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-slate-900 font-bold text-xs"
-                      >–</button>
-                      <button 
-                        type="button" 
-                        onclick="stepCartQty('${item.id}', 1)" 
-                        class="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-slate-900 font-bold text-xs"
-                      >+</button>
+                      <button type="button" onclick="stepCartQty('${item.id}', -1)" class="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-slate-900 font-bold text-xs">–</button>
+                      <button type="button" onclick="stepCartQty('${item.id}', 1)" class="w-6 h-6 flex items-center justify-center text-slate-600 hover:text-slate-900 font-bold text-xs">+</button>
                     </div>
 
+                    <!-- Botão Editar Item (Lápis) -->
+                    <button 
+                      type="button" 
+                      onclick="openEditCartItemModal('${item.id}')" 
+                      class="p-1.5 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="Editar preço ou quantidade"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                      </svg>
+                    </button>
+
+                    <!-- Botão Remover do Carrinho -->
                     <button 
                       type="button" 
                       onclick="removeCartItem('${item.id}')" 
-                      class="p-1.5 text-slate-600 hover:text-rose-600 rounded-lg transition-colors"
+                      class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Remover item"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -1660,6 +1598,132 @@
 
       updateCartTotals(totalItems, checkedItems);
     }
+
+    // CONTROLES DO MODAL DE EDIÇÃO DE ITEM
+    function openEditCartItemModal(itemId) {
+      const item = cart.find(x => x.id === itemId);
+      if (!item) return;
+
+      document.getElementById('editCartItemId').value = item.id;
+      document.getElementById('modalEditCartTitle').innerText = item.name;
+      document.getElementById('modalEditCartSubtitle').innerText = `Unidade: ${item.unit} • ${item.category || 'Geral'}`;
+      document.getElementById('editCartItemPrice').value = formatBRL(item.unitPrice);
+      document.getElementById('editCartItemQty').value = formatQty(item.quantity);
+
+      const promo = item.promo || { type: 'none' };
+      const promoType = promo.type || 'none';
+      const radio = document.querySelector(`input[name="editItemPromoType"][value="${promoType}"]`);
+      if (radio) radio.checked = true;
+
+      handleEditItemPromoTypeChange(promoType);
+
+      if (promoType === 'discount') {
+        document.getElementById('editCartDiscountMode').value = promo.mode || 'percent';
+        document.getElementById('editCartDiscountVal').value = promo.value ? promo.value.toString().replace('.', ',') : '';
+      } else if (promoType === 'wholesale') {
+        document.getElementById('editCartWholesaleMin').value = promo.minQty ? promo.minQty.toString().replace('.', ',') : '';
+        document.getElementById('editCartWholesalePrice').value = promo.wholesalePrice ? formatBRL(promo.wholesalePrice) : '';
+      }
+
+      updateEditCartModalPreview();
+      document.getElementById('modalEditCartItem').classList.remove('hidden');
+      document.getElementById('editCartItemQty').focus();
+    }
+
+    function closeEditCartItemModal() {
+      document.getElementById('modalEditCartItem').classList.add('hidden');
+    }
+
+    function setEditCartQuickQty(val) {
+      document.getElementById('editCartItemQty').value = val;
+      updateEditCartModalPreview();
+    }
+
+    function handleEditItemPromoTypeChange(type) {
+      document.getElementById('editPromoDiscountFields').classList.toggle('hidden', type !== 'discount');
+      document.getElementById('editPromoWholesaleFields').classList.toggle('hidden', type !== 'wholesale');
+      updateEditCartModalPreview();
+    }
+
+    function getEditFormPromoConfig() {
+      const type = document.querySelector('input[name="editItemPromoType"]:checked')?.value || 'none';
+      if (type === 'discount') {
+        return {
+          type: 'discount',
+          mode: document.getElementById('editCartDiscountMode').value,
+          value: parseNumberInput(document.getElementById('editCartDiscountVal').value)
+        };
+      } else if (type === 'wholesale') {
+        return {
+          type: 'wholesale',
+          minQty: parseNumberInput(document.getElementById('editCartWholesaleMin').value),
+          wholesalePrice: parseNumberInput(document.getElementById('editCartWholesalePrice').value)
+        };
+      }
+      return { type: 'none' };
+    }
+
+    function updateEditCartModalPreview() {
+      const price = parseNumberInput(document.getElementById('editCartItemPrice').value);
+      const qty = parseNumberInput(document.getElementById('editCartItemQty').value);
+      const promo = getEditFormPromoConfig();
+      const calc = computeItemFinancials(qty, price, promo);
+
+      document.getElementById('editCartPreviewSubtotal').innerText = `R$ ${formatBRL(calc.finalSubtotal)}`;
+      const savEl = document.getElementById('editCartPreviewSavings');
+      if (calc.savings > 0) {
+        savEl.innerText = `(-R$ ${formatBRL(calc.savings)})`;
+        savEl.classList.remove('hidden');
+      } else {
+        savEl.classList.add('hidden');
+      }
+    }
+
+    [document.getElementById('editCartItemPrice'), 
+     document.getElementById('editCartItemQty'),
+     document.getElementById('editCartDiscountMode'),
+     document.getElementById('editCartDiscountVal'),
+     document.getElementById('editCartWholesaleMin'),
+     document.getElementById('editCartWholesalePrice')
+    ].forEach(el => {
+      if (el) {
+        el.addEventListener('input', updateEditCartModalPreview);
+        el.addEventListener('change', updateEditCartModalPreview);
+      }
+    });
+
+    document.getElementById('formSaveCartItemEdit').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editCartItemId').value;
+      const item = cart.find(x => x.id === id);
+      if (!item) return;
+
+      const newPrice = parseNumberInput(document.getElementById('editCartItemPrice').value);
+      const newQty = parseNumberInput(document.getElementById('editCartItemQty').value);
+      const newPromo = getEditFormPromoConfig();
+
+      if (newPrice <= 0 || newQty <= 0) {
+        showAppToast('Informe preço e quantidade válidos.', 'error');
+        return;
+      }
+
+      item.unitPrice = newPrice;
+      item.quantity = newQty;
+      item.promo = newPromo;
+
+      const masterProd = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+      if (masterProd) {
+        if (!masterProd.marketPrices) masterProd.marketPrices = {};
+        masterProd.marketPrices[activeMarketId] = newPrice;
+        saveAllLocalData();
+        enviarProdutoParaPlanilha(masterProd, activeMarketId, newPrice);
+      }
+
+      saveCartData();
+      closeEditCartItemModal();
+      playAppBeep('check');
+      showAppToast(`"${item.name}" atualizado!`, 'success');
+    });
 
     function toggleCartItemCheck(id) {
       const it = cart.find(x => x.id === id);
@@ -1717,7 +1781,7 @@
       }
     }
 
-    // 11. FINALIZAR COMPRA
+    // FINALIZAÇÃO DE COMPRA
     function askFinishPurchase() {
       if (cart.length === 0) {
         showAppToast('O carrinho está vazio!', 'info');
@@ -1734,7 +1798,7 @@
 
       openCustomDialog(
         'Finalizar Compra?',
-        `Deseja concluir a compra no ${marketName} totalizando R$ ${formatBRL(grandTotal)}? Isso atualizará a tabela de preços deste mercado e salvará o histórico.`,
+        `Deseja concluir a compra no ${marketName} totalizando R$ ${formatBRL(grandTotal)}?`,
         'Concluir & Limpar Carrinho',
         'Concluir & Manter Lista',
         () => executeFinishPurchase(true),
@@ -1755,6 +1819,7 @@
         if (p) {
           if (!p.marketPrices) p.marketPrices = {};
           p.marketPrices[activeMarketId] = item.unitPrice;
+          enviarProdutoParaPlanilha(p, activeMarketId, item.unitPrice);
         }
       });
 
@@ -1781,18 +1846,17 @@
       saveCartData();
       renderCatalogUI();
       renderMarketsUI();
-
       playAppBeep('finish');
-      showAppToast('🎉 Compra finalizada e preços do mercado atualizados!', 'success');
+      showAppToast('🎉 Compra finalizada e preços gravados!', 'success');
     }
 
     function askClearCart() {
       if (cart.length === 0) return;
       openCustomDialog(
         'Limpar Lista de Compras?',
-        'O que você deseja remover do carrinho ativo?',
+        'O que você deseja remover do carrinho?',
         'Limpar Todos os Itens',
-        'Limpar Só os Marcados',
+        'Limpar Só os Pegos',
         () => {
           cart = [];
           saveCartData();
@@ -1806,7 +1870,7 @@
       );
     }
 
-    // 12. ABA PRODUTOS (CATÁLOGO MESTRE & MODAL COM CADASTRO DIRETO)
+    // CATÁLOGO DE PRODUTOS
     const catalogSearchInput = document.getElementById('catalogSearchInput');
     const catalogCategoryTabs = document.getElementById('catalogCategoryTabs');
     const catalogProductList = document.getElementById('catalogProductList');
@@ -1840,7 +1904,7 @@
       if (filtered.length === 0) {
         catalogProductList.innerHTML = `
           <div class="text-center py-10 bg-white rounded-2xl border border-dashed border-slate-300 text-xs text-slate-600">
-            Nenhum produto encontrado. Clique em "Novo Produto" para cadastrar.
+            Nenhum produto cadastrado. Toque no botão de sincronizar no topo para carregar a planilha.
           </div>
         `;
         return;
@@ -1852,28 +1916,26 @@
         return `
           <div class="bg-white rounded-xl p-3 border border-slate-200 hover:border-slate-300 shadow-sm transition-all">
             <div class="flex items-center justify-between gap-2.5">
-              
               <div class="min-w-0 flex-1">
                 <div class="flex items-center space-x-1.5 flex-wrap">
                   <h4 class="font-extrabold text-sm text-slate-800 truncate">${p.name}</h4>
-                  <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">${p.category}</span>
+                  <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">${p.category || 'Geral'}</span>
                   <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">${p.unit}</span>
                 </div>
 
                 <div class="text-xs text-slate-600 mt-1 flex items-center space-x-2 flex-wrap">
                   <span>Preço Base: <strong class="text-slate-800">R$ ${formatBRL(p.basePrice)}</strong></span>
                   <span>•</span>
-                  <span>No ${getSelectedMarketName()}: <strong class="${currentMktPrice ? 'text-emerald-700 font-extrabold' : 'text-slate-600 italic'}">${currentMktPrice ? 'R$ ' + formatBRL(currentMktPrice) : 'Não registrado'}</strong></span>
+                  <span>No ${getSelectedMarketName()}: <strong class="${currentMktPrice ? 'text-emerald-700 font-extrabold' : 'text-slate-500 italic'}">${currentMktPrice ? 'R$ ' + formatBRL(currentMktPrice) : 'Não lançado'}</strong></span>
                 </div>
               </div>
 
               <div class="flex items-center space-x-1.5 shrink-0">
-                <!-- Botão Comparar & Cadastrar Preço -->
                 <button 
                   type="button" 
                   onclick="openPriceCompareModal('${p.id}')"
                   class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition-all flex items-center space-x-1"
-                  title="Cadastrar e Comparar Preços nos Mercados"
+                  title="Comparar e lançar preços"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -1896,14 +1958,13 @@
                   type="button" 
                   onclick="quickAddToCartFromCatalog('${p.id}')"
                   class="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all"
-                  title="Adicionar ao Carrinho"
+                  title="Pôr no Carrinho"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
                   </svg>
                 </button>
               </div>
-
             </div>
           </div>
         `;
@@ -1921,7 +1982,6 @@
       showAppToast('Produto selecionado! Ajuste a quantidade.', 'info');
     }
 
-    // Modal Cadastrar / Editar Produto
     function openProductEditModal(productId = null) {
       const modal = document.getElementById('modalProductEdit');
       const title = document.getElementById('modalProductEditTitle');
@@ -1937,14 +1997,14 @@
         title.innerText = 'Editar Produto';
         idInput.value = p.id;
         nameInput.value = p.name;
-        catInput.value = p.category || 'Mercearia';
+        catInput.value = p.category || 'Geral';
         unitInput.value = p.unit || 'un';
         priceInput.value = formatBRL(p.basePrice);
       } else {
         title.innerText = 'Novo Produto no Catálogo';
         idInput.value = '';
         nameInput.value = '';
-        catInput.value = 'Mercearia';
+        catInput.value = 'Geral';
         unitInput.value = 'un';
         priceInput.value = '';
       }
@@ -1966,12 +2026,13 @@
       const basePrice = parseNumberInput(document.getElementById('editProdBasePrice').value);
 
       if (!name || basePrice <= 0) {
-        showAppToast('Preencha nome e preço válidos', 'error');
+        showAppToast('Preencha nome e preço válidos.', 'error');
         return;
       }
 
+      let p = null;
       if (id) {
-        const p = products.find(x => x.id === id);
+        p = products.find(x => x.id === id);
         if (p) {
           p.name = name;
           p.category = category;
@@ -1980,48 +2041,40 @@
           showAppToast('Produto atualizado!', 'success');
         }
       } else {
-        products.unshift({
+        p = {
           id: 'p-' + Date.now(),
           name: name,
           category: category,
           unit: unit,
           basePrice: basePrice,
           marketPrices: {}
-        });
-        showAppToast('Novo produto cadastrado!', 'success');
+        };
+        products.unshift(p);
+        showAppToast('Produto cadastrado!', 'success');
       }
 
       saveAllLocalData();
       renderCatalogUI();
       closeProductEditModal();
+      if (p) enviarProdutoParaPlanilha(p, activeMarketId, basePrice);
     });
 
-    // ============================================================
-    // MODAL DE PREÇOS POR MERCADO (COM FORMULÁRIO DE CADASTRO DIRETO)
-    // ============================================================
+    // COMPARATIVO DE PREÇOS POR MERCADO
     function openPriceCompareModal(productId) {
       const p = products.find(x => x.id === productId);
       if (!p) return;
 
       document.getElementById('compareTargetProdId').value = p.id;
       document.getElementById('compareProdName').innerText = p.name;
-      document.getElementById('compareProdDetails').innerText = `Unidade: ${p.unit} • Preço Base Padrão: R$ ${formatBRL(p.basePrice)}`;
+      document.getElementById('compareProdDetails').innerText = `Unidade: ${p.unit} • Preço Base: R$ ${formatBRL(p.basePrice)}`;
 
-      // Preencher o select de mercados no formulário de cadastro direto
       const selectMarket = document.getElementById('compareSelectMarket');
       selectMarket.innerHTML = supermarkets.map(m => `
-        <option value="${m.id}" ${m.id === activeMarketId ? 'selected' : ''}>
-          ${m.name} (${m.branch || 'Principal'})
-        </option>
+        <option value="${m.id}" ${m.id === activeMarketId ? 'selected' : ''}>${m.name} (${m.branch || 'SJP'})</option>
       `).join('');
 
-      // Pré-carregar o preço já cadastrado do mercado atualmente selecionado no select
       syncPriceFieldToSelectedMarket(p.id, selectMarket.value);
-
-      // Listener para atualizar o campo de preço ao mudar o mercado no dropdown
-      selectMarket.onchange = (e) => {
-        syncPriceFieldToSelectedMarket(p.id, e.target.value);
-      };
+      selectMarket.onchange = (e) => syncPriceFieldToSelectedMarket(p.id, e.target.value);
 
       renderPriceCompareTable(p);
       document.getElementById('modalPriceCompare').classList.remove('hidden');
@@ -2056,7 +2109,7 @@
             <div class="min-w-0 flex-1">
               <div class="flex items-center space-x-1.5 flex-wrap">
                 <span class="font-bold text-xs text-slate-800">${m.name}</span>
-                <span class="text-[10px] text-slate-500">(${m.branch || 'Principal'})</span>
+                <span class="text-[10px] text-slate-500">(${m.branch || 'SJP'})</span>
                 ${isBest ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">MENOR PREÇO</span>` : ''}
               </div>
               <div class="text-[10px] text-slate-500 mt-0.5 truncate">${m.promoDay || 'Sem dia fixo'}</div>
@@ -2070,30 +2123,16 @@
                 }
               </div>
 
-              <!-- Botão Carregar para o Form de Edição -->
               <button 
                 type="button" 
                 onclick="loadMarketToDirectEdit('${product.id}', '${m.id}')"
                 class="p-1.5 bg-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors text-slate-700"
-                title="Editar este preço no formulário acima"
+                title="Editar este preço"
               >
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
                 </svg>
               </button>
-
-              ${hasPrice ? `
-                <button 
-                  type="button" 
-                  onclick="removeProductMarketPrice('${product.id}', '${m.id}')"
-                  class="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors text-slate-400"
-                  title="Remover preço deste mercado"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              ` : ''}
             </div>
           </div>
         `;
@@ -2109,20 +2148,14 @@
       inputPrice.select();
     }
 
-    // Submissão do Formulário de Preço Direto
     document.getElementById('formRegisterMarketPrice').addEventListener('submit', (e) => {
       e.preventDefault();
       const productId = document.getElementById('compareTargetProdId').value;
       const marketId = document.getElementById('compareSelectMarket').value;
       const priceVal = parseNumberInput(document.getElementById('compareInputPrice').value);
 
-      if (!productId || !marketId) {
-        showAppToast('Selecione o supermercado', 'error');
-        return;
-      }
-
-      if (priceVal <= 0) {
-        showAppToast('Informe um preço unitário válido maior que zero', 'error');
+      if (!productId || !marketId || priceVal <= 0) {
+        showAppToast('Informe um preço válido.', 'error');
         return;
       }
 
@@ -2137,25 +2170,14 @@
       renderCatalogUI();
       renderMarketsUI();
 
+      enviarProdutoParaPlanilha(p, marketId, priceVal);
+
       const m = supermarkets.find(x => x.id === marketId);
-      const marketName = m ? m.name : 'Supermercado';
-      showAppToast(`Preço de R$ ${formatBRL(priceVal)} salvo para ${marketName}!`, 'success');
+      showAppToast(`Preço de R$ ${formatBRL(priceVal)} salvo para ${m ? m.name : 'Supermercado'}!`, 'success');
       playAppBeep('add');
     });
 
-    function removeProductMarketPrice(productId, marketId) {
-      const p = products.find(x => x.id === productId);
-      if (!p || !p.marketPrices) return;
-
-      delete p.marketPrices[marketId];
-      saveAllLocalData();
-      renderPriceCompareTable(p);
-      renderCatalogUI();
-      renderMarketsUI();
-      showAppToast('Preço do mercado removido.', 'info');
-    }
-
-    // 13. ABA SUPERMERCADOS
+    // ABA SUPERMERCADOS
     const marketsListContainer = document.getElementById('marketsListContainer');
 
     function renderMarketsUI() {
@@ -2186,7 +2208,7 @@
                   <h3 class="font-black text-base text-slate-800">${m.name}</h3>
                   ${isCurrent ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">ATIVO NA COMPRA</span>` : ''}
                 </div>
-                <p class="text-xs text-slate-600 font-semibold">${m.branch || 'Unidade Principal'}</p>
+                <p class="text-xs text-slate-600 font-semibold">${m.branch || 'Afonso Pena / SJP'}</p>
                 ${m.promoDay ? `<div class="mt-1 text-xs text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-lg inline-block">🗓️ ${m.promoDay}</div>` : ''}
                 ${m.notes ? `<p class="text-xs text-slate-600 mt-1 italic">"${m.notes}"</p>` : ''}
               </div>
@@ -2200,17 +2222,6 @@
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                  </svg>
-                </button>
-
-                <button 
-                  type="button" 
-                  onclick="askDeleteMarket('${m.id}')"
-                  class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl transition-all"
-                  title="Excluir Supermercado"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                   </svg>
                 </button>
               </div>
@@ -2298,10 +2309,7 @@
       const promoDay = document.getElementById('editMarketPromoDay').value.trim();
       const notes = document.getElementById('editMarketNotes').value.trim();
 
-      if (!name) {
-        showAppToast('Informe o nome da rede ou loja.', 'error');
-        return;
-      }
+      if (!name) return;
 
       if (id) {
         const m = supermarkets.find(x => x.id === id);
@@ -2310,7 +2318,6 @@
           m.branch = branch;
           m.promoDay = promoDay;
           m.notes = notes;
-          showAppToast('Supermercado atualizado!', 'success');
         }
       } else {
         supermarkets.push({
@@ -2320,41 +2327,16 @@
           promoDay: promoDay,
           notes: notes
         });
-        showAppToast('Novo supermercado cadastrado!', 'success');
       }
 
       saveAllLocalData();
       refreshActiveMarketUI();
       renderMarketsUI();
       closeMarketEditModal();
+      showAppToast('Supermercado salvo!', 'success');
     });
 
-    function askDeleteMarket(id) {
-      if (supermarkets.length <= 1) {
-        showAppToast('Mantenha ao menos um supermercado cadastrado.', 'info');
-        return;
-      }
-
-      const m = supermarkets.find(x => x.id === id);
-      if (!m) return;
-
-      openCustomDialog(
-        `Excluir ${m.name}?`,
-        'Os preços cadastrados nesta rede permanecerão gravados, mas ela não aparecerá mais como opção de compra.',
-        'Sim, Excluir',
-        null,
-        () => {
-          supermarkets = supermarkets.filter(x => x.id !== id);
-          if (activeMarketId === id) activeMarketId = supermarkets[0].id;
-          saveAllLocalData();
-          refreshActiveMarketUI();
-          renderMarketsUI();
-          showAppToast(`"${m.name}" removido`, 'info');
-        }
-      );
-    }
-
-    // 14. MODAL HISTÓRICO
+    // HISTÓRICO, BACKUP E DIÁLOGOS
     document.getElementById('btnOpenHistoryModal').addEventListener('click', () => {
       renderHistoryModal();
       document.getElementById('modalHistory').classList.remove('hidden');
@@ -2363,11 +2345,7 @@
     function renderHistoryModal() {
       const container = document.getElementById('historyListContainer');
       if (purchaseHistory.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-10 text-xs text-slate-600">
-            Nenhuma compra finalizada registrada ainda.
-          </div>
-        `;
+        container.innerHTML = `<div class="text-center py-10 text-xs text-slate-600">Nenhuma compra finalizada registrada ainda.</div>`;
         return;
       }
 
@@ -2407,7 +2385,6 @@
       );
     }
 
-    // 15. BACKUP JSON
     document.getElementById('btnOpenBackupModal').addEventListener('click', () => {
       document.getElementById('modalBackup').classList.remove('hidden');
     });
@@ -2415,7 +2392,7 @@
     function exportBackupJSON() {
       const fullBackup = {
         app: 'SuperComprasPro',
-        version: 2,
+        version: 3,
         exportDate: new Date().toISOString(),
         supermarkets: supermarkets,
         products: products,
@@ -2432,8 +2409,7 @@
       document.body.appendChild(dlAnchor);
       dlAnchor.click();
       document.body.removeChild(dlAnchor);
-
-      showAppToast('Backup JSON exportado!', 'success');
+      showAppToast('Backup exportado!', 'success');
       document.getElementById('modalBackup').classList.add('hidden');
     }
 
@@ -2445,9 +2421,9 @@
       reader.onload = (event) => {
         try {
           const parsed = JSON.parse(event.target.result);
-          if (parsed.products && Array.isArray(parsed.products) && parsed.supermarkets && Array.isArray(parsed.supermarkets)) {
+          if (parsed.products && Array.isArray(parsed.products)) {
             products = parsed.products;
-            supermarkets = parsed.supermarkets;
+            if (parsed.supermarkets) supermarkets = parsed.supermarkets;
             if (parsed.activeMarketId) activeMarketId = parsed.activeMarketId;
             if (parsed.cart) cart = parsed.cart;
             if (parsed.purchaseHistory) purchaseHistory = parsed.purchaseHistory;
@@ -2457,11 +2433,8 @@
             renderCartUI();
             renderCatalogUI();
             renderMarketsUI();
-
-            showAppToast('Backup restaurado com sucesso!', 'success');
+            showAppToast('Backup restaurado!', 'success');
             document.getElementById('modalBackup').classList.add('hidden');
-          } else {
-            showAppToast('Arquivo JSON incompatível', 'error');
           }
         } catch (err) {
           showAppToast('Erro ao ler arquivo de backup', 'error');
@@ -2471,10 +2444,9 @@
       e.target.value = '';
     }
 
-    // 16. EXPORTAÇÃO WHATSAPP & CSV
     function openExportOptionsModal() {
       if (cart.length === 0) {
-        showAppToast('Adicione produtos antes de exportar.', 'info');
+        showAppToast('O carrinho está vazio.', 'info');
         return;
       }
       document.getElementById('modalExportOptions').classList.remove('hidden');
@@ -2482,7 +2454,7 @@
 
     function copyCartToWhatsApp() {
       const marketName = getSelectedMarketName();
-      let text = `🛒 *LISTA DE COMPRAS - ${marketName.toUpperCase()}*\n`;
+      let text = `🛒 *LISTA DE COMPRAS (${marketName.toUpperCase()})*\n`;
       text += `📅 Data: ${new Date().toLocaleDateString('pt-BR')}\n`;
       text += `------------------------------------\n`;
 
@@ -2496,7 +2468,6 @@
 
       text += `------------------------------------\n`;
       text += `💰 *TOTAL PREVISTO: R$ ${formatBRL(total)}* (${cart.length} itens)\n`;
-      text += `Gerado no SuperCompras Pro`;
 
       const ta = document.createElement('textarea');
       ta.value = text;
@@ -2504,13 +2475,9 @@
       ta.style.opacity = '0';
       document.body.appendChild(ta);
       ta.select();
-      try {
-        document.execCommand('copy');
-        showAppToast('Lista copiada! Cole no WhatsApp.', 'success');
-      } catch (err) {
-        showAppToast('Erro ao copiar texto', 'error');
-      }
+      document.execCommand('copy');
       document.body.removeChild(ta);
+      showAppToast('Lista copiada para o WhatsApp!', 'success');
       document.getElementById('modalExportOptions').classList.add('hidden');
     }
 
@@ -2520,16 +2487,7 @@
 
       cart.forEach(it => {
         const calc = computeItemFinancials(it.quantity, it.unitPrice, it.promo);
-        const row = [
-          `"${it.name.replace(/"/g, '""')}"`,
-          it.category || 'Geral',
-          it.unit,
-          it.unitPrice.toFixed(2).replace('.', ','),
-          it.quantity.toString().replace('.', ','),
-          calc.finalSubtotal.toFixed(2).replace('.', ','),
-          it.checked ? 'SIM' : 'NÃO'
-        ].join(';');
-        csv += row + '\n';
+        csv += `"${it.name.replace(/"/g, '""')}";${it.category || 'Geral'};${it.unit};${it.unitPrice.toFixed(2).replace('.', ',')};${it.quantity.toString().replace('.', ',')};${calc.finalSubtotal.toFixed(2).replace('.', ',')};${it.checked ? 'SIM' : 'NÃO'}\n`;
       });
 
       const uri = encodeURI(csv);
@@ -2539,12 +2497,10 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       showAppToast('Planilha CSV gerada!', 'success');
       document.getElementById('modalExportOptions').classList.add('hidden');
     }
 
-    // 17. DIÁLOGO CUSTOMIZADO & TOASTS
     const dialogCustom = document.getElementById('dialogCustom');
     const dialogTitle = document.getElementById('dialogTitle');
     const dialogMessage = document.getElementById('dialogMessage');
@@ -2573,17 +2529,13 @@
         if (onPrimary) onPrimary();
       };
 
-      dialogBtnCancel.onclick = () => {
-        dialogCustom.classList.add('hidden');
-      };
-
+      dialogBtnCancel.onclick = () => dialogCustom.classList.add('hidden');
       dialogCustom.classList.remove('hidden');
     }
 
     function showAppToast(message, type = 'info') {
       const stack = document.getElementById('toastStack');
       const toast = document.createElement('div');
-      
       let bg = 'bg-slate-800 text-white';
       if (type === 'success') bg = 'bg-emerald-600 text-white';
       if (type === 'error') bg = 'bg-rose-600 text-white';
@@ -2593,10 +2545,7 @@
       toast.innerHTML = `<span>${message}</span>`;
       stack.appendChild(toast);
 
-      requestAnimationFrame(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      });
-
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
       setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-2');
         setTimeout(() => toast.remove(), 300);
@@ -2614,10 +2563,15 @@
       showAppToast(isSoundOn ? 'Sons ativados' : 'Sons desativados', 'info');
     });
 
-    // INICIALIZAÇÃO
-    window.addEventListener('DOMContentLoaded', () => {
+    // INICIALIZAÇÃO AUTOMÁTICA
+    window.addEventListener('DOMContentLoaded', async () => {
       loadApplicationData();
       updateCartItemPreview();
+
+      // Sincroniza silenciosamente com a folha de cálculo caso haja conexão
+      if (navigator.onLine) {
+        await sincronizarComPlanilha();
+      }
     });
   </script>
 </body>
