@@ -25,6 +25,12 @@ let currentTab = 'compras';
 let cartFilterMode = 'all';
 let selectedCatalogCategory = 'Todas';
 let isSoundOn = true;
+let pendingSyncPayload = { produtos: [], supermercados: [] };
+let selectedSyncProducts = new Set();
+let selectedSyncMarkets = new Set();
+let activeSyncTab = 'produtos';
+let catalogSyncFilter = 'all';
+let selectedCatalogProductIds = new Set();
 
 const CATEGORIES = [
   'Todas', 
@@ -41,6 +47,455 @@ const CATEGORIES = [
 // ============================================================
 function getSecurityToken() {
   return localStorage.getItem('sc_security_token') || '';
+}
+async function abrirModalSincronizacaoSeletiva() {
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) {
+      showAppToast('Sincronização cancelada: chave necessária.', 'info');
+      return;
+    }
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  const btn = document.getElementById('btnSyncPlanilha');
+  if (btn) btn.classList.add('animate-spin');
+  showAppToast('Baixando dados da planilha...', 'info');
+
+  try {
+    const res = await fetch(`${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}`);
+    const json = await res.json();
+
+    if (json.status !== 'success') {
+      throw new Error(json.message || 'Falha na resposta da API');
+    }
+
+    pendingSyncPayload.produtos = Array.isArray(json.produtos) ? json.produtos : [];
+    pendingSyncPayload.supermercados = Array.isArray(json.supermercados) ? json.supermercados : [];
+
+    // Por padrão, todos começam pré-selecionados
+    selectedSyncProducts = new Set(pendingSyncPayload.produtos.map(p => p.name.toLowerCase()));
+    selectedSyncMarkets = new Set(pendingSyncPayload.supermercados.map(m => m.id));
+
+    document.getElementById('syncProdCount').innerText = pendingSyncPayload.produtos.length;
+    document.getElementById('syncMarketCount').innerText = pendingSyncPayload.supermercados.length;
+
+    switchSyncTab('produtos');
+    document.getElementById('modalSelectiveSync').classList.remove('hidden');
+  } catch (err) {
+    showAppToast('Erro ao consultar planilha: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.classList.remove('animate-spin');
+  }
+}
+
+async function promoverMercadoEmEdicaoParaPlanilha() {
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) {
+      showAppToast('Chave de segurança necessária para sincronizar.', 'error');
+      return;
+    }
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  const idAtual = document.getElementById('editMarketId').value;
+  const m = supermarkets.find(x => x.id === idAtual);
+  if (!m) {
+    showAppToast('Erro: registro do mercado não localizado.', 'error');
+    return;
+  }
+
+  const nome = (document.getElementById('editMarketName').value || m.name || '').trim();
+  const bairro = (document.getElementById('editMarketBranch').value || m.branch || '').trim();
+  const endereco = (document.getElementById('editMarketAddress').value || m.address || '').trim();
+  const encarte = (document.getElementById('editMarketUrlEncarte').value || m.urlEncarte || '').trim();
+
+  if (!nome) {
+    showAppToast('Informe o nome da rede.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnPromoverMercado');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Sincronizando com a planilha...';
+  }
+
+  showAppToast('Criando mercado e coluna na planilha Google...', 'info');
+
+  try {
+    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_mercado&name=${encodeURIComponent(nome)}&branch=${encodeURIComponent(bairro)}&address=${encodeURIComponent(endereco)}&urlEncarte=${encodeURIComponent(encarte)}`;
+    
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (json.status === 'success') {
+      const idAntigo = m.id;
+      m.id = json.novoId;
+      m.colIndex = json.colIndex;
+      m.name = json.name;
+      m.address = json.address;
+      m.linkMaps = json.linkMaps;
+
+      if (activeMarketId === idAntigo) {
+        activeMarketId = json.novoId;
+      }
+
+      saveAllLocalData();
+      refreshActiveMarketUI();
+      renderMarketsUI();
+      renderCatalogUI();
+      closeMarketEditModal();
+
+      showAppToast(`"${json.name}" adicionado à planilha com sucesso (Coluna ${json.colIndex})!`, 'success');
+    } else {
+      throw new Error(json.message || 'Falha ao processar na planilha.');
+    }
+  } catch (err) {
+    showAppToast('Erro na sincronização: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = 'Sincronizar este mercado com a planilha';
+    }
+  }
+}
+
+// Sincronizar o produto local com a planilha Google
+async function promoverProdutoEmEdicaoParaPlanilha() {
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) {
+      showAppToast('Chave de segurança necessária para sincronizar.', 'error');
+      return;
+    }
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  const idAtual = document.getElementById('editProdId').value;
+  const p = products.find(x => x.id === idAtual);
+  if (!p) {
+    showAppToast('Registro do produto não localizado.', 'error');
+    return;
+  }
+
+  const nome = (document.getElementById('editProdName').value || p.name || '').trim();
+  const categoria = document.getElementById('editProdCategory').value || p.category || 'Geral';
+  const unidade = document.getElementById('editProdUnit').value || p.unit || 'un';
+  const preco = parseNumberInput(document.getElementById('editProdBasePrice').value);
+
+  if (!nome) {
+    showAppToast('Informe o nome do produto.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btnPromoverProduto');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Enviando para a planilha...';
+  }
+
+  showAppToast('Cadastrando produto na planilha Google...', 'info');
+
+  try {
+    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_produto&name=${encodeURIComponent(nome)}&category=${encodeURIComponent(categoria)}&unit=${encodeURIComponent(unidade)}&price=${encodeURIComponent(preco)}`;
+    
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (json.status === 'success' && json.action === 'created_product') {
+      p.id = json.id; // Atualiza para o ID oficial vindo da planilha (ex: p-sheet-72)
+      p.name = json.name;
+      p.category = json.category;
+      p.unit = json.unit;
+      p.basePrice = json.basePrice;
+
+      saveAllLocalData();
+      renderCatalogUI();
+      closeProductEditModal();
+
+      showAppToast(`"${json.name}" foi registrado com sucesso na planilha Google!`, 'success');
+    } else {
+      throw new Error(json.message || 'A planilha não confirmou o cadastro do produto.');
+    }
+  } catch (err) {
+    showAppToast('Erro ao sincronizar produto: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = 'Sincronizar este produto com a planilha';
+    }
+  }
+}
+
+function closeSelectiveSyncModal() {
+  document.getElementById('modalSelectiveSync').classList.add('hidden');
+}
+// ============================================================
+// MODAL DE EDIÇÃO DO ITEM NO CARRINHO (LÁPIS DA LISTA)
+// ============================================================
+function openEditCartItemModal(itemId) {
+  const item = cart.find(x => x.id === itemId);
+  if (!item) return;
+
+  document.getElementById('editCartItemId').value = item.id;
+  document.getElementById('modalEditCartTitle').innerText = item.name;
+  document.getElementById('modalEditCartSubtitle').innerText = `Unidade: ${item.unit} • ${item.category || 'Geral'}`;
+  document.getElementById('editCartItemPrice').value = formatBRL(item.unitPrice);
+  document.getElementById('editCartItemQty').value = formatQty(item.quantity);
+
+  const promoType = item.promo?.type || 'none';
+  const radio = document.querySelector(`input[name="editItemPromoType"][value="${promoType}"]`);
+  if (radio) radio.checked = true;
+
+  handleEditItemPromoTypeChange(promoType);
+  if (promoType === 'discount') {
+    document.getElementById('editCartDiscountMode').value = item.promo.mode || 'percent';
+    document.getElementById('editCartDiscountVal').value = item.promo.value ? item.promo.value.toString().replace('.', ',') : '';
+  } else if (promoType === 'wholesale') {
+    document.getElementById('editCartWholesaleMin').value = item.promo.minQty ? item.promo.minQty.toString().replace('.', ',') : '';
+    document.getElementById('editCartWholesalePrice').value = item.promo.wholesalePrice ? formatBRL(item.promo.wholesalePrice) : '';
+  }
+
+  // Executa o cálculo com segurança
+  updateEditCartModalPreview();
+
+  // Exibe a janela no navegador
+  document.getElementById('modalEditCartItem').classList.remove('hidden');
+  setTimeout(() => document.getElementById('editCartItemQty').focus(), 50);
+}
+
+function updateEditCartModalPreview() {
+  const qEl = document.getElementById('editCartItemQty');
+  const pEl = document.getElementById('editCartItemPrice');
+  const previewSub = document.getElementById('editCartPreviewSubtotal');
+  const previewSav = document.getElementById('editCartPreviewSavings');
+
+  if (!qEl || !pEl || !previewSub) return;
+
+  const q = parseNumberInput(qEl.value);
+  const p = parseNumberInput(pEl.value);
+  const calc = computeItemFinancials(q, p, getEditFormPromoConfig());
+
+  previewSub.innerText = `R$ ${formatBRL(calc.finalSubtotal)}`;
+
+  if (previewSav) {
+    if (calc.savings > 0) {
+      previewSav.innerText = `(-R$ ${formatBRL(calc.savings)})`;
+      previewSav.classList.remove('hidden');
+    } else {
+      previewSav.classList.add('hidden');
+    }
+  }
+}
+function switchSyncTab(tab) {
+  activeSyncTab = tab;
+  const isProd = tab === 'produtos';
+
+  document.getElementById('tabSyncProdBtn').className = isProd
+    ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm'
+    : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100';
+
+  document.getElementById('tabSyncMarketBtn').className = !isProd
+    ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm'
+    : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100';
+
+  document.getElementById('syncProductsList').classList.toggle('hidden', !isProd);
+  document.getElementById('syncMarketsList').classList.toggle('hidden', isProd);
+
+  renderSyncLists();
+}
+
+function renderSyncLists() {
+  const isProd = activeSyncTab === 'produtos';
+  const selectAllBox = document.getElementById('checkSyncSelectAll');
+
+  if (isProd) {
+    const total = pendingSyncPayload.produtos.length;
+    const marcados = selectedSyncProducts.size;
+    selectAllBox.checked = total > 0 && marcados === total;
+    document.getElementById('labelSyncSelectedCounter').innerText = `${marcados} de ${total} produtos`;
+
+    document.getElementById('syncProductsList').innerHTML = pendingSyncPayload.produtos.map(p => {
+      const isChecked = selectedSyncProducts.has(p.name.toLowerCase());
+      return `
+        <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
+          <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSingleProductSync('${p.name.replace(/'/g, "\\'")}', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+            <div class="truncate">
+              <span class="font-bold text-slate-800">${p.name}</span>
+              <span class="text-[10px] text-slate-500 ml-1">(${p.unit || 'un'} - ${p.category || 'Geral'})</span>
+            </div>
+          </label>
+          <button type="button" onclick="syncSingleItemNow('produto', '${p.name.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+            Sincar Só Este
+          </button>
+        </div>
+      `;
+    }).join('');
+  } else {
+    const total = pendingSyncPayload.supermercados.length;
+    const marcados = selectedSyncMarkets.size;
+    selectAllBox.checked = total > 0 && marcados === total;
+    document.getElementById('labelSyncSelectedCounter').innerText = `${marcados} de ${total} mercados`;
+
+    document.getElementById('syncMarketsList').innerHTML = pendingSyncPayload.supermercados.map(m => {
+      const isChecked = selectedSyncMarkets.has(m.id);
+      return `
+        <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
+          <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSingleMarketSync('${m.id}', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+            <div class="truncate">
+              <span class="font-bold text-slate-800">${m.name}</span>
+              <span class="text-[10px] text-slate-500 ml-1">(${m.branch || 'SJP'})</span>
+            </div>
+          </label>
+          <button type="button" onclick="syncSingleItemNow('mercado', '${m.id}')" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+            Sincar Só Este
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function toggleSelectAllSync(checked) {
+  if (activeSyncTab === 'produtos') {
+    if (checked) {
+      selectedSyncProducts = new Set(pendingSyncPayload.produtos.map(p => p.name.toLowerCase()));
+    } else {
+      selectedSyncProducts.clear();
+    }
+  } else {
+    if (checked) {
+      selectedSyncMarkets = new Set(pendingSyncPayload.supermercados.map(m => m.id));
+    } else {
+      selectedSyncMarkets.clear();
+    }
+  }
+  renderSyncLists();
+}
+
+function toggleSingleProductSync(name, checked) {
+  const key = name.toLowerCase();
+  if (checked) selectedSyncProducts.add(key);
+  else selectedSyncProducts.delete(key);
+  renderSyncLists();
+}
+
+function toggleSingleMarketSync(id, checked) {
+  if (checked) selectedSyncMarkets.add(id);
+  else selectedSyncMarkets.delete(id);
+  renderSyncLists();
+}
+
+function applySelectiveSync() {
+  let contadorProd = 0;
+  let contadorMerc = 0;
+
+  // 1. Aplica mercados selecionados
+  if (selectedSyncMarkets.size > 0) {
+    const mercadosCriadosNoApp = supermarkets.filter(m => m.id && m.id.startsWith('m-custom-'));
+    const mercadosFiltrados = pendingSyncPayload.supermercados.filter(m => selectedSyncMarkets.has(m.id));
+
+    supermarkets = [ MERCADO_PADRAO_GENERICO ];
+    mercadosFiltrados.forEach(m => {
+      supermarkets.push({
+        id: m.id,
+        name: m.name,
+        sigla: m.sigla || '',
+        branch: m.branch || 'São José dos Pinhais',
+        address: m.address || '',
+        colIndex: m.colIndex || null,
+        urlEncarte: m.urlEncarte || '',
+        promoDay: m.promoDay || ''
+      });
+      contadorMerc++;
+    });
+
+    mercadosCriadosNoApp.forEach(mLocal => {
+      if (!supermarkets.some(m => m.id === mLocal.id)) {
+        supermarkets.push(mLocal);
+      }
+    });
+  }
+
+  // 2. Aplica produtos selecionados
+  if (selectedSyncProducts.size > 0) {
+    pendingSyncPayload.produtos.forEach(sp => {
+      if (selectedSyncProducts.has(sp.name.toLowerCase())) {
+        const localIdx = products.findIndex(p => p.name.toLowerCase() === sp.name.toLowerCase());
+        if (localIdx > -1) {
+          products[localIdx].marketPrices = { ...products[localIdx].marketPrices, ...sp.marketPrices };
+          products[localIdx].basePrice = sp.basePrice || products[localIdx].basePrice;
+          products[localIdx].unit = sp.unit || products[localIdx].unit;
+          products[localIdx].category = sp.category || products[localIdx].category;
+        } else {
+          products.push(sp);
+        }
+        contadorProd++;
+      }
+    });
+  }
+
+  saveAllLocalData();
+  refreshActiveMarketUI();
+  renderMarketsUI();
+  renderCatalogUI();
+  renderCartUI();
+  closeSelectiveSyncModal();
+
+  showAppToast(`Sincronizados com sucesso: ${contadorProd} produtos e ${contadorMerc} mercados.`, 'success');
+}
+
+function syncSingleItemNow(type, identifier) {
+  if (type === 'produto') {
+    const sp = pendingSyncPayload.produtos.find(p => p.name.toLowerCase() === identifier.toLowerCase());
+    if (!sp) return;
+    const localIdx = products.findIndex(p => p.name.toLowerCase() === sp.name.toLowerCase());
+    if (localIdx > -1) {
+      products[localIdx].marketPrices = { ...products[localIdx].marketPrices, ...sp.marketPrices };
+      products[localIdx].basePrice = sp.basePrice || products[localIdx].basePrice;
+      products[localIdx].unit = sp.unit || products[localIdx].unit;
+      products[localIdx].category = sp.category || products[localIdx].category;
+    } else {
+      products.push(sp);
+    }
+    showAppToast(`Produto "${sp.name}" atualizado individualmente!`, 'success');
+  } else {
+    const sm = pendingSyncPayload.supermercados.find(m => m.id === identifier);
+    if (!sm) return;
+    const localIdx = supermarkets.findIndex(m => m.id === sm.id);
+    const objFormatado = {
+      id: sm.id,
+      name: sm.name,
+      sigla: sm.sigla || '',
+      branch: sm.branch || 'São José dos Pinhais',
+      address: sm.address || '',
+      colIndex: sm.colIndex || null,
+      urlEncarte: sm.urlEncarte || '',
+      promoDay: sm.promoDay || ''
+    };
+    if (localIdx > -1) {
+      supermarkets[localIdx] = objFormatado;
+    } else {
+      supermarkets.push(objFormatado);
+    }
+    showAppToast(`Mercado "${sm.name}" atualizado individualmente!`, 'success');
+  }
+
+  saveAllLocalData();
+  refreshActiveMarketUI();
+  renderMarketsUI();
+  renderCatalogUI();
+  renderCartUI();
 }
 
 function salvarChaveSeguranca() {
@@ -76,20 +531,34 @@ async function sincronizarComPlanilha() {
     const json = await res.json();
 
     if (json.status === 'success') {
-      // 1. Atualiza lista de supermercados preservando o genérico no topo
+      // 1. Atualiza lista de supermercados preservando o genérico E os mercados criados no app
       if (Array.isArray(json.supermercados) && json.supermercados.length > 0) {
+        // Resgata mercados manuais criados pelo botão "Novo Supermercado"
+        const mercadosCriadosNoApp = supermarkets.filter(m => m.id && m.id.startsWith('m-custom-'));
+
         supermarkets = [ MERCADO_PADRAO_GENERICO ];
+        const ignoredMarkets = getIgnoredMarkets();
+
         json.supermercados.forEach(m => {
-          supermarkets.push({
-            id: m.id,
-            name: m.name,
-            sigla: m.sigla || '',
-            branch: m.branch || 'São José dos Pinhais',
-            address: m.address || '',
-            colIndex: m.colIndex || null,
-            urlEncarte: m.urlEncarte || '',
-            promoDay: m.promoDay || ''
-          });
+         if (!ignoredMarkets.includes(m.id)) {
+           supermarkets.push({
+           id: m.id,
+           name: m.name,
+           sigla: m.sigla || '',
+           branch: m.branch || 'São José dos Pinhais',
+           address: m.address || '',
+           colIndex: m.colIndex || null,
+           urlEncarte: m.urlEncarte || '',
+           promoDay: m.promoDay || ''
+         });
+       }
+      });
+
+        // Reanexa os mercados manuais locais
+        mercadosCriadosNoApp.forEach(mLocal => {
+          if (!supermarkets.some(m => m.id === mLocal.id)) {
+            supermarkets.push(mLocal);
+          }
         });
       }
 
@@ -464,15 +933,18 @@ function updateCartItemPreview() {
   }
 });
 
+// ============================================================
+// ADIÇÃO AO CARRINHO (PERMITE PREÇO ZERO / VAZIO)
+// ============================================================
 document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const name = document.getElementById('cartInputProductName').value.trim();
   const unit = document.getElementById('cartInputUnit').value;
-  const unitPrice = parseNumberInput(document.getElementById('cartInputUnitPrice').value);
+  const unitPrice = parseNumberInput(document.getElementById('cartInputUnitPrice').value); // Permite 0
   const quantity = parseNumberInput(document.getElementById('cartInputQuantity').value);
 
-  if (!name || unitPrice <= 0 || quantity <= 0) {
-    showAppToast('Indique nome, preço e quantidade válidos.', 'error');
+  if (!name || quantity <= 0) {
+    showAppToast('Indique o nome do produto e a quantidade.', 'error');
     return;
   }
 
@@ -492,10 +964,10 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   }
 
   if (!masterProd.marketPrices) masterProd.marketPrices = {};
-  if (activeMarketId !== 'm-padrao') {
+  if (activeMarketId !== 'm-padrao' && unitPrice > 0) {
     masterProd.marketPrices[activeMarketId] = unitPrice;
     enviarProdutoParaPlanilha(masterProd, activeMarketId, unitPrice);
-  } else {
+  } else if (unitPrice > 0) {
     masterProd.basePrice = unitPrice;
   }
   saveAllLocalData();
@@ -503,7 +975,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   const existingIdx = cart.findIndex(it => it.name.toLowerCase() === name.toLowerCase() && it.unit === unit);
   if (existingIdx > -1) {
     cart[existingIdx].quantity += quantity;
-    cart[existingIdx].unitPrice = unitPrice;
+    if (unitPrice > 0) cart[existingIdx].unitPrice = unitPrice;
     if (promo.type !== 'none') cart[existingIdx].promo = promo;
     showAppToast(`"${name}" teve a quantidade somada!`, 'info');
   } else {
@@ -530,7 +1002,6 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   document.getElementById('cartBtnClearProduct').classList.add('hidden');
   document.querySelector('input[name="itemPromoType"][value="none"]').checked = true;
   handleCartPromoTypeChange('none');
-  ['cartDiscountVal', 'cartWholesaleMin', 'cartWholesalePrice'].forEach(id => document.getElementById(id).value = '');
   updateCartItemPreview();
   document.getElementById('cartInputProductName').focus();
 });
@@ -738,8 +1209,10 @@ function setEditCartQuickQty(val) {
 }
 
 function handleEditItemPromoTypeChange(type) {
-  document.getElementById('editPromoDiscountFields').classList.toggle('hidden', type !== 'discount');
-  document.getElementById('editPromoWholesaleFields').classList.toggle('hidden', type !== 'wholesale');
+  const dFields = document.getElementById('editPromoDiscountFields');
+  const wFields = document.getElementById('editPromoWholesaleFields');
+  if (dFields) dFields.classList.toggle('hidden', type !== 'discount');
+  if (wFields) wFields.classList.toggle('hidden', type !== 'wholesale');
   updateEditCartModalPreview();
 }
 
@@ -830,9 +1303,95 @@ function executeFinishPurchase(clearAfter) {
 // ============================================================
 document.getElementById('catalogSearchInput')?.addEventListener('input', () => renderCatalogUI());
 
+function setCatalogSyncFilter(filterMode) {
+  catalogSyncFilter = filterMode;
+
+  const btnAll = document.getElementById('catalogFilterAll');
+  const btnSynced = document.getElementById('catalogFilterSynced');
+  const btnLocal = document.getElementById('catalogFilterLocal');
+
+  [
+    { btn: btnAll, mode: 'all' },
+    { btn: btnSynced, mode: 'synced' },
+    { btn: btnLocal, mode: 'local' }
+  ].forEach(({ btn, mode }) => {
+    if (!btn) return;
+    if (mode === filterMode) {
+      btn.className = 'px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all flex items-center space-x-1.5 font-bold whitespace-nowrap';
+    } else {
+      btn.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all flex items-center space-x-1.5 font-semibold whitespace-nowrap';
+    }
+  });
+
+  renderCatalogUI();
+}
+
+function toggleSelectAllCatalog(checked) {
+  const visibleProducts = getFilteredCatalogProducts();
+  if (checked) {
+    visibleProducts.forEach(p => selectedCatalogProductIds.add(p.id));
+  } else {
+    visibleProducts.forEach(p => selectedCatalogProductIds.delete(p.id));
+  }
+  updateCatalogBatchToolbarUI(visibleProducts);
+  renderCatalogUI();
+}
+
+function toggleCatalogProductSelection(productId, checked) {
+  if (checked) {
+    selectedCatalogProductIds.add(productId);
+  } else {
+    selectedCatalogProductIds.delete(productId);
+  }
+  updateCatalogBatchToolbarUI(getFilteredCatalogProducts());
+  renderCatalogUI();
+}
+
+function getFilteredCatalogProducts() {
+  const q = (document.getElementById('catalogSearchInput')?.value || '').toLowerCase().trim();
+  return products.filter(p => {
+    const isSynced = !p.id.startsWith('p-custom-');
+    if (catalogSyncFilter === 'synced' && !isSynced) return false;
+    if (catalogSyncFilter === 'local' && isSynced) return false;
+    if (selectedCatalogCategory !== 'Todas' && p.category !== selectedCatalogCategory) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !(p.category && p.category.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function updateCatalogBatchToolbarUI(visibleProducts) {
+  const count = selectedCatalogProductIds.size;
+  const badge = document.getElementById('catalogSelectedCountBadge');
+  const checkAll = document.getElementById('checkSelectAllCatalog');
+  const btnSync = document.getElementById('btnBatchSync');
+  const btnUnsync = document.getElementById('btnBatchUnsync');
+  const btnDelete = document.getElementById('btnBatchDelete');
+
+  if (badge) badge.innerText = `${count} selecionado${count === 1 ? '' : 's'}`;
+
+  const allVisibleSelected = visibleProducts.length > 0 && visibleProducts.every(p => selectedCatalogProductIds.has(p.id));
+  if (checkAll) checkAll.checked = allVisibleSelected;
+
+  const hasSelection = count > 0;
+  if (btnSync) btnSync.disabled = !hasSelection;
+  if (btnUnsync) btnUnsync.disabled = !hasSelection;
+  if (btnDelete) btnDelete.disabled = !hasSelection;
+}
+
 function renderCatalogUI() {
   const cBadge = document.getElementById('catalogTotalCountBadge');
   if (cBadge) cBadge.innerText = products.length;
+
+  const totalNuvem = products.filter(p => !p.id.startsWith('p-custom-')).length;
+  const totalLocais = products.filter(p => p.id.startsWith('p-custom-')).length;
+
+  const badgeAll = document.getElementById('catalogBadgeFilterAll');
+  const badgeSynced = document.getElementById('catalogBadgeFilterSynced');
+  const badgeLocal = document.getElementById('catalogBadgeFilterLocal');
+
+  if (badgeAll) badgeAll.innerText = products.length;
+  if (badgeSynced) badgeSynced.innerText = totalNuvem;
+  if (badgeLocal) badgeLocal.innerText = totalLocais;
 
   const tabs = document.getElementById('catalogCategoryTabs');
   if (tabs) {
@@ -841,50 +1400,277 @@ function renderCatalogUI() {
     `).join('');
   }
 
-  const q = (document.getElementById('catalogSearchInput')?.value || '').toLowerCase().trim();
-  const filtered = products.filter(p => {
-    if (selectedCatalogCategory !== 'Todas' && p.category !== selectedCatalogCategory) return false;
-    if (q && !p.name.toLowerCase().includes(q) && !(p.category && p.category.toLowerCase().includes(q))) return false;
-    return true;
-  });
+  const filtered = getFilteredCatalogProducts();
+  updateCatalogBatchToolbarUI(filtered);
 
   const cList = document.getElementById('catalogProductList');
   if (!cList) return;
 
   if (filtered.length === 0) {
-    cList.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-dashed border-slate-300 text-xs text-slate-500">Nenhum produto cadastrado. Toque no botão de sincronização no topo.</div>`;
+    cList.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border border-dashed border-slate-300 text-xs text-slate-500">Nenhum produto localizado com os filtros selecionados.</div>`;
     return;
   }
 
   cList.innerHTML = filtered.map(p => {
+    const isSynced = !p.id.startsWith('p-custom-');
+    const isSelected = selectedCatalogProductIds.has(p.id);
     const curP = (p.marketPrices && p.marketPrices[activeMarketId] > 0)
       ? p.marketPrices[activeMarketId]
       : null;
 
     return `
-      <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-sm transition-all">
+      <div class="bg-white rounded-xl p-3 border ${isSelected ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/20' : 'border-slate-200'} shadow-sm transition-all">
         <div class="flex items-center justify-between gap-2.5">
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center space-x-1.5 flex-wrap">
-              <h4 class="font-extrabold text-sm text-slate-800 truncate">${p.name}</h4>
-              <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">${p.category || 'Geral'}</span>
-              <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">${p.unit}</span>
-            </div>
-            <div class="text-xs text-slate-500 mt-1 flex items-center space-x-2 flex-wrap">
-              <span>Base: <strong class="text-slate-800">R$ ${formatBRL(p.basePrice)}</strong></span>
-              <span>•</span>
-              <span>No ${getSelectedMarketName()}: <strong class="${curP ? 'text-emerald-700 font-extrabold' : 'text-slate-400 italic'}">${curP ? 'R$ ' + formatBRL(curP) : 'Sem cotação'}</strong></span>
+          <div class="flex items-center space-x-3 flex-1 min-w-0">
+            <!-- Checkbox de seleção do item -->
+            <input 
+              type="checkbox" 
+              ${isSelected ? 'checked' : ''} 
+              onchange="toggleCatalogProductSelection('${p.id}', this.checked)" 
+              class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+            >
+
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center space-x-1.5 flex-wrap">
+                <h4 class="font-extrabold text-sm text-slate-800 truncate">${p.name}</h4>
+                
+                ${isSynced ? `
+                  <span class="inline-flex items-center space-x-1 bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md" title="Produto oficial da Planilha Google">
+                    <svg class="w-3 h-3 text-sky-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/>
+                    </svg>
+                    <span>Nuvem</span>
+                  </span>
+                ` : `
+                  <span class="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md" title="Produto exclusivo deste aparelho">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    <span>Local</span>
+                  </span>
+                `}
+
+                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">${p.category || 'Geral'}</span>
+                <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">${p.unit}</span>
+              </div>
+
+              <div class="text-xs text-slate-500 mt-1 flex items-center space-x-2 flex-wrap">
+                <span>Base: <strong class="text-slate-800">${p.basePrice > 0 ? 'R$ ' + formatBRL(p.basePrice) : 'A definir'}</strong></span>
+                <span>•</span>
+                <span>No ${getSelectedMarketName()}: <strong class="${curP ? 'text-emerald-700 font-extrabold' : 'text-slate-400 italic'}">${curP ? 'R$ ' + formatBRL(curP) : 'Sem cotação'}</strong></span>
+              </div>
             </div>
           </div>
+
           <div class="flex items-center space-x-1.5 shrink-0">
-            <button type="button" onclick="openPriceCompareModal('${p.id}')" class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition-all"><span class="hidden sm:inline">Preços</span> 🏷️</button>
-            <button type="button" onclick="openProductEditModal('${p.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
-            <button type="button" onclick="quickAddToCartFromCatalog('${p.id}')" class="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg></button>
+            <button type="button" onclick="openPriceCompareModal('${p.id}')" class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition-all" title="Comparar preços entre supermercados">
+              <span class="hidden sm:inline">Preços</span> 🏷️
+            </button>
+            <button type="button" onclick="openProductEditModal('${p.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all" title="Editar dados do produto">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+              </svg>
+            </button>
+            <button type="button" onclick="quickAddToCartFromCatalog('${p.id}')" class="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all" title="Lançar no carrinho">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// 1. SINCRONIZAR PRODUTOS SELECIONADOS PARA A PLANILHA
+async function executarSincronizacaoLoteProdutos() {
+  const alvos = products.filter(p => selectedCatalogProductIds.has(p.id) && p.id.startsWith('p-custom-'));
+  if (alvos.length === 0) {
+    showAppToast('Nenhum produto local pendente de envio nos selecionados.', 'info');
+    return;
+  }
+
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) return;
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  showAppToast(`Sincronizando 0 de ${alvos.length} produtos...`, 'info');
+  let processados = 0;
+
+  for (const p of alvos) {
+    try {
+      const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_produto&name=${encodeURIComponent(p.name)}&category=${encodeURIComponent(p.category || 'Geral')}&unit=${encodeURIComponent(p.unit || 'un')}&price=${encodeURIComponent(p.basePrice || 0)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.status === 'success' && json.action === 'created_product') {
+        p.id = json.id || p.id;
+        processados++;
+      }
+    } catch (e) {
+      console.error(`Erro ao sincronizar ${p.name}:`, e);
+    }
+    showAppToast(`Sincronizando ${processados} de ${alvos.length}...`, 'info');
+  }
+
+  saveAllLocalData();
+  selectedCatalogProductIds.clear();
+  renderCatalogUI();
+  showAppToast(`${processados} produtos sincronizados com a folha de cálculo!`, 'success');
+}
+
+// 2. DESSINCRONIZAR PRODUTOS SELECIONADOS (TORNAR LOCAIS)
+// ============================================================
+// 1. DESSINCRONIZAR PRODUTOS (REMOVE DA PLANILHA E MANTÉM LOCAL NO APP)
+// ============================================================
+async function executarDessincronizacaoLoteProdutos() {
+  const alvos = products.filter(p => selectedCatalogProductIds.has(p.id));
+  if (alvos.length === 0) {
+    showAppToast('Selecione ao menos um produto.', 'info');
+    return;
+  }
+
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) return;
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  showAppToast(`Tirando da planilha: 0 de ${alvos.length}...`, 'info');
+  let processados = 0;
+
+  let ignored = [];
+  try { ignored = JSON.parse(localStorage.getItem('sc_ignored_products')) || []; } catch (e) { ignored = []; }
+
+  for (const p of alvos) {
+    try {
+      // Exclui a linha correspondente na folha de cálculo
+      const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=excluir_produto&name=${encodeURIComponent(p.name)}&productId=${encodeURIComponent(p.id)}`;
+      await fetch(url);
+
+      // Transforma o produto em estritamente local no aparelho
+      p.id = 'p-custom-' + Date.now() + '-' + Math.floor(Math.random() * 899 + 100);
+      const key = p.name.toLowerCase();
+      if (!ignored.includes(key)) ignored.push(key);
+      processados++;
+    } catch (e) {
+      console.error(`Erro ao tirar sincronia de ${p.name}:`, e);
+    }
+    showAppToast(`Tirando da planilha: ${processados} de ${alvos.length}...`, 'info');
+  }
+
+  localStorage.setItem('sc_ignored_products', JSON.stringify(ignored));
+  saveAllLocalData();
+  selectedCatalogProductIds.clear();
+  renderCatalogUI();
+  showAppToast(`${processados} produto(s) removidos da planilha e mantidos apenas como locais!`, 'success');
+}
+
+// ============================================================
+// 2. EXCLUSÃO EM LOTE (REMOVE DA PLANILHA E DO DISPOSITIVO)
+// ============================================================
+function solicitarExclusaoLoteProdutos() {
+  const selecionados = products.filter(p => selectedCatalogProductIds.has(p.id));
+  if (selecionados.length === 0) return;
+
+  openCustomDialog(
+    'Excluir Produtos Selecionados',
+    `Deseja apagar os ${selecionados.length} itens marcados permanentemente da folha de cálculo e do aparelho, ou apenas remover deste telefone?`,
+    'Excluir da Planilha e do App',
+    'Excluir Só Deste Aparelho',
+    () => confirmarExclusaoLote(true, selecionados),
+    () => confirmarExclusaoLote(false, selecionados)
+  );
+}
+
+async function confirmarExclusaoLote(daPlanilhaTambem, listaAlvo) {
+  let token = getSecurityToken();
+  if (daPlanilhaTambem && !token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) return;
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  let apagadosRemoto = 0;
+
+  if (daPlanilhaTambem) {
+    showAppToast(`Apagando da folha de cálculo: 0 de ${listaAlvo.length}...`, 'info');
+    for (const p of listaAlvo) {
+      try {
+        // Envia ordem de exclusão por nome para garantir a remoção mesmo que o ID local seja p-custom
+        const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=excluir_produto&name=${encodeURIComponent(p.name)}&productId=${encodeURIComponent(p.id)}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.status === 'success') {
+          apagadosRemoto++;
+        }
+      } catch (e) {
+        console.error(`Erro ao apagar ${p.name} da planilha:`, e);
+      }
+    }
+  }
+
+  // Remove os itens da base local e do carrinho
+  const nomesParaRemover = new Set(listaAlvo.map(p => p.name.toLowerCase()));
+  products = products.filter(p => !nomesParaRemover.has(p.name.toLowerCase()));
+  cart = cart.filter(c => !nomesParaRemover.has(c.name.toLowerCase()));
+
+  selectedCatalogProductIds.clear();
+  saveAllLocalData();
+  saveCartData();
+  renderCatalogUI();
+  renderCartUI();
+
+  if (daPlanilhaTambem) {
+    showAppToast(`${listaAlvo.length} itens removidos (${apagadosRemoto} apagados da planilha).`, 'success');
+  } else {
+    showAppToast(`${listaAlvo.length} produto(s) removidos apenas deste aparelho.`, 'info');
+  }
+}
+
+// ============================================================
+// 3. DESSINCRONIZAÇÃO UNITÁRIA NA JANELA MODAL
+// ============================================================
+async function dessincronizarProdutoEmEdicao() {
+  const idAtual = document.getElementById('editProdId').value;
+  const p = products.find(x => x.id === idAtual);
+  if (!p) return;
+
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) return;
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  showAppToast(`Removendo "${p.name}" da folha de cálculo...`, 'info');
+
+  try {
+    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=excluir_produto&name=${encodeURIComponent(p.name)}&productId=${encodeURIComponent(p.id)}`;
+    await fetch(url);
+  } catch (e) {
+    console.warn('Falha na comunicação remota ao dessincronizar:', e);
+  }
+
+  p.id = 'p-custom-' + Date.now();
+
+  let ignored = [];
+  try { ignored = JSON.parse(localStorage.getItem('sc_ignored_products')) || []; } catch (e) { ignored = []; }
+  if (!ignored.includes(p.name.toLowerCase())) {
+    ignored.push(p.name.toLowerCase());
+    localStorage.setItem('sc_ignored_products', JSON.stringify(ignored));
+  }
+
+  saveAllLocalData();
+  renderCatalogUI();
+  closeProductEditModal();
+  showAppToast(`"${p.name}" foi removido da folha de cálculo e mantido apenas no aparelho.`, 'success');
 }
 
 function selectCatalogCategory(cat) {
@@ -898,25 +1684,239 @@ function quickAddToCartFromCatalog(productId) {
   showAppToast('Produto selecionado! Ajuste a quantidade.', 'info');
 }
 
+// ============================================================
+// GESTÃO E EDIÇÃO DO CATÁLOGO DE PRODUTOS
+// ============================================================
 function openProductEditModal(productId = null) {
-  if (productId) {
+  const modal = document.getElementById('modalProductEdit');
+  const title = document.getElementById('modalProductEditTitle');
+  const idInput = document.getElementById('editProdId');
+  const nameInput = document.getElementById('editProdName');
+  const catInput = document.getElementById('editProdCategory');
+  const unitInput = document.getElementById('editProdUnit');
+  const priceInput = document.getElementById('editProdBasePrice');
+  const promoContainer = document.getElementById('containerPromoverProduto');
+  const gestaoContainer = document.getElementById('containerGestaoProdutoPlanilha');
+
+  const isEditing = typeof productId === 'string' && productId.trim().length > 0;
+
+  if (isEditing) {
     const p = products.find(x => x.id === productId);
     if (!p) return;
-    document.getElementById('editProdId').value = p.id;
-    document.getElementById('editProdName').value = p.name;
-    document.getElementById('editProdCategory').value = p.category || 'Geral';
-    document.getElementById('editProdUnit').value = p.unit || 'un';
-    document.getElementById('editProdBasePrice').value = formatBRL(p.basePrice);
+
+    title.innerText = 'Editar Produto';
+    idInput.value = p.id;
+    nameInput.value = p.name || '';
+    catInput.value = p.category || 'Geral';
+    unitInput.value = p.unit || 'un';
+    priceInput.value = p.basePrice > 0 ? formatBRL(p.basePrice) : '';
+
+    const ehProdutoLocal = p.id.startsWith('p-custom-');
+
+    if (promoContainer) promoContainer.classList.toggle('hidden', !ehProdutoLocal);
+    if (gestaoContainer) gestaoContainer.classList.toggle('hidden', ehProdutoLocal);
   } else {
-    document.getElementById('editProdId').value = '';
-    document.getElementById('editProdName').value = '';
-    document.getElementById('editProdCategory').value = 'Geral';
-    document.getElementById('editProdUnit').value = 'un';
-    document.getElementById('editProdBasePrice').value = '';
+    title.innerText = 'Cadastrar Produto';
+    idInput.value = '';
+    nameInput.value = '';
+    catInput.value = 'Geral';
+    unitInput.value = 'un';
+    priceInput.value = '';
+
+    if (promoContainer) promoContainer.classList.add('hidden');
+    if (gestaoContainer) gestaoContainer.classList.add('hidden');
   }
-  document.getElementById('modalProductEdit').classList.remove('hidden');
-  document.getElementById('editProdName').focus();
+
+  modal.classList.remove('hidden');
+  setTimeout(() => nameInput.focus(), 50);
 }
+
+document.getElementById('formSaveProductCatalog')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editProdId').value;
+  const name = document.getElementById('editProdName').value.trim();
+  const category = document.getElementById('editProdCategory').value;
+  const unit = document.getElementById('editProdUnit').value;
+  const bp = parseNumberInput(document.getElementById('editProdBasePrice').value);
+
+  if (!name) {
+    showAppToast('Informe o nome do produto.', 'error');
+    return;
+  }
+
+  let p = null;
+  if (id) {
+    p = products.find(x => x.id === id);
+    if (p) {
+      p.name = name;
+      p.category = category;
+      p.unit = unit;
+      p.basePrice = bp;
+    }
+  } else {
+    p = {
+      id: 'p-custom-' + Date.now(),
+      name: name,
+      category: category,
+      unit: unit,
+      basePrice: bp,
+      marketPrices: {}
+    };
+    products.unshift(p);
+  }
+
+  saveAllLocalData();
+  renderCatalogUI();
+  closeProductEditModal();
+
+  if (p && activeMarketId !== 'm-padrao' && bp > 0) {
+    enviarProdutoParaPlanilha(p, activeMarketId, bp);
+  }
+
+  showAppToast('Produto salvo com sucesso!', 'success');
+});
+
+function closeProductEditModal() {
+  document.getElementById('modalProductEdit').classList.add('hidden');
+}
+
+// Dessincroniza o produto: torna-o local no aparelho sem apagar a planilha
+function dessincronizarProdutoEmEdicao() {
+  const idAtual = document.getElementById('editProdId').value;
+  const p = products.find(x => x.id === idAtual);
+  if (!p) return;
+
+  // Substitui o identificador de planilha por identificador local
+  p.id = 'p-custom-' + Date.now();
+
+  // Registra na lista de ignorados para a sincronização não puxar novamente
+  let ignored = [];
+  try { ignored = JSON.parse(localStorage.getItem('sc_ignored_products')) || []; } catch (e) { ignored = []; }
+  if (!ignored.includes(p.name.toLowerCase())) {
+    ignored.push(p.name.toLowerCase());
+    localStorage.setItem('sc_ignored_products', JSON.stringify(ignored));
+  }
+
+  saveAllLocalData();
+  renderCatalogUI();
+  closeProductEditModal();
+  showAppToast(`"${p.name}" agora é um produto local independente.`, 'info');
+}
+
+// Solicita confirmação para exclusão física da planilha
+function solicitarExclusaoProdutoPlanilha() {
+  const idAtual = document.getElementById('editProdId').value;
+  const p = products.find(x => x.id === idAtual);
+  if (!p) return;
+
+  openCustomDialog(
+    'Excluir da Planilha Google?',
+    `ATENÇÃO: "${p.name}" será excluído permanentemente da matriz de preços e da aba de produtos na folha de cálculo. Confirmar exclusão?`,
+    'Sim, Excluir na Nuvem',
+    null,
+    () => executarExclusaoProdutoPlanilha(p.name, p.id),
+    null
+  );
+}
+
+// Dispara a requisição de exclusão para o Apps Script com avisos em tela
+async function executarExclusaoProdutoPlanilha(nomeProduto, produtoId) {
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) {
+      showAppToast('Chave de segurança necessária.', 'error');
+      return;
+    }
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  const btn = document.getElementById('btnExcluirProdutoPlanilha');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerText = 'Excluindo da nuvem...';
+  }
+
+  showAppToast('Enviando ordem de exclusão do produto para o Google Sheets...', 'info');
+
+  try {
+    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=excluir_produto&name=${encodeURIComponent(nomeProduto)}&productId=${encodeURIComponent(produtoId)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (json.status === 'success' && json.action === 'deleted_product') {
+      // Remove do catálogo local
+      const idx = products.findIndex(x => x.name.toLowerCase() === nomeProduto.toLowerCase());
+      if (idx > -1) products.splice(idx, 1);
+
+      // Remove do carrinho se estiver presente
+      cart = cart.filter(c => c.name.toLowerCase() !== nomeProduto.toLowerCase());
+
+      saveAllLocalData();
+      saveCartData();
+      renderCatalogUI();
+      renderCartUI();
+      closeProductEditModal();
+
+      showAppToast(`"${nomeProduto}" foi removido da folha de cálculo com sucesso!`, 'success');
+    } else {
+      throw new Error(json.message || 'A planilha não confirmou a exclusão do produto.');
+    }
+  } catch (err) {
+    showAppToast('Erro ao excluir produto: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerText = 'Excluir da Planilha';
+    }
+  }
+}
+
+document.getElementById('formSaveProductCatalog')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editProdId').value;
+  const name = document.getElementById('editProdName').value.trim();
+  const category = document.getElementById('editProdCategory').value;
+  const unit = document.getElementById('editProdUnit').value;
+  const bp = parseNumberInput(document.getElementById('editProdBasePrice').value); // Permite 0
+
+  if (!name) {
+    showAppToast('Informe o nome do produto.', 'error');
+    return;
+  }
+
+  let p = null;
+  if (id) {
+    p = products.find(x => x.id === id);
+    if (p) {
+      p.name = name;
+      p.category = category;
+      p.unit = unit;
+      p.basePrice = bp;
+    }
+  } else {
+    p = {
+      id: 'p-custom-' + Date.now(),
+      name: name,
+      category: category,
+      unit: unit,
+      basePrice: bp,
+      marketPrices: {}
+    };
+    products.unshift(p);
+  }
+
+  saveAllLocalData();
+  renderCatalogUI();
+  closeProductEditModal();
+
+  if (p && activeMarketId !== 'm-padrao' && bp > 0) {
+    enviarProdutoParaPlanilha(p, activeMarketId, bp);
+  }
+
+  showAppToast('Produto salvo com sucesso!', 'success');
+});
 
 function closeProductEditModal() {
   document.getElementById('modalProductEdit').classList.add('hidden');
@@ -1057,7 +2057,7 @@ document.getElementById('formRegisterMarketPrice')?.addEventListener('submit', (
 });
 
 // ============================================================
-// 8. LISTAGEM DE SUPERMERCADOS COM AÇÕES
+// 8. LISTAGEM E GERENCIAMENTO DE SUPERMERCADOS
 // ============================================================
 function renderMarketsUI() {
   const mBadge = document.getElementById('marketTotalCountBadge');
@@ -1069,32 +2069,52 @@ function renderMarketsUI() {
   container.innerHTML = supermarkets.map(m => {
     const isCur = m.id === activeMarketId;
     const isPadrao = m.id === 'm-padrao';
+    const ehMercadoLocal = m.id.startsWith('m-custom-') || !m.colIndex;
 
     return `
       <div class="bg-white rounded-2xl p-4 border ${isCur ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/20' : 'border-slate-200 shadow-sm'}">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 flex-wrap">
               <h3 class="font-black text-base text-slate-800">${m.name}</h3>
               ${isCur ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">ATIVO</span>` : ''}
               ${isPadrao ? `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">PADRÃO NEUTRO</span>` : ''}
+              ${ehMercadoLocal && !isPadrao ? `<span class="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">LOCAL (NÃO SINCRONIZADO)</span>` : ''}
             </div>
-            <p class="text-xs text-slate-600 font-semibold mt-0.5">${m.branch || 'Afonso Pena / SJP'}</p>
+            <p class="text-xs text-slate-600 font-semibold mt-0.5">${m.branch || 'São José dos Pinhais'}</p>
             ${m.address ? `<p class="text-[11px] text-slate-500 mt-0.5">${m.address}</p>` : ''}
             ${m.promoDay ? `<div class="mt-1 text-xs text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-lg inline-block">🗓️ ${m.promoDay}</div>` : ''}
+            ${m.notes ? `<p class="text-xs text-slate-500 mt-1 italic">"${m.notes}"</p>` : ''}
           </div>
 
+          <!-- BOTÕES DE AÇÃO DO SUPERMERCADO -->
           <div class="flex items-center space-x-1.5 shrink-0">
+            <!-- 1. Botão GPS Maps -->
             ${m.address ? `
               <button type="button" onclick="abrirSupermercadoNoMaps('${m.id}', true)" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl transition-all" title="Traçar rota no Google Maps">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
               </button>
             ` : ''}
 
+            <!-- 2. Botão Encarte -->
             ${m.urlEncarte ? `
               <a href="${m.urlEncarte}" target="_blank" rel="noopener noreferrer" class="p-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-xl transition-all" title="Ver Encarte de Ofertas">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
               </a>
+            ` : ''}
+
+            <!-- 3. Botão Editar (Lápis) -->
+            ${!isPadrao ? `
+              <button type="button" onclick="openMarketEditModal('${m.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all" title="Editar Supermercado">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              </button>
+            ` : ''}
+
+            <!-- 4. Botão Excluir (Lixeira) -->
+            ${!isPadrao ? `
+              <button type="button" onclick="askDeleteMarket('${m.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all" title="Excluir Supermercado">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              </button>
             ` : ''}
           </div>
         </div>
@@ -1118,6 +2138,361 @@ function selectActiveMarketFromCard(id) {
   switchActiveTab('compras');
   showAppToast(`Agora comprando em ${getSelectedMarketName()}!`, 'success');
 }
+
+function getIgnoredMarkets() {
+  try {
+    return JSON.parse(localStorage.getItem('sc_ignored_markets')) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function getEditFormPromoConfig() {
+  const type = document.querySelector('input[name="editItemPromoType"]:checked')?.value || 'none';
+  if (type === 'discount') {
+    return {
+      type: 'discount',
+      mode: document.getElementById('editCartDiscountMode')?.value || 'percent',
+      value: parseNumberInput(document.getElementById('editCartDiscountVal')?.value)
+    };
+  }
+  if (type === 'wholesale') {
+    return {
+      type: 'wholesale',
+      minQty: parseNumberInput(document.getElementById('editCartWholesaleMin')?.value),
+      wholesalePrice: parseNumberInput(document.getElementById('editCartWholesalePrice')?.value)
+    };
+  }
+  return { type: 'none' };
+}
+
+// FUNÇÃO ESSENCIAL QUE ESTAVA FALTANDO:
+function updateEditCartModalPreview() {
+  const qtyInput = document.getElementById('editCartItemQty');
+  const priceInput = document.getElementById('editCartItemPrice');
+  const previewSubtotal = document.getElementById('editCartPreviewSubtotal');
+  const previewSavings = document.getElementById('editCartPreviewSavings');
+
+  if (!qtyInput || !priceInput || !previewSubtotal) return;
+
+  const q = parseNumberInput(qtyInput.value);
+  const p = parseNumberInput(priceInput.value);
+  const calc = computeItemFinancials(q, p, getEditFormPromoConfig());
+
+  previewSubtotal.innerText = `R$ ${formatBRL(calc.finalSubtotal)}`;
+
+  if (previewSavings) {
+    if (calc.savings > 0) {
+      previewSavings.innerText = `(-R$ ${formatBRL(calc.savings)})`;
+      previewSavings.classList.remove('hidden');
+    } else {
+      previewSavings.classList.add('hidden');
+    }
+  }
+}
+
+// Ouvintes para recalcular os valores na hora em que você digita
+['editCartItemPrice', 'editCartItemQty', 'editCartDiscountMode', 'editCartDiscountVal', 'editCartWholesaleMin', 'editCartWholesalePrice'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('input', updateEditCartModalPreview);
+    el.addEventListener('change', updateEditCartModalPreview);
+  }
+});
+
+// Salvamento do item editado no carrinho
+document.getElementById('formSaveCartItemEdit')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const item = cart.find(x => x.id === document.getElementById('editCartItemId').value);
+  if (!item) return;
+
+  const newPrice = parseNumberInput(document.getElementById('editCartItemPrice').value);
+  const newQty = parseNumberInput(document.getElementById('editCartItemQty').value);
+  if (newQty <= 0) {
+    showAppToast('Informe uma quantidade válida.', 'error');
+    return;
+  }
+
+  item.unitPrice = newPrice;
+  item.quantity = newQty;
+  item.promo = getEditFormPromoConfig();
+
+  // Atualiza também o preço no cadastro local se um preço foi definido
+  const masterProd = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+  if (masterProd) {
+    if (!masterProd.marketPrices) masterProd.marketPrices = {};
+    if (activeMarketId !== 'm-padrao' && newPrice > 0) {
+      masterProd.marketPrices[activeMarketId] = newPrice;
+      enviarProdutoParaPlanilha(masterProd, activeMarketId, newPrice);
+    } else if (newPrice > 0) {
+      masterProd.basePrice = newPrice;
+    }
+    saveAllLocalData();
+  }
+
+  saveCartData();
+  closeEditCartItemModal();
+  playAppBeep('check');
+  showAppToast(`"${item.name}" atualizado!`, 'success');
+});
+
+function askDeleteMarket(marketId) {
+  const m = supermarkets.find(x => x.id === marketId);
+  if (!m || m.id === 'm-padrao') return;
+
+  const ehMercadoNuvem = !m.id.startsWith('m-custom-') && m.colIndex;
+
+  if (ehMercadoNuvem) {
+    // Oferece escolha dupla para mercados sincronizados com a planilha
+    openCustomDialog(
+      'Opções de Exclusão',
+      `O supermercado "${m.name}" está vinculado à planilha Google. O que deseja fazer?`,
+      'Excluir da Planilha Google',
+      'Ocultar Só no Aparelho',
+      () => executarExclusaoMercadoPlanilha(marketId),
+      () => executeDeleteMarketLocal(marketId)
+    );
+  } else {
+    // Mercado apenas local: exclusão direta simples
+    openCustomDialog(
+      'Excluir Supermercado Local?',
+      `Deseja remover "${m.name}" deste aparelho?`,
+      'Sim, Excluir',
+      null,
+      () => executeDeleteMarketLocal(marketId),
+      null
+    );
+  }
+}
+
+function executeDeleteMarketLocal(marketId) {
+  const idx = supermarkets.findIndex(x => x.id === marketId);
+  if (idx === -1) return;
+
+  const m = supermarkets[idx];
+
+  // Se for da planilha, registra na lista de bloqueio para não voltar na sincronização seletiva
+  if (!marketId.startsWith('m-custom-')) {
+    const ignored = getIgnoredMarkets();
+    if (!ignored.includes(marketId)) {
+      ignored.push(marketId);
+      localStorage.setItem('sc_ignored_markets', JSON.stringify(ignored));
+    }
+  }
+
+  supermarkets.splice(idx, 1);
+
+  if (activeMarketId === marketId) {
+    activeMarketId = 'm-padrao';
+  }
+
+  saveAllLocalData();
+  refreshActiveMarketUI();
+  renderMarketsUI();
+  showAppToast(`"${m.name}" foi removido deste aparelho.`, 'info');
+}
+
+// Na função openMarketEditModal do app.js:
+function openMarketEditModal(marketId = null) {
+  const modal = document.getElementById('modalMarketEdit');
+  const title = document.getElementById('modalMarketEditTitle');
+  const idInput = document.getElementById('editMarketId');
+  const nameInput = document.getElementById('editMarketName');
+  const branchInput = document.getElementById('editMarketBranch');
+  const addressInput = document.getElementById('editMarketAddress');
+  const promoInput = document.getElementById('editMarketPromoDay');
+  const encarteInput = document.getElementById('editMarketUrlEncarte');
+  const notesInput = document.getElementById('editMarketNotes');
+  const promoContainer = document.getElementById('containerPromoverMercado');
+  const excluirContainer = document.getElementById('containerExcluirMercadoPlanilha');
+
+  const isEditing = typeof marketId === 'string' && marketId.trim().length > 0;
+
+  if (isEditing) {
+    const m = supermarkets.find(x => x.id === marketId);
+    if (!m) return;
+
+    title.innerText = 'Editar Supermercado';
+    idInput.value = m.id;
+    nameInput.value = m.name || '';
+    branchInput.value = m.branch || '';
+    addressInput.value = m.address || '';
+    promoInput.value = m.promoDay || '';
+    encarteInput.value = m.urlEncarte || '';
+    notesInput.value = m.notes || '';
+
+    // Verifica se o mercado é local (criado no telemóvel ou sem índice de coluna)
+    const ehMercadoLocal = String(m.id).startsWith('m-custom-') || !m.colIndex;
+    const ehMercadoNeutro = m.id === 'm-padrao';
+
+    if (promoContainer) {
+      if (ehMercadoLocal && !ehMercadoNeutro) {
+        promoContainer.classList.remove('hidden');
+      } else {
+        promoContainer.classList.add('hidden');
+      }
+    }
+
+    if (excluirContainer) {
+      if (!ehMercadoLocal && !ehMercadoNeutro) {
+        excluirContainer.classList.remove('hidden');
+      } else {
+        excluirContainer.classList.add('hidden');
+      }
+    }
+  } else {
+    title.innerText = 'Novo Supermercado';
+    idInput.value = '';
+    nameInput.value = '';
+    branchInput.value = '';
+    addressInput.value = '';
+    promoInput.value = '';
+    encarteInput.value = '';
+    notesInput.value = '';
+
+    if (promoContainer) promoContainer.classList.add('hidden');
+    if (excluirContainer) excluirContainer.classList.add('hidden');
+  }
+
+  modal.classList.remove('hidden');
+  setTimeout(() => nameInput.focus(), 50);
+}
+
+// Rotina com confirmação e avisos passo a passo
+function solicitarExclusaoMercadoPlanilha() {
+  const idAtual = document.getElementById('editMarketId').value;
+  const m = supermarkets.find(x => x.id === idAtual);
+  if (!m || m.id === 'm-padrao') return;
+
+  openCustomDialog(
+    'Excluir da Planilha Google?',
+    `ATENÇÃO: A rede "${m.name}" será removida da aba Supermercados e a coluna física de preços dela será apagada da folha de cálculo. Confirma esta ação?`,
+    'Sim, Excluir na Nuvem',
+    null,
+    () => executarExclusaoMercadoPlanilha(m.id),
+    null
+  );
+}
+
+async function executarExclusaoMercadoPlanilha(marketId) {
+  let token = getSecurityToken();
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) {
+      showAppToast('Chave de segurança necessária.', 'error');
+      return;
+    }
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  const m = supermarkets.find(x => x.id === marketId);
+  if (!m) return;
+
+  const btnForm = document.getElementById('btnExcluirMercadoPlanilha');
+  if (btnForm) {
+    btnForm.disabled = true;
+    btnForm.innerHTML = `<span class="animate-spin mr-1.5">⏳</span> Excluindo da planilha...`;
+  }
+
+  showAppToast('Enviando ordem de exclusão para a planilha Google...', 'info');
+
+  try {
+    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=excluir_mercado&marketId=${encodeURIComponent(m.id)}&name=${encodeURIComponent(m.name)}`;
+    
+    const res = await fetch(url);
+    const json = await res.json();
+
+    // Validação estrita: exige status de sucesso e a confirmação de exclusão
+    if (json.status === 'success' && json.action === 'deleted') {
+      // Remove do vetor local do app
+      const idx = supermarkets.findIndex(x => x.id === marketId);
+      if (idx > -1) supermarkets.splice(idx, 1);
+
+      // Limpa os preços vinculados a esse mercado no catálogo local
+      products.forEach(p => {
+        if (p.marketPrices && p.marketPrices[marketId] !== undefined) {
+          delete p.marketPrices[marketId];
+        }
+      });
+
+      if (activeMarketId === marketId) {
+        activeMarketId = 'm-padrao';
+      }
+
+      saveAllLocalData();
+      refreshActiveMarketUI();
+      renderMarketsUI();
+      renderCatalogUI();
+      closeMarketEditModal();
+
+      showAppToast(`"${json.name || m.name}" e sua coluna foram excluídos da planilha!`, 'success');
+    } else {
+      throw new Error(json.message || 'A planilha não confirmou a exclusão.');
+    }
+  } catch (err) {
+    showAppToast('Erro ao excluir da planilha: ' + err.message, 'error');
+  } finally {
+    if (btnForm) {
+      btnForm.disabled = false;
+      btnForm.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        <span>Excluir definitivamente da planilha</span>
+      `;
+    }
+  }
+}
+
+function closeMarketEditModal() {
+  document.getElementById('modalMarketEdit').classList.add('hidden');
+}
+
+document.getElementById('formSaveMarket')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editMarketId').value;
+  const name = document.getElementById('editMarketName').value.trim();
+  const branch = document.getElementById('editMarketBranch').value.trim();
+  const address = document.getElementById('editMarketAddress').value.trim();
+  const promoDay = document.getElementById('editMarketPromoDay').value.trim();
+  const urlEncarte = document.getElementById('editMarketUrlEncarte').value.trim();
+  const notes = document.getElementById('editMarketNotes').value.trim();
+
+  if (!name) {
+    showAppToast('Informe o nome da rede.', 'error');
+    return;
+  }
+
+  if (id) {
+    const m = supermarkets.find(x => x.id === id);
+    if (m) {
+      m.name = name;
+      m.branch = branch;
+      m.address = address;
+      m.promoDay = promoDay;
+      m.urlEncarte = urlEncarte;
+      m.notes = notes;
+    }
+  } else {
+    supermarkets.push({
+      id: 'm-custom-' + Date.now(),
+      name: name,
+      branch: branch || 'São José dos Pinhais',
+      address: address,
+      promoDay: promoDay,
+      urlEncarte: urlEncarte,
+      notes: notes,
+      colIndex: null
+    });
+  }
+
+  saveAllLocalData();
+  refreshActiveMarketUI();
+  renderMarketsUI();
+  closeMarketEditModal();
+  showAppToast('Supermercado salvo com sucesso!', 'success');
+});
 
 // ============================================================
 // 9. HISTÓRICO, BACKUP E EXPORTAÇÕES
