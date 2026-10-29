@@ -193,246 +193,273 @@
       
       <!-- Seletor do Supermercado Ativo -->
       <section class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-              </svg>
-            </div>
-            <div>
-              <label for="selectActiveMarket" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                Supermercado da Compra
-              </label>
-              <div class="flex items-center space-x-2 mt-0.5">
-                <select 
-                  id="selectActiveMarket" 
-                  class="font-extrabold text-sm text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer hover:text-emerald-700 transition-colors"
-                >
-                  <!-- Alimentado via JS -->
-                </select>
-
-                <!-- BOTÃO DE ROTA RÁPIDA NO GOOGLE MAPS -->
-                <button 
-                  type="button" 
-                  onclick="abrirSupermercadoNoMaps(activeMarketId, true)" 
-                  title="Abrir rota no Google Maps"
-                  class="p-1 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold transition-all flex items-center space-x-1 border border-emerald-200 active:scale-95"
-                >
-                  <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                  </svg>
-                  <span>Rota</span>
-                </button>
-              </div>
-            </div>
+        <div class="flex items-center space-x-3">
+          <!-- Ícone do Mercado -->
+          <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
           </div>
 
-          <!-- Informações de Promoção do Mercado -->
-          <div id="marketPromoTag" class="text-xs bg-amber-50 text-amber-800 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center space-x-1.5 self-start sm:self-auto">
-            <span class="text-amber-500">🗓️</span>
-            <span id="marketPromoText" class="font-semibold">Dia de Ofertas</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Entrada de Produto no Carrinho -->
-      <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4">
-        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 mb-3">
-          <div class="flex items-center space-x-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <h2 class="font-bold text-slate-800 text-sm sm:text-base">Adicionar Produto ao Carrinho</h2>
-          </div>
-          <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">Balança & Unitário</span>
-        </div>
-
-        <form id="formAddCartItem" class="space-y-3">
-          <div class="relative">
-            <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputProductName">
-              Buscar Produto no Catálogo <span class="text-rose-500">*</span>
+          <!-- Conteúdo com largura flexível e corte automático de texto -->
+            <div class="flex-1 min-w-0">
+            <label for="selectActiveMarket" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+              Supermercado da Compra
             </label>
-            <div class="relative">
-              <input 
-                type="text" 
-                id="cartInputProductName" 
-                placeholder="Digite para buscar (ex: Acém, Feijão, Arroz, Leite)..." 
-                autocomplete="off" 
-                required
-                class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
+      
+            <div class="flex items-center justify-between gap-2 mt-0.5">
+              <select 
+                id="selectActiveMarket" 
+                class="font-extrabold text-sm text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer hover:text-emerald-700 transition-colors flex-1 min-w-0 truncate"
               >
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </div>
+                <!-- Alimentado via JS -->
+              </select>
+
+              <!-- BOTÃO DE ROTA RÁPIDA NO GOOGLE MAPS -->
               <button 
                 type="button" 
-                id="cartBtnClearProduct" 
-                class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                onclick="abrirSupermercadoNoMaps(activeMarketId, true)" 
+                title="Abrir rota no Google Maps" 
+                class="p-1.5 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 border border-emerald-200 active:scale-95 shrink-0"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                 </svg>
+                <span>Rota</span>
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+      
+      
 
-            <div 
-              id="cartAutocompleteDropdown" 
-              class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-60 overflow-y-auto divide-y divide-slate-100"
+      <!-- Entrada de Produto no Carrinho -->
+      <!-- ENTRADA DE PRODUTOS RESPONSIVA (BOT-SHEET NO CELULAR, CARD NO COMPUTADOR) -->
+    <!-- Fundo escurecido ao abrir no celular -->
+    <div id="cartFormBackdrop" class="hidden md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 transition-opacity" onclick="fecharSheetAdicionarItem()"></div>
+
+    <section id="cartFormContainer" class="fixed md:static inset-x-0 bottom-0 z-50 md:z-auto bg-white rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-sm border-t md:border border-slate-200 p-4 md:p-4 transform translate-y-full md:translate-y-0 transition-transform duration-300 ease-out max-h-[88vh] md:max-h-none overflow-y-auto md:overflow-visible">
+      
+      <!-- Barra de puxar e cabeçalho visíveis no celular -->
+      <div class="md:hidden flex flex-col items-center pb-2">
+        <div class="w-10 h-1 bg-slate-300 rounded-full mb-3 cursor-pointer" onclick="fecharSheetAdicionarItem()"></div>
+        <div class="w-full flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 class="font-black text-slate-800 text-base">Adicionar Produto</h2>
+          </div>
+          <button type="button" onclick="fecharSheetAdicionarItem()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg text-lg font-bold">✕</button>
+        </div>
+      </div>
+
+      <!-- Cabeçalho visível apenas no computador com atalho da calculadora -->
+      <div class="hidden md:flex items-center justify-between pb-2.5 border-b border-slate-100 mb-3">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h2 class="font-bold text-slate-800 text-base">Adicionar Produto ao Carrinho</h2>
+        </div>
+  
+        <div class="flex items-center space-x-2">
+          <button 
+            type="button" 
+            onclick="abrirCalculadoraComparativa()" 
+            class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 active:scale-95 shadow-xs"
+            title="Comparar embalagens e atacado"
+          >
+            <span>⚖️</span>
+            <span>Comparar Preço / Atacado</span>
+          </button>
+          <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">Balança & Unitário</span>
+        </div>
+      </div>
+
+      <form id="formAddCartItem" class="space-y-3">
+        <div class="relative">
+          <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputProductName">
+            Buscar Produto no Catálogo <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <input 
+              type="text" 
+              id="cartInputProductName" 
+              placeholder="Digite para buscar (ex: Acém, Feijão, Arroz)..." 
+              autocomplete="off" 
+              required
+              class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
             >
-              <!-- Itens do autocomplete -->
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
             </div>
-          </div>
-
-          <div class="grid grid-cols-12 gap-2">
-            <div class="col-span-4 sm:col-span-3">
-              <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnit">Unidade</label>
-              <select 
-                id="cartInputUnit" 
-                class="w-full py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
-              >
-                <option value="kg">kg (Quilo / Balança)</option>
-                <option value="un">un (Unidade)</option>
-                <option value="cx">cx (Caixa)</option>
-                <option value="pct">pct (Pacote)</option>
-                <option value="pt">pt (Pote)</option>
-                <option value="lt">lt (Lata)</option>
-                <option value="gf">gf (Garrafa)</option>
-                <option value="dz">dz (Dúzia)</option>
-              </select>
-            </div>
-
-            <div class="col-span-4 sm:col-span-4">
-              <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnitPrice">
-                Preço Unit. (R$) <span class="text-rose-500">*</span>
-              </label>
-              <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
-                <input 
-                  type="text" 
-                  id="cartInputUnitPrice" 
-                  inputmode="decimal" 
-                  placeholder="0,00 (opcional)" 
-                  class="w-full pl-8 pr-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
-                >
-              </div>
-            </div>
-
-            <div class="col-span-4 sm:col-span-5">
-              <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputQuantity">
-                Qtd. / Peso <span class="text-rose-500">*</span>
-              </label>
-              <input 
-                type="text" 
-                id="cartInputQuantity" 
-                inputmode="decimal" 
-                placeholder="Ex: 1,132" 
-                value="1" 
-                required
-                class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all text-center sm:text-left"
-              >
-            </div>
-          </div>
-
-          <!-- Atalhos rápidos de quantidade -->
-          <div class="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
-            <span class="text-[11px] text-slate-600 font-medium mr-1">Atalhos:</span>
-            <button type="button" onclick="setCartQuickQty('1')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">1</button>
-            <button type="button" onclick="setCartQuickQty('2')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">2</button>
-            <button type="button" onclick="setCartQuickQty('3')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">3</button>
-            <button type="button" onclick="setCartQuickQty('6')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">6</button>
-            <span class="border-r border-slate-300 h-4 mx-0.5"></span>
-            <button type="button" onclick="setCartQuickQty('0.250')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">250g</button>
-            <button type="button" onclick="setCartQuickQty('0.500')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">500g</button>
-            <button type="button" onclick="setCartQuickQty('1.000')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1 kg</button>
-            <button type="button" onclick="setCartQuickQty('1.500')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1,5 kg</button>
-          </div>
-
-          <!-- Condição Comercial Opcional -->
-          <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
             <button 
               type="button" 
-              id="btnToggleCartPromo" 
-              class="w-full px-3 py-2 text-left flex items-center justify-between text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+              id="cartBtnClearProduct" 
+              class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
             >
-              <div class="flex items-center space-x-1.5">
-                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                </svg>
-                <span>Condição Especial: Desconto ou Atacado</span>
-                <span id="cartPromoBadge" class="hidden text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Ativo</span>
-              </div>
-              <svg id="cartPromoChevron" class="w-4 h-4 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
+          </div>
 
-            <div id="cartPromoContent" class="hidden p-3 border-t border-slate-200 space-y-2.5 bg-white">
-              <div class="flex gap-2 text-xs font-semibold">
-                <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
-                  <input type="radio" name="itemPromoType" value="none" checked class="hidden" onchange="handleCartPromoTypeChange(this.value)">
-                  Nenhum
-                </label>
-                <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
-                  <input type="radio" name="itemPromoType" value="discount" class="hidden" onchange="handleCartPromoTypeChange(this.value)">
-                  Desconto
-                </label>
-                <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
-                  <input type="radio" name="itemPromoType" value="wholesale" class="hidden" onchange="handleCartPromoTypeChange(this.value)">
-                  Atacado
-                </label>
-              </div>
+          <div 
+            id="cartAutocompleteDropdown" 
+            class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100"
+          >
+          </div>
+        </div>
 
-              <div id="cartPromoDiscountFields" class="hidden grid grid-cols-2 gap-2 pt-1">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo de Abatimento</label>
-                  <select id="cartDiscountMode" class="w-full text-xs font-semibold py-2 px-2 bg-slate-50 border border-slate-300 rounded-lg">
-                    <option value="percent">Porcentagem (%)</option>
-                    <option value="fixed">Fixo por unidade (R$)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Valor do Desconto</label>
-                  <input type="text" id="cartDiscountVal" inputmode="decimal" placeholder="Ex: 10" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg">
-                </div>
-              </div>
+        <div class="grid grid-cols-12 gap-2">
+          <div class="col-span-4 sm:col-span-3">
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnit">Unidade</label>
+            <select 
+              id="cartInputUnit" 
+              class="w-full py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
+            >
+              <option value="kg">kg (Quilo / Balança)</option>
+              <option value="un">un (Unidade)</option>
+              <option value="cx">cx (Caixa)</option>
+              <option value="pct">pct (Pacote)</option>
+              <option value="pt">pt (Pote)</option>
+              <option value="lt">lt (Lata)</option>
+              <option value="gf">gf (Garrafa)</option>
+              <option value="dz">dz (Dúzia)</option>
+            </select>
+          </div>
 
-              <div id="cartPromoWholesaleFields" class="hidden grid grid-cols-2 gap-2 pt-1">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">A partir de (Qtd)</label>
-                  <input type="text" id="cartWholesaleMin" inputmode="decimal" placeholder="Ex: 3" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-600 mb-1">Preço no Atacado (R$)</label>
-                  <input type="text" id="cartWholesalePrice" inputmode="decimal" placeholder="Ex: 12,90" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg">
-                </div>
-              </div>
+          <div class="col-span-4 sm:col-span-4">
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnitPrice">
+              Preço Unit. (R$) <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
+              <input 
+                type="text" 
+                id="cartInputUnitPrice" 
+                inputmode="decimal" 
+                placeholder="0,00 (opcional)" 
+                class="w-full pl-8 pr-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all"
+              >
             </div>
           </div>
 
-          <!-- Prévia do Subtotal & Botão de Inserção -->
-          <div class="pt-1 flex items-center justify-between gap-3">
-            <div>
-              <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">Subtotal Calculado</span>
-              <div class="flex items-baseline space-x-1.5">
-                <span id="cartItemPreviewSubtotal" class="text-xl font-black text-emerald-700">R$ 0,00</span>
-                <span id="cartItemPreviewSavings" class="text-xs text-rose-600 font-bold hidden"></span>
+          <div class="col-span-4 sm:col-span-5">
+            <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputQuantity">
+              Qtd. / Peso <span class="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="cartInputQuantity" 
+              inputmode="decimal" 
+              placeholder="Ex: 1,132" 
+              value="1" 
+              required
+              class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all text-center sm:text-left"
+            >
+          </div>
+        </div>
+
+        <!-- Atalhos rápidos de quantidade ajustados para toque ágil -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
+          <span class="text-[11px] text-slate-600 font-medium mr-1">Atalhos:</span>
+          <button type="button" onclick="setCartQuickQty('1')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">1</button>
+          <button type="button" onclick="setCartQuickQty('2')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">2</button>
+          <button type="button" onclick="setCartQuickQty('3')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">3</button>
+          <button type="button" onclick="setCartQuickQty('6')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">6</button>
+          <span class="border-r border-slate-300 h-4 mx-0.5"></span>
+          <button type="button" onclick="setCartQuickQty('0.250')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">250g</button>
+          <button type="button" onclick="setCartQuickQty('0.500')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">500g</button>
+          <button type="button" onclick="setCartQuickQty('1.000')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1 kg</button>
+          <button type="button" onclick="setCartQuickQty('1.500')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1,5 kg</button>
+        </div>
+
+        <!-- Condição Especial (Desconto / Atacado) -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+          <button 
+            type="button" 
+            id="btnToggleCartPromo" 
+            class="w-full px-3 py-2 text-left flex items-center justify-between text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <div class="flex items-center space-x-1.5">
+              <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+              <span>Condição Especial: Desconto ou Atacado</span>
+              <span id="cartPromoBadge" class="hidden text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Ativo</span>
+            </div>
+            <svg id="cartPromoChevron" class="w-4 h-4 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <div id="cartPromoContent" class="hidden p-3 border-t border-slate-200 space-y-2.5 bg-white">
+            <div class="flex gap-2 text-xs font-semibold">
+              <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+                <input type="radio" name="itemPromoType" value="none" checked class="hidden" onchange="handleCartPromoTypeChange(this.value)">
+                Nenhum
+              </label>
+              <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+                <input type="radio" name="itemPromoType" value="discount" class="hidden" onchange="handleCartPromoTypeChange(this.value)">
+                Desconto
+              </label>
+              <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
+                <input type="radio" name="itemPromoType" value="wholesale" class="hidden" onchange="handleCartPromoTypeChange(this.value)">
+                Atacado
+              </label>
+            </div>
+
+            <div id="cartPromoDiscountFields" class="hidden grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo de Abatimento</label>
+                <select id="cartDiscountMode" class="w-full text-xs font-semibold py-2 px-2 bg-slate-50 border border-slate-300 rounded-lg">
+                  <option value="percent">Porcentagem (%)</option>
+                  <option value="fixed">Fixo por unidade (R$)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Valor do Desconto</label>
+                <input type="text" id="cartDiscountVal" inputmode="decimal" placeholder="Ex: 10" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg">
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              class="touch-target flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex-1 max-w-[220px]"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
-              </svg>
-              <span>Pôr no Carrinho</span>
-            </button>
+            <div id="cartPromoWholesaleFields" class="hidden grid grid-cols-2 gap-2 pt-1">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">A partir de (Qtd)</label>
+                <input type="text" id="cartWholesaleMin" inputmode="decimal" placeholder="Ex: 3" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Preço no Atacado (R$)</label>
+                <input type="text" id="cartWholesalePrice" inputmode="decimal" placeholder="Ex: 12,90" class="w-full text-xs font-bold py-2 px-2.5 bg-slate-50 border border-slate-300 rounded-lg">
+              </div>
+            </div>
           </div>
-        </form>
-      </section>
+        </div>
+
+        <!-- Subtotal Calculado & Botão Pôr no Carrinho -->
+        <div class="pt-1 flex items-center justify-between gap-3">
+          <div>
+            <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">Subtotal Calculado</span>
+            <div class="flex items-baseline space-x-1.5">
+              <span id="cartItemPreviewSubtotal" class="text-xl font-black text-emerald-700">R$ 0,00</span>
+              <span id="cartItemPreviewSavings" class="text-xs text-rose-600 font-bold hidden"></span>
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            class="touch-target flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex-1 max-w-[220px]"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span>Pôr no Carrinho</span>
+          </button>
+        </div>
+      </form>
+    </section>
 
       <!-- Lista do Carrinho -->
       <section class="space-y-2.5">
@@ -489,7 +516,7 @@
         <button 
           type="button" 
           onclick="openProductEditModal()" 
-          class="touch-target px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-sm transition-all self-stretch sm:self-auto"
+          class="touch-target px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl hidden sm:flex items-center justify-center space-x-1.5 shadow-sm transition-all self-stretch sm:self-auto"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -627,7 +654,7 @@
           <button 
             type="button" 
             onclick="openMarketEditModal()" 
-            class="touch-target px-4 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 shadow-sm transition-all self-stretch sm:self-auto"
+            class="touch-target px-4 py-2 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl hidden sm:flex items-center justify-center space-x-1.5 shadow-sm transition-all self-stretch sm:self-auto"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -641,7 +668,30 @@
     </div>
 
   </main>
-
+  <!-- BOTÃO FLUTUANTE DA BALANÇA (MINIMALISTA EM FUNDO BRANCO E VETOR NÍTIDO) -->
+  <button 
+    type="button" 
+    id="fabOpenComparator" 
+    onclick="abrirCalculadoraComparativa()" 
+    class="md:hidden fixed bottom-52 right-4 z-40 w-11 h-11 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all focus:outline-none ring-2 ring-slate-700/30"
+    title="Comparar Preço por Proporção / Atacado"
+  >
+    <svg class="w-5 h-5 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+    </svg>
+  </button>
+  <!-- BOTÃO FLUTUANTE (FAB) MULTI-FUNÇÃO PARA CELULAR -->
+  <button 
+    type="button" 
+    id="fabOpenAddItem" 
+    onclick="executarAcaoFabContextual()" 
+    class="md:hidden fixed bottom-36 right-4 z-40 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 focus:outline-none ring-4 ring-emerald-500/20"
+    title="Adicionar"
+  >
+    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+    </svg>
+  </button>
   <!-- BARRA DE TOTAL E FINALIZAÇÃO FIXA -->
   <div id="cartFloatingCheckoutBar" class="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-30 transition-all">
     <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2.5">
@@ -1108,6 +1158,89 @@
       </form>
     </div>
   </div>
+  <!-- MODAL FLUTUANTE: CALCULADORA COMPARATIVA DE PREÇO / ATACADO -->
+  <div id="modalPriceComparator" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-4 space-y-3.5 max-h-[92vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center font-black text-sm">⚖️</div>
+          <div>
+            <h3 class="font-extrabold text-slate-800 text-sm">Qual compensa mais?</h3>
+            <p class="text-[10px] text-slate-500 font-medium">Compara preço por kg, litro ou unidade</p>
+          </div>
+        </div>
+        <button type="button" onclick="fecharCalculadoraComparativa()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg text-lg font-bold">✕</button>
+      </div>
+
+      <div class="flex items-center justify-between bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
+        <button type="button" id="compModeWeight" onclick="setCompMode('weight')" class="flex-1 py-1 rounded-lg bg-white text-slate-800 shadow-xs text-center transition-all font-bold">Peso (g / kg)</button>
+        <button type="button" id="compModeVolume" onclick="setCompMode('volume')" class="flex-1 py-1 rounded-lg text-center transition-all text-slate-600 font-semibold">Volume (ml / L)</button>
+        <button type="button" id="compModeUnit" onclick="setCompMode('unit')" class="flex-1 py-1 rounded-lg text-center transition-all text-slate-600 font-semibold">Unidades</button>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+          <span>Opção A (ex: menor / unitário)</span>
+          <span id="labelUnitBaseA" class="text-[10px] text-slate-500 font-normal">Preço por kg</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tamanho / Qtd</label>
+            <div class="relative">
+              <input type="text" id="compQtyA" inputmode="decimal" placeholder="Ex: 400" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-2 pl-2.5 pr-8 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <span id="compSuffixA" class="absolute inset-y-0 right-0 pr-2 flex items-center text-[10px] font-bold text-slate-400 pointer-events-none">g</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Preço (R$)</label>
+            <input type="text" id="compPriceA" inputmode="decimal" placeholder="Ex: 14,90" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs pt-0.5">
+          <span class="text-[11px] text-slate-500">Custo normalizado:</span>
+          <span id="compResultUnitA" class="font-extrabold text-slate-800 text-xs">R$ 0,00 / kg</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+          <span>Opção B (ex: maior / atacado)</span>
+          <span id="labelUnitBaseB" class="text-[10px] text-slate-500 font-normal">Preço por kg</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tamanho / Qtd</label>
+            <div class="relative">
+              <input type="text" id="compQtyB" inputmode="decimal" placeholder="Ex: 1000" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-2 pl-2.5 pr-8 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <span id="compSuffixB" class="absolute inset-y-0 right-0 pr-2 flex items-center text-[10px] font-bold text-slate-400 pointer-events-none">g</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Preço (R$)</label>
+            <input type="text" id="compPriceB" inputmode="decimal" placeholder="Ex: 34,90" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs pt-0.5">
+          <span class="text-[11px] text-slate-500">Custo normalizado:</span>
+          <span id="compResultUnitB" class="font-extrabold text-slate-800 text-xs">R$ 0,00 / kg</span>
+        </div>
+      </div>
+
+      <div id="compVerdictCard" class="p-3 rounded-xl border border-dashed border-slate-300 bg-white text-center">
+        <p class="text-xs text-slate-500 font-medium">Preencha quantidade e preço das opções para comparar.</p>
+      </div>
+
+      <div class="flex items-center justify-between pt-1 text-[11px] text-slate-500">
+        <span>Exemplos:</span>
+        <div class="flex gap-1.5">
+          <button type="button" onclick="carregarExemploComp('leite')" class="px-2 py-0.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded font-semibold">Leite Pó</button>
+          <button type="button" onclick="carregarExemploComp('papel')" class="px-2 py-0.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 rounded font-semibold">Papel Hig.</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- MODAL: HISTÓRICO DE COMPRAS -->
   <div id="modalHistory" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -1221,6 +1354,8 @@
   <div id="toastStack" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <!-- MOTOR COMPLETO DA APLICAÇÃO EXTERNO -->
-  <script src="app.js?v=3.7.0"></script>
+  <script src="app.js?v=4.0.3"></script>
+  <!-- CALCULADORA COMPARATIVA MODULAR NA PASTA JS -->
+  <script src="js/calculadora.js?v=1.0.0"></script>
 </body>
 </html>

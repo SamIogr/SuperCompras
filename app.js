@@ -743,13 +743,20 @@ function refreshActiveMarketUI() {
 
   const current = supermarkets.find(m => m.id === activeMarketId);
   if (current) {
-    document.getElementById('topMarketSubtitle').innerText = `${current.name} • ${current.branch || 'SJP'}`;
+    const subtitle = document.getElementById('topMarketSubtitle');
+    if (subtitle) {
+      subtitle.innerText = `${current.name} • ${current.branch || 'SJP'}`;
+    }
+    
     const tag = document.getElementById('marketPromoTag');
-    if (current.promoDay) {
-      document.getElementById('marketPromoText').innerText = current.promoDay;
-      tag.classList.remove('hidden');
-    } else {
-      tag.classList.add('hidden');
+    const textPromo = document.getElementById('marketPromoText');
+    if (tag) {
+      if (current.promoDay) {
+        if (textPromo) textPromo.innerText = current.promoDay;
+        tag.classList.remove('hidden');
+      } else {
+        tag.classList.add('hidden');
+      }
     }
   }
 }
@@ -804,45 +811,85 @@ function computeItemFinancials(qty, unitPrice, promo = {}) {
 // ============================================================
 // 5. AUTOCOMPLETE E ENTRADA DE PRODUTOS NO CARRINHO
 // ============================================================
-document.getElementById('cartInputProductName')?.addEventListener('input', (e) => {
+const inputProdName = document.getElementById('cartInputProductName');
+const dropdownProd = document.getElementById('cartAutocompleteDropdown');
+const btnClearProd = document.getElementById('cartBtnClearProduct');
+
+inputProdName?.addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase().trim();
-  const clearBtn = document.getElementById('cartBtnClearProduct');
-  const dropdown = document.getElementById('cartAutocompleteDropdown');
-  clearBtn.classList.toggle('hidden', q.length === 0);
+  if (btnClearProd) btnClearProd.classList.toggle('hidden', q.length === 0);
 
   if (q.length < 1) {
-    dropdown.classList.add('hidden');
-    dropdown.innerHTML = '';
+    if (dropdownProd) {
+      dropdownProd.classList.add('hidden');
+      dropdownProd.innerHTML = '';
+    }
     return;
   }
 
   const matches = products.filter(p => 
     p.name.toLowerCase().includes(q) || (p.category && p.category.toLowerCase().includes(q))
-  ).slice(0, 8);
+  ).slice(0, 6);
 
   if (matches.length > 0) {
-    dropdown.innerHTML = matches.map(p => {
+    dropdownProd.innerHTML = `
+      <div class="p-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-bold">
+        <span>Sugestões no Catálogo:</span>
+        <button type="button" onclick="fecharDropdownSugestoes()" class="text-slate-400 hover:text-slate-700 px-1.5 py-0.5 rounded">✕ Fechar</button>
+      </div>
+    ` + matches.map(p => {
       const pPrice = (p.marketPrices && p.marketPrices[activeMarketId] > 0) 
         ? p.marketPrices[activeMarketId] 
         : p.basePrice;
       return `
-        <div class="px-3.5 py-2 hover:bg-emerald-50 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart('${p.id}')">
-          <div>
-            <span class="font-bold text-slate-800">${p.name}</span>
-            <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded ml-1 text-slate-600">${p.category || 'Geral'}</span>
+        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart('${p.id}')">
+          <div class="min-w-0 pr-2">
+            <span class="font-bold text-slate-800 block truncate">${p.name}</span>
+            <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${p.category || 'Geral'}</span>
           </div>
-          <div class="text-right text-emerald-700 font-black">
+          <div class="text-right text-emerald-700 font-black shrink-0">
             R$ ${formatBRL(pPrice)}
             <span class="text-[10px] text-slate-500 font-normal"> / ${p.unit}</span>
           </div>
         </div>
       `;
     }).join('');
+    dropdownProd.classList.remove('hidden');
   } else {
-    dropdown.innerHTML = `<div class="px-3 py-2 text-xs text-slate-500 italic">Produto novo. Digite o preço e a unidade para registrá-lo.</div>`;
+    dropdownProd.innerHTML = `
+      <div class="p-2.5 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
+        <span class="font-medium">✨ Produto novo! Preencha o valor abaixo.</span>
+        <button type="button" onclick="fecharDropdownSugestoes()" class="text-amber-800 font-bold text-xs px-2 py-1 bg-amber-200/60 rounded-lg">OK</button>
+      </div>
+    `;
+    dropdownProd.classList.remove('hidden');
   }
-  dropdown.classList.remove('hidden');
   updateCartItemPreview();
+});
+
+function fecharDropdownSugestoes() {
+  const d = document.getElementById('cartAutocompleteDropdown');
+  if (d) d.classList.add('hidden');
+}
+
+// 1. Fecha automaticamente ao tocar em qualquer campo inferior
+['cartInputUnitPrice', 'cartInputQuantity', 'cartInputUnit'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('focus', fecharDropdownSugestoes);
+    el.addEventListener('click', fecharDropdownSugestoes);
+  }
+});
+
+// 2. Fecha ao tocar fora do campo de pesquisa no ecrã
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('cartAutocompleteDropdown');
+  const input = document.getElementById('cartInputProductName');
+  if (!dropdown || !input) return;
+
+  if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
 });
 
 document.getElementById('cartBtnClearProduct')?.addEventListener('click', () => {
@@ -869,6 +916,87 @@ function selectProductForCart(productId) {
     updateCartItemPreview();
   }
 }
+
+// ============================================================
+// CONTROLE DO FORMULÁRIO RESPONSIVO E FAB MULTI-ABAS NO TELEMÓVEL
+// ============================================================
+function abrirSheetAdicionarItem() {
+  const container = document.getElementById('cartFormContainer');
+  const backdrop = document.getElementById('cartFormBackdrop');
+  const fab = document.getElementById('fabOpenAddItem');
+
+  if (container && backdrop) {
+    backdrop.classList.remove('hidden');
+    container.classList.remove('translate-y-full');
+    if (fab) fab.classList.add('hidden');
+    setTimeout(() => {
+      document.getElementById('cartInputProductName')?.focus();
+    }, 150);
+  }
+}
+
+function fecharSheetAdicionarItem() {
+  const container = document.getElementById('cartFormContainer');
+  const backdrop = document.getElementById('cartFormBackdrop');
+  const fab = document.getElementById('fabOpenAddItem');
+  const dropdown = document.getElementById('cartAutocompleteDropdown');
+
+  if (dropdown) dropdown.classList.add('hidden');
+
+  if (container && backdrop) {
+    container.classList.add('translate-y-full');
+    backdrop.classList.add('hidden');
+    if (fab) fab.classList.remove('hidden');
+  }
+}
+
+function executarAcaoFabContextual() {
+  if (currentTab === 'compras') {
+    abrirSheetAdicionarItem();
+  } else if (currentTab === 'produtos') {
+    openProductEditModal();
+  } else if (currentTab === 'supermercados' || currentTab === 'mercados') {
+    openMarketEditModal();
+  }
+}
+
+function atualizarEstadoFabMobile(tabName) {
+  const fab = document.getElementById('fabOpenAddItem');
+  const compBtn = document.getElementById('fabOpenComparator');
+
+  if (typeof fecharSheetAdicionarItem === 'function') {
+    fecharSheetAdicionarItem();
+  }
+
+  // 1. Controle da Calculadora Comparativa: visível apenas na lista de compras
+  if (compBtn) {
+    compBtn.classList.toggle('hidden', tabName !== 'compras');
+  }
+
+  // 2. Controle do FAB verde principal (+): calibra posição e função
+  if (fab) {
+    if (tabName === 'compras') {
+      fab.setAttribute('title', 'Adicionar Produto ao Carrinho');
+      fab.classList.remove('bottom-24');
+      fab.classList.add('bottom-36');
+    } else if (tabName === 'produtos') {
+      fab.setAttribute('title', 'Cadastrar Novo Produto');
+      fab.classList.remove('bottom-36');
+      fab.classList.add('bottom-24');
+    } else if (tabName === 'supermercados' || tabName === 'mercados') {
+      fab.setAttribute('title', 'Cadastrar Novo Supermercado');
+      fab.classList.remove('bottom-36');
+      fab.classList.add('bottom-24');
+    }
+  }
+}
+
+// Interceta a mudança de abas de forma segura
+const transicaoOriginalDeAba = switchActiveTab;
+switchActiveTab = function(tabName) {
+  transicaoOriginalDeAba(tabName);
+  atualizarEstadoFabMobile(tabName);
+};
 
 function setCartQuickQty(val) {
   document.getElementById('cartInputQuantity').value = val;
@@ -947,7 +1075,10 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
     showAppToast('Indique o nome do produto e a quantidade.', 'error');
     return;
   }
-
+// Após salvar os dados e emitir o toast:
+  if (window.innerWidth < 768) {
+    fecharSheetAdicionarItem();
+  }
   const promo = getFormPromoConfig();
   let masterProd = products.find(p => p.name.toLowerCase() === name.toLowerCase());
 
@@ -1004,6 +1135,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   handleCartPromoTypeChange('none');
   updateCartItemPreview();
   document.getElementById('cartInputProductName').focus();
+
 });
 
 // ============================================================
@@ -2057,7 +2189,7 @@ document.getElementById('formRegisterMarketPrice')?.addEventListener('submit', (
 });
 
 // ============================================================
-// 8. LISTAGEM E GERENCIAMENTO DE SUPERMERCADOS
+// 8. LISTAGEM SIMPLIFICADA DE SUPERMERCADOS (OTIMIZADA PARA CELULAR)
 // ============================================================
 function renderMarketsUI() {
   const mBadge = document.getElementById('marketTotalCountBadge');
@@ -2072,60 +2204,55 @@ function renderMarketsUI() {
     const ehMercadoLocal = m.id.startsWith('m-custom-') || !m.colIndex;
 
     return `
-      <div class="bg-white rounded-2xl p-4 border ${isCur ? 'border-emerald-500 shadow-md ring-1 ring-emerald-500/20' : 'border-slate-200 shadow-sm'}">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <div class="flex items-center space-x-2 flex-wrap">
-              <h3 class="font-black text-base text-slate-800">${m.name}</h3>
-              ${isCur ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">ATIVO</span>` : ''}
-              ${isPadrao ? `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">PADRÃO NEUTRO</span>` : ''}
-              ${ehMercadoLocal && !isPadrao ? `<span class="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">LOCAL (NÃO SINCRONIZADO)</span>` : ''}
+      <div class="bg-white rounded-xl p-3 sm:p-4 border ${isCur ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20' : 'border-slate-200'} shadow-sm transition-all">
+        <div class="flex items-center justify-between gap-2.5">
+          
+          <!-- Área de seleção rápida com um toque -->
+          <div class="flex-1 min-w-0 cursor-pointer" onclick="selectActiveMarketFromCard('${m.id}')">
+            <div class="flex items-center space-x-1.5 flex-wrap">
+              <h3 class="font-extrabold text-sm text-slate-800 truncate">${m.name}</h3>
+              ${isCur ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md">ATIVO</span>` : ''}
+              ${isPadrao ? `<span class="bg-slate-100 text-slate-600 text-[9px] font-bold px-1.5 py-0.5 rounded-md">NEUTRO</span>` : ''}
+              ${ehMercadoLocal && !isPadrao ? `<span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded-md">LOCAL</span>` : ''}
             </div>
-            <p class="text-xs text-slate-600 font-semibold mt-0.5">${m.branch || 'São José dos Pinhais'}</p>
-            ${m.address ? `<p class="text-[11px] text-slate-500 mt-0.5">${m.address}</p>` : ''}
-            ${m.promoDay ? `<div class="mt-1 text-xs text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-lg inline-block">🗓️ ${m.promoDay}</div>` : ''}
-            ${m.notes ? `<p class="text-xs text-slate-500 mt-1 italic">"${m.notes}"</p>` : ''}
+            
+            <p class="text-xs text-slate-500 mt-0.5 truncate">${m.branch || 'São José dos Pinhais'}${m.promoDay ? ' • 🗓️ ' + m.promoDay : ''}</p>
+            ${m.address ? `<p class="text-[11px] text-slate-400 mt-0.5 truncate">${m.address}</p>` : ''}
           </div>
 
-          <!-- BOTÕES DE AÇÃO DO SUPERMERCADO -->
-          <div class="flex items-center space-x-1.5 shrink-0">
-            <!-- 1. Botão GPS Maps -->
+          <!-- Ações rápidas de toque -->
+          <div class="flex items-center space-x-1 shrink-0">
             ${m.address ? `
-              <button type="button" onclick="abrirSupermercadoNoMaps('${m.id}', true)" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl transition-all" title="Traçar rota no Google Maps">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <button type="button" onclick="abrirSupermercadoNoMaps('${m.id}', true)" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-lg transition-colors" title="Traçar rota Maps">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
               </button>
             ` : ''}
 
-            <!-- 2. Botão Encarte -->
             ${m.urlEncarte ? `
-              <a href="${m.urlEncarte}" target="_blank" rel="noopener noreferrer" class="p-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-xl transition-all" title="Ver Encarte de Ofertas">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <a href="${m.urlEncarte}" target="_blank" rel="noopener noreferrer" class="p-2 bg-slate-100 hover:bg-sky-50 text-slate-600 hover:text-sky-700 rounded-lg transition-colors" title="Ver Encarte">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
               </a>
             ` : ''}
 
-            <!-- 3. Botão Editar (Lápis) -->
             ${!isPadrao ? `
-              <button type="button" onclick="openMarketEditModal('${m.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all" title="Editar Supermercado">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+              <button type="button" onclick="openMarketEditModal('${m.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors" title="Editar">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                </svg>
               </button>
-            ` : ''}
-
-            <!-- 4. Botão Excluir (Lixeira) -->
-            ${!isPadrao ? `
-              <button type="button" onclick="askDeleteMarket('${m.id}')" class="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl transition-all" title="Excluir Supermercado">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <button type="button" onclick="askDeleteMarket('${m.id}')" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-lg transition-colors" title="Excluir">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
               </button>
             ` : ''}
           </div>
         </div>
-
-        ${!isCur ? `
-          <div class="pt-3 mt-3 border-t border-slate-100 text-right">
-            <button type="button" onclick="selectActiveMarketFromCard('${m.id}')" class="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl transition-all">
-              Fazer Compras Aqui
-            </button>
-          </div>
-        ` : ''}
       </div>
     `;
   }).join('');
