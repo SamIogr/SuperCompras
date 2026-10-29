@@ -675,7 +675,22 @@ function loadApplicationData() {
     supermarkets = [ MERCADO_PADRAO_GENERICO ];
   }
 
-  try { products = JSON.parse(localStorage.getItem('sc_products_v3')) || []; } catch (e) { products = []; }
+  try {
+    products = JSON.parse(localStorage.getItem('sc_products_v3')) || [];
+    // Remove registos repetidos pelo nome
+    const mapaUnico = new Map();
+    products.forEach(item => {
+      if (item && item.name) {
+        const chave = item.name.trim().toLowerCase();
+        if (!mapaUnico.has(chave)) {
+          mapaUnico.set(chave, item);
+        }
+      }
+    });
+    products = Array.from(mapaUnico.values());
+  } catch (e) {
+    products = [];
+  }
   try { cart = JSON.parse(localStorage.getItem('sc_cart_v3')) || []; } catch (e) { cart = []; }
   try { purchaseHistory = JSON.parse(localStorage.getItem('sc_history_v3')) || []; } catch (e) { purchaseHistory = []; }
 
@@ -1872,7 +1887,7 @@ document.getElementById('formSaveProductCatalog')?.addEventListener('submit', (e
   const bp = parseNumberInput(document.getElementById('editProdBasePrice').value);
 
   if (!name) {
-    showAppToast('Informe o nome do produto.', 'error');
+    showAppToast('Indique o nome do produto.', 'error');
     return;
   }
 
@@ -1886,15 +1901,25 @@ document.getElementById('formSaveProductCatalog')?.addEventListener('submit', (e
       p.basePrice = bp;
     }
   } else {
-    p = {
-      id: 'p-custom-' + Date.now(),
-      name: name,
-      category: category,
-      unit: unit,
-      basePrice: bp,
-      marketPrices: {}
-    };
-    products.unshift(p);
+    // Evita duplicar se já existir outro produto com o mesmo nome exato
+    const jaExiste = products.find(x => x.name.toLowerCase() === name.toLowerCase());
+    if (jaExiste) {
+      jaExiste.category = category;
+      jaExiste.unit = unit;
+      if (bp > 0) jaExiste.basePrice = bp;
+      p = jaExiste;
+      showAppToast('Produto já existia e foi atualizado!', 'info');
+    } else {
+      p = {
+        id: 'p-custom-' + Date.now(),
+        name: name,
+        category: category,
+        unit: unit,
+        basePrice: bp,
+        marketPrices: {}
+      };
+      products.unshift(p);
+    }
   }
 
   saveAllLocalData();
@@ -1905,7 +1930,7 @@ document.getElementById('formSaveProductCatalog')?.addEventListener('submit', (e
     enviarProdutoParaPlanilha(p, activeMarketId, bp);
   }
 
-  showAppToast('Produto salvo com sucesso!', 'success');
+  showAppToast('Produto guardado com sucesso!', 'success');
 });
 
 function closeProductEditModal() {
