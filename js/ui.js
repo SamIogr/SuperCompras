@@ -1,4 +1,6 @@
-// Web Audio API
+/**
+ * SUPERCOMPRAS PRO - INTERFACE, MODAIS E ÁUDIO
+ */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioInst = null;
 
@@ -38,51 +40,41 @@ function playAppBeep(kind = 'click') {
   } catch (err) {}
 }
 
-function showAppToast(message, type = 'info') {
-  const stack = document.getElementById('toastStack');
-  const toast = document.createElement('div');
-  let bg = 'bg-slate-800 text-white';
-  if (type === 'success') bg = 'bg-emerald-600 text-white';
-  if (type === 'error') bg = 'bg-rose-600 text-white';
-  if (type === 'info') bg = 'bg-sky-700 text-white';
-
-  toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-xl text-xs font-bold flex items-center space-x-2 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
-  toast.innerHTML = `<span>${message}</span>`;
-  stack.appendChild(toast);
-
-  requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+function showAppToast(msg, type = 'info') {
+  const s = document.getElementById('toastStack');
+  if (!s) return;
+  const t = document.createElement('div');
+  t.className = `${type === 'success' ? 'bg-emerald-600' : type === 'error' ? 'bg-rose-600' : 'bg-slate-800'} text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform translate-y-2 opacity-0 shadow-lg pointer-events-auto`;
+  t.innerHTML = `<span>${msg}</span>`;
+  s.appendChild(t);
+  requestAnimationFrame(() => t.classList.remove('translate-y-2', 'opacity-0'));
   setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
+    t.classList.add('opacity-0', 'translate-y-2');
+    setTimeout(() => t.remove(), 300);
   }, 2700);
 }
 
-function openCustomDialog(title, msg, primaryText, secondaryText, onPrimary, onSecondary) {
-  const dialogCustom = document.getElementById('dialogCustom');
+function openCustomDialog(title, msg, pTxt, sTxt, onP, onS) {
+  const d = document.getElementById('dialogCustom');
+  if (!d) return;
   document.getElementById('dialogTitle').innerText = title;
   document.getElementById('dialogMessage').innerText = msg;
-  
-  const btnP = document.getElementById('dialogBtnPrimary');
-  btnP.innerText = primaryText;
-  btnP.onclick = () => {
-    dialogCustom.classList.add('hidden');
-    if (onPrimary) onPrimary();
-  };
 
-  const btnS = document.getElementById('dialogBtnSecondary');
-  if (secondaryText && onSecondary) {
-    btnS.innerText = secondaryText;
-    btnS.classList.remove('hidden');
-    btnS.onclick = () => {
-      dialogCustom.classList.add('hidden');
-      onSecondary();
-    };
+  const bp = document.getElementById('dialogBtnPrimary');
+  bp.innerText = pTxt;
+  bp.onclick = () => { d.classList.add('hidden'); if (onP) onP(); };
+
+  const bs = document.getElementById('dialogBtnSecondary');
+  if (sTxt && onS) {
+    bs.innerText = sTxt;
+    bs.classList.remove('hidden');
+    bs.onclick = () => { d.classList.add('hidden'); onS(); };
   } else {
-    btnS.classList.add('hidden');
+    bs.classList.add('hidden');
   }
 
-  document.getElementById('dialogBtnCancel').onclick = () => dialogCustom.classList.add('hidden');
-  dialogCustom.classList.remove('hidden');
+  document.getElementById('dialogBtnCancel').onclick = () => d.classList.add('hidden');
+  d.classList.remove('hidden');
 }
 
 function switchActiveTab(tabName) {
@@ -92,60 +84,106 @@ function switchActiveTab(tabName) {
   document.getElementById('viewSupermercados').classList.toggle('hidden', tabName !== 'supermercados');
   document.getElementById('cartFloatingCheckoutBar').classList.toggle('hidden', tabName !== 'compras');
 
-  const navButtons = [
-    { name: 'compras', el: document.getElementById('navBtnCompras') },
-    { name: 'produtos', el: document.getElementById('navBtnProdutos') },
-    { name: 'supermercados', el: document.getElementById('navBtnSupermercados') }
-  ];
-
-  navButtons.forEach(btn => {
-    if (btn.name === tabName) {
-      btn.el.classList.remove('text-slate-600');
-      btn.el.classList.add('text-emerald-700', 'font-extrabold');
-    } else {
-      btn.el.classList.remove('text-emerald-700', 'font-extrabold');
-      btn.el.classList.add('text-slate-600', 'font-semibold');
+  ['compras', 'produtos', 'supermercados'].forEach(name => {
+    const el = document.getElementById('navBtn' + name.charAt(0).toUpperCase() + name.slice(1));
+    if (el) {
+      if (name === tabName) {
+        el.classList.add('text-emerald-700', 'font-extrabold');
+        el.classList.remove('text-slate-600', 'font-semibold');
+      } else {
+        el.classList.add('text-slate-600', 'font-semibold');
+        el.classList.remove('text-emerald-700', 'font-extrabold');
+      }
     }
   });
 
-  if (tabName === 'produtos') renderCatalogUI();
-  if (tabName === 'supermercados') renderMarketsUI();
+  if (tabName === 'produtos' && typeof renderCatalogUI === 'function') renderCatalogUI();
+  if (tabName === 'supermercados' && typeof renderMarketsUI === 'function') renderMarketsUI();
+  atualizarEstadoFabMobile(tabName);
 }
 
-// Inicialização da interface
-window.addEventListener('DOMContentLoaded', async () => {
-  loadApplicationData();
-  refreshActiveMarketUI();
-  renderCartUI();
-  renderCatalogUI();
-  renderMarketsUI();
-  updateCartItemPreview();
-
-  // Ouvintes de modais e botões do cabeçalho
-  document.getElementById('btnOpenBackupModal').addEventListener('click', () => {
-    const input = document.getElementById('inputSecurityToken');
-    if (input) input.value = getSecurityToken();
-    document.getElementById('modalBackup').classList.remove('hidden');
-  });
-
-  document.getElementById('btnOpenHistoryModal').addEventListener('click', () => {
-    renderHistoryModal();
-    document.getElementById('modalHistory').classList.remove('hidden');
-  });
-
-  document.getElementById('btnToggleAudio').addEventListener('click', () => {
-    isSoundOn = !isSoundOn;
-    document.getElementById('soundOnIcon').classList.toggle('hidden', !isSoundOn);
-    document.getElementById('soundOffIcon').classList.toggle('hidden', isSoundOn);
-    showAppToast(isSoundOn ? 'Sons ativados' : 'Sons desativados', 'info');
-  });
-
-  // Autocomplete e formulários
-  document.getElementById('cartSearchFilter').addEventListener('input', () => renderCartUI());
-  document.getElementById('catalogSearchInput').addEventListener('input', () => renderCatalogUI());
-
-  // Sincronização automática inicial
-  if (navigator.onLine && getSecurityToken()) {
-    await sincronizarComPlanilha();
+function refreshActiveMarketUI() {
+  const sel = document.getElementById('selectActiveMarket');
+  if (sel) {
+    sel.innerHTML = supermarkets.map(m => `
+      <option value="${m.id}" ${m.id === activeMarketId ? 'selected' : ''}>${m.name} (${m.branch || 'SJP'})</option>
+    `).join('');
   }
-});
+
+  const current = supermarkets.find(m => m.id === activeMarketId);
+  if (current) {
+    const subtitle = document.getElementById('topMarketSubtitle');
+    if (subtitle) subtitle.innerText = `${current.name} • ${current.branch || 'SJP'}`;
+    const tag = document.getElementById('marketPromoTag');
+    const textPromo = document.getElementById('marketPromoText');
+    if (tag) {
+      if (current.promoDay) {
+        if (textPromo) textPromo.innerText = current.promoDay;
+        tag.classList.remove('hidden');
+      } else {
+        tag.classList.add('hidden');
+      }
+    }
+  }
+}
+
+function abrirSupermercadoNoMaps(marketId, rotaDireta = true) {
+  const m = supermarkets.find(x => x.id === marketId);
+  if (!m || m.id === 'm-padrao' || !m.address) {
+    showAppToast('Selecione uma rede física com endereço para traçar rota.', 'info');
+    return;
+  }
+  const destino = encodeURIComponent(m.address);
+  const url = rotaDireta
+    ? `https://www.google.com/maps/dir/?api=1&destination=${destino}`
+    : `https://www.google.com/maps/search/?api=1&query=${destino}`;
+  window.open(url, '_blank');
+}
+
+function abrirSheetAdicionarItem() {
+  const container = document.getElementById('cartFormContainer');
+  const backdrop = document.getElementById('cartFormBackdrop');
+  const fab = document.getElementById('fabOpenAddItem');
+  if (container && backdrop) {
+    backdrop.classList.remove('hidden');
+    container.classList.remove('translate-y-full');
+    if (fab) fab.classList.add('hidden');
+    setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 150);
+  }
+}
+
+function fecharSheetAdicionarItem() {
+  const container = document.getElementById('cartFormContainer');
+  const backdrop = document.getElementById('cartFormBackdrop');
+  const fab = document.getElementById('fabOpenAddItem');
+  const dropdown = document.getElementById('cartAutocompleteDropdown');
+  if (dropdown) dropdown.classList.add('hidden');
+  if (container && backdrop) {
+    container.classList.add('translate-y-full');
+    backdrop.classList.add('hidden');
+    if (fab) fab.classList.remove('hidden');
+  }
+}
+
+function executarAcaoFabContextual() {
+  if (currentTab === 'compras') abrirSheetAdicionarItem();
+  else if (currentTab === 'produtos' && typeof openProductEditModal === 'function') openProductEditModal();
+  else if ((currentTab === 'supermercados' || currentTab === 'mercados') && typeof openMarketEditModal === 'function') openMarketEditModal();
+}
+
+function atualizarEstadoFabMobile(tabName) {
+  const fab = document.getElementById('fabOpenAddItem');
+  const compBtn = document.getElementById('fabOpenComparator');
+  fecharSheetAdicionarItem();
+
+  if (compBtn) compBtn.classList.toggle('hidden', tabName !== 'compras');
+  if (fab) {
+    if (tabName === 'compras') {
+      fab.setAttribute('title', 'Adicionar Produto ao Carrinho');
+      fab.classList.remove('bottom-24'); fab.classList.add('bottom-36');
+    } else {
+      fab.setAttribute('title', tabName === 'produtos' ? 'Novo Produto' : 'Novo Supermercado');
+      fab.classList.remove('bottom-36'); fab.classList.add('bottom-24');
+    }
+  }
+}

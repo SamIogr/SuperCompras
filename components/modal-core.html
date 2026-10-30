@@ -1,0 +1,116 @@
+<!-- MODAL: SINCRONIZAÇÃO SELETIVA -->
+<div id="modalSelectiveSync" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl p-5 space-y-4 max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div>
+        <h3 class="font-extrabold text-slate-800 text-base">Sincronização Seletiva</h3>
+        <p class="text-xs text-slate-500">Escolha exatamente o que deseja importar da planilha.</p>
+      </div>
+      <button type="button" onclick="closeSelectiveSyncModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+    </div>
+    <div class="flex items-center space-x-2 border-b border-slate-200 pb-2">
+      <button type="button" id="tabSyncProdBtn" onclick="switchSyncTab('produtos')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm">
+        Produtos (<span id="syncProdCount">0</span>)
+      </button>
+      <button type="button" id="tabSyncMarketBtn" onclick="switchSyncTab('mercados')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100">
+        Supermercados (<span id="syncMarketCount">0</span>)
+      </button>
+    </div>
+    <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700">
+      <label class="flex items-center space-x-2 cursor-pointer">
+        <input type="checkbox" id="checkSyncSelectAll" onchange="toggleSelectAllSync(this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" />
+        <span id="labelSelectAllSync">Marcar Todos</span>
+      </label>
+      <span class="text-[11px] text-slate-500" id="labelSyncSelectedCounter">0 selecionados</span>
+    </div>
+    <div class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px]">
+      <div id="syncProductsList" class="space-y-1.5"></div>
+      <div id="syncMarketsList" class="hidden space-y-1.5"></div>
+    </div>
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+      <button type="button" onclick="closeSelectiveSyncModal()" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+      <button type="button" onclick="applySelectiveSync()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all">Sincronizar Selecionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: HISTÓRICO DE COMPRAS -->
+<div id="modalHistory" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-5 space-y-4 max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h3 class="font-extrabold text-slate-800 text-base">Histórico de Compras Finalizadas</h3>
+      <button onclick="document.getElementById('modalHistory').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+    </div>
+    <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+      <button onclick="askClearHistory()" class="text-rose-600 hover:underline font-semibold">Limpar Histórico</button>
+      <button onclick="document.getElementById('modalHistory').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-white font-bold rounded-xl">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: BACKUP E RESTAURAÇÃO (JSON) -->
+<div id="modalBackup" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h3 class="font-extrabold text-slate-800 text-base">Backup & Restauração</h3>
+      <button onclick="document.getElementById('modalBackup').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+    </div>
+    <p class="text-xs text-slate-600">Exporte cópia de segurança dos dados locais ou restaure quando desejar.</p>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+      <label for="inputSecurityToken" class="block text-xs font-bold text-slate-700">Chave de Acesso da Planilha</label>
+      <div class="flex items-center space-x-2">
+        <input type="password" id="inputSecurityToken" placeholder="Cole aqui o token definido no Apps Script..." class="flex-1 text-xs py-2 px-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+        <button type="button" onclick="salvarChaveSeguranca()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all">Salvar</button>
+      </div>
+    </div>
+    <div class="space-y-2.5 pt-1">
+      <button type="button" onclick="exportBackupJSON()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+        <span>Exportar Dados (Arquivo JSON)</span>
+      </button>
+      <label class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 cursor-pointer transition-all border border-slate-300">
+        <span>Restaurar Backup (Carregar JSON)</span>
+        <input type="file" id="inputRestoreJSON" accept=".json" class="hidden" onchange="handleRestoreJSON(event)" />
+      </label>
+    </div>
+    <div class="pt-2 text-right">
+      <button onclick="document.getElementById('modalBackup').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl">Concluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EXPORTAR (WHATSAPP / CSV) -->
+<div id="modalExportOptions" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-3.5">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <h3 class="font-bold text-slate-800 text-base">Exportar Lista de Compras</h3>
+      <button onclick="document.getElementById('modalExportOptions').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+    </div>
+    <div class="space-y-2">
+      <button onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+        <span>Copiar Formatado para WhatsApp</span>
+      </button>
+      <button onclick="exportCartCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+        <span>Baixar Planilha CSV</span>
+      </button>
+    </div>
+    <div class="pt-2 text-right">
+      <button onclick="document.getElementById('modalExportOptions').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE DIÁLOGO CUSTOMIZADO -->
+<div id="dialogCustom" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 space-y-4 text-center">
+    <div>
+      <h4 id="dialogTitle" class="font-extrabold text-slate-800 text-base">Título</h4>
+      <p id="dialogMessage" class="text-xs text-slate-600 mt-1.5 leading-relaxed">Mensagem.</p>
+    </div>
+    <div class="flex flex-col gap-2 pt-2">
+      <button id="dialogBtnPrimary" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all">Confirmar</button>
+      <button id="dialogBtnSecondary" class="hidden w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all">Secundária</button>
+      <button id="dialogBtnCancel" class="w-full py-2 px-4 text-slate-600 text-xs font-semibold hover:bg-slate-100 rounded-xl transition-all">Cancelar</button>
+    </div>
+  </div>
+</div>

@@ -248,6 +248,11 @@ function openEditCartItemModal(itemId) {
   document.getElementById('editCartItemId').value = item.id;
   document.getElementById('modalEditCartTitle').innerText = item.name;
   document.getElementById('modalEditCartSubtitle').innerText = `Unidade: ${item.unit} • ${item.category || 'Geral'}`;
+  
+  // Preenche a marca no formulário
+  const brandEl = document.getElementById('editCartItemBrand');
+  if (brandEl) brandEl.value = item.selectedBrandId || 'Padrão';
+
   document.getElementById('editCartItemPrice').value = formatBRL(item.unitPrice);
   document.getElementById('editCartItemQty').value = formatQty(item.quantity);
 
@@ -264,13 +269,80 @@ function openEditCartItemModal(itemId) {
     document.getElementById('editCartWholesalePrice').value = item.promo.wholesalePrice ? formatBRL(item.promo.wholesalePrice) : '';
   }
 
-  // Executa o cálculo com segurança
   updateEditCartModalPreview();
-
-  // Exibe a janela no navegador
   document.getElementById('modalEditCartItem').classList.remove('hidden');
-  setTimeout(() => document.getElementById('editCartItemQty').focus(), 50);
+  document.getElementById('editCartItemQty').focus();
 }
+
+document.getElementById('formSaveCartItemEdit')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const item = cart.find(x => x.id === document.getElementById('editCartItemId').value);
+  if (!item) return;
+
+  const newPrice = parseNumberInput(document.getElementById('editCartItemPrice').value);
+  const newQty = parseNumberInput(document.getElementById('editCartItemQty').value);
+  const newBrand = (document.getElementById('editCartItemBrand')?.value || 'Padrão').trim();
+
+  if (newQty <= 0) {
+    showAppToast('Informe uma quantidade válida.', 'error');
+    return;
+  }
+
+  item.unitPrice = newPrice;
+  item.quantity = newQty;
+  item.selectedBrandId = newBrand;
+  item.promo = getEditFormPromoConfig();
+
+  const masterProd = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+  if (masterProd && activeMarketId !== 'm-padrao' && newPrice > 0) {
+    enviarProdutoParaPlanilha(masterProd, activeMarketId, newPrice, newBrand);
+  }
+
+  saveCartData();
+  closeEditCartItemModal();
+  playAppBeep('check');
+  showAppToast(`"${item.name} (${newBrand})" atualizado!`, 'success');
+});
+
+window.abrirPainelMarcasProduto = function(productId) {
+  const p = products.find(x => x.id === productId);
+  if (!p) return;
+
+  const modal = document.getElementById('modalMarcasDetalhes');
+  if (!modal) return;
+
+  document.getElementById('modalMarcasTitulo').innerText = `Marcas & Cotações: ${p.name}`;
+  const container = document.getElementById('modalMarcasConteudo');
+
+  const marcas = (p.brands && p.brands.length > 0) 
+    ? p.brands 
+    : [{ id: 'padrao', name: 'Padrão', marketPrices: p.marketPrices || {} }];
+
+  const redesReais = supermarkets.filter(m => m.id !== 'm-padrao');
+
+  container.innerHTML = marcas.map(m => `
+    <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl mb-3">
+      <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-200">
+        <span class="font-extrabold text-xs text-slate-800">🏷️ Marca: ${m.name}</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px]">
+        ${redesReais.map(rede => {
+          const preco = m.marketPrices ? m.marketPrices[rede.id] : null;
+          return `
+            <div class="p-1.5 bg-white rounded border border-slate-100 flex justify-between items-center">
+              <span class="text-slate-500 truncate mr-1">${rede.name}:</span>
+              <span class="font-bold ${preco > 0 ? 'text-emerald-700' : 'text-slate-400 italic'}">
+                ${preco > 0 ? 'R$ ' + formatBRL(preco) : '—'}
+              </span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  modal.classList.remove('hidden');
+};
 
 function updateEditCartModalPreview() {
   const qEl = document.getElementById('editCartItemQty');
@@ -596,7 +668,7 @@ async function sincronizarComPlanilha() {
   }
 }
 
-async function enviarProdutoParaPlanilha(produto, marketId, preco) {
+async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = 'Padrão') {
   const token = getSecurityToken();
   if (!token || marketId === 'm-padrao') return;
 
@@ -605,22 +677,30 @@ async function enviarProdutoParaPlanilha(produto, marketId, preco) {
 
   const payload = {
     token: token,
+    action: "atualizar_preco",
+    productId: produto.id,
     name: produto.name,
+    brand: brandName || produto.brand || 'Padrão',
     unit: produto.unit,
-    quantity: produto.quantity || 1,
+    marketId: marketId,
     marketColIndex: mercadoAlvo.colIndex,
     price: preco,
     category: produto.category || 'Geral'
   };
 
   try {
-    await fetch(API_GOOGLE_SHEETS_URL, {
+    const res = await fetch(API_GOOGLE_SHEETS_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
-  } catch (err) {}
+    const json = await res.json();
+    if (json.status === 'success') {
+      showAppToast(`Preço de "${produto.name} (${brandName})" sincronizado na planilha!`, 'success');
+    }
+  } catch (err) {
+    console.warn("Erro na sincronização em segundo plano:", err);
+  }
 }
 
 // ============================================================
@@ -911,6 +991,11 @@ document.getElementById('cartBtnClearProduct')?.addEventListener('click', () => 
   document.getElementById('cartInputProductName').value = '';
   document.getElementById('cartBtnClearProduct').classList.add('hidden');
   document.getElementById('cartAutocompleteDropdown').classList.add('hidden');
+  
+  // Oculta o contentor de marcas ao limpar
+  const containerMarcas = document.getElementById('containerMarcasDinamicas');
+  if (containerMarcas) containerMarcas.classList.add('hidden');
+
   document.getElementById('cartInputProductName').focus();
   updateCartItemPreview();
 });
@@ -920,6 +1005,14 @@ function selectProductForCart(productId) {
   if (p) {
     document.getElementById('cartInputProductName').value = p.name;
     document.getElementById('cartInputUnit').value = p.unit || 'un';
+
+    // 1. REVELA O CONTENTOR DE MARCAS E MONTA OS BOTÕES
+    const containerMarcas = document.getElementById('containerMarcasDinamicas');
+    if (containerMarcas) {
+      containerMarcas.classList.remove('hidden');
+      atualizarChipsDeMarcas(p.name, 'Padrão');
+    }
+
     const precoRegistrado = (p.marketPrices && p.marketPrices[activeMarketId] > 0)
       ? p.marketPrices[activeMarketId]
       : p.basePrice;
@@ -931,6 +1024,70 @@ function selectProductForCart(productId) {
     updateCartItemPreview();
   }
 }
+
+// 2. FUNÇÃO QUE MONTA OS BOTÕES (CHIPS) DAS MARCAS
+function atualizarChipsDeMarcas(nomeProduto, marcaAtiva = 'Padrão') {
+  const containerChips = document.getElementById('listaChipsMarcas');
+  const inputMarca = document.getElementById('cartInputProductBrand');
+  const labelAtiva = document.getElementById('marcaSelecionadaLabel');
+  if (!containerChips) return;
+
+  const marcas = new Set(['Padrão']);
+  const p = products.find(it => it.name.toLowerCase() === nomeProduto.toLowerCase());
+
+  if (p && Array.isArray(p.brands)) {
+    p.brands.forEach(b => marcas.add(b.name || b.id));
+  }
+  cart.forEach(c => {
+    if (c.name.toLowerCase() === nomeProduto.toLowerCase() && c.selectedBrandId) {
+      marcas.add(c.selectedBrandId);
+    }
+  });
+
+  containerChips.innerHTML = Array.from(marcas).map(marca => {
+    const isSel = marca.toLowerCase() === marcaAtiva.toLowerCase();
+    return `
+      <button 
+        type="button" 
+        onclick="selecionarMarcaChip('${marca}')" 
+        class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+          isSel 
+            ? 'bg-emerald-600 text-white shadow-sm' 
+            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+        }"
+      >
+        🏷️ ${marca}
+      </button>
+    `;
+  }).join('');
+
+  if (inputMarca) inputMarca.value = marcaAtiva;
+  if (labelAtiva) labelAtiva.innerText = marcaAtiva;
+}
+
+// 3. AÇÃO AO CLICAR NUM CHIP DE MARCA
+window.selecionarMarcaChip = function(marca) {
+  const inputMarca = document.getElementById('cartInputProductBrand');
+  const labelAtiva = document.getElementById('marcaSelecionadaLabel');
+  const inputProd = document.getElementById('cartInputProductName');
+  const inputPreco = document.getElementById('cartInputUnitPrice');
+
+  if (inputMarca) inputMarca.value = marca;
+  if (labelAtiva) labelAtiva.innerText = marca;
+
+  if (inputProd) {
+    const nome = inputProd.value.trim();
+    const p = products.find(it => it.name.toLowerCase() === nome.toLowerCase());
+    if (p && p.brands) {
+      const bObj = p.brands.find(b => (b.name || b.id).toLowerCase() === marca.toLowerCase());
+      if (bObj && bObj.marketPrices && bObj.marketPrices[activeMarketId] > 0) {
+        if (inputPreco) inputPreco.value = formatBRL(bObj.marketPrices[activeMarketId]);
+        updateCartItemPreview();
+      }
+    }
+    atualizarChipsDeMarcas(nome, marca);
+  }
+};
 
 // ============================================================
 // CONTROLE DO FORMULÁRIO RESPONSIVO E FAB MULTI-ABAS NO TELEMÓVEL
@@ -1077,7 +1234,7 @@ function updateCartItemPreview() {
 });
 
 // ============================================================
-// ADIÇÃO AO CARRINHO (PERMITE PREÇO ZERO / VAZIO)
+// ADIÇÃO AO CARRINHO (PERMITE PREÇO ZERO / VAZIO E SUPORTA MARCAS)
 // ============================================================
 document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -1086,11 +1243,16 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   const unitPrice = parseNumberInput(document.getElementById('cartInputUnitPrice').value); // Permite 0
   const quantity = parseNumberInput(document.getElementById('cartInputQuantity').value);
 
+  // Lê a marca se existir no formulário; caso contrário, assume 'padrao'
+  const brandEl = document.getElementById('cartInputProductBrand');
+  const selectedBrandId = (brandEl && brandEl.value.trim()) ? brandEl.value.trim() : 'Padrão';
+
   if (!name || quantity <= 0) {
     showAppToast('Indique o nome do produto e a quantidade.', 'error');
     return;
   }
-// Após salvar os dados e emitir o toast:
+
+  // Após salvar os dados e emitir o toast:
   if (window.innerWidth < 768) {
     fecharSheetAdicionarItem();
   }
@@ -1118,7 +1280,13 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   }
   saveAllLocalData();
 
-  const existingIdx = cart.findIndex(it => it.name.toLowerCase() === name.toLowerCase() && it.unit === unit);
+  // 1. A busca agora considera o Produto E a Marca ativa
+  const existingIdx = cart.findIndex(it => 
+    (it.productId === masterProd.id || it.name.toLowerCase() === name.toLowerCase()) && 
+    (it.selectedBrandId || 'padrao') === selectedBrandId && 
+    it.unit === unit
+  );
+
   if (existingIdx > -1) {
     cart[existingIdx].quantity += quantity;
     if (unitPrice > 0) cart[existingIdx].unitPrice = unitPrice;
@@ -1128,6 +1296,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
     cart.unshift({
       id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
       productId: masterProd.id,
+      selectedBrandId: selectedBrandId,
       name: name,
       category: masterProd.category || 'Geral',
       unit: unit,
@@ -1150,7 +1319,6 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   handleCartPromoTypeChange('none');
   updateCartItemPreview();
   document.getElementById('cartInputProductName').focus();
-
 });
 
 // ============================================================
@@ -1220,6 +1388,11 @@ function renderCartUI() {
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center space-x-1.5 flex-wrap">
                     <h4 class="font-extrabold text-sm text-slate-800 truncate ${isChecked ? 'line-through text-slate-500' : ''}">${item.name}</h4>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 rounded font-bold">${item.unit}</span>
+                    <!-- TAG DA MARCA VISÍVEL NO CARRINHO -->
+                    <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 rounded font-black border border-emerald-300">
+                      🏷️ ${item.selectedBrandId || 'Padrão'}
+                    </span>
                     <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 rounded font-bold">${item.unit}</span>
                   </div>
                   <div class="text-xs text-slate-500 flex items-center space-x-1.5 mt-0.5">
@@ -1362,37 +1535,6 @@ function handleEditItemPromoTypeChange(type) {
   if (wFields) wFields.classList.toggle('hidden', type !== 'wholesale');
   updateEditCartModalPreview();
 }
-
-document.getElementById('formSaveCartItemEdit')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const item = cart.find(x => x.id === document.getElementById('editCartItemId').value);
-  if (!item) return;
-
-  const newPrice = parseNumberInput(document.getElementById('editCartItemPrice').value);
-  const newQty = parseNumberInput(document.getElementById('editCartItemQty').value);
-  if (newPrice <= 0 || newQty <= 0) return;
-
-  item.unitPrice = newPrice;
-  item.quantity = newQty;
-  item.promo = getEditFormPromoConfig();
-
-  const masterProd = products.find(p => p.name.toLowerCase() === item.name.toLowerCase());
-  if (masterProd) {
-    if (!masterProd.marketPrices) masterProd.marketPrices = {};
-    if (activeMarketId !== 'm-padrao') {
-      masterProd.marketPrices[activeMarketId] = newPrice;
-      enviarProdutoParaPlanilha(masterProd, activeMarketId, newPrice);
-    } else {
-      masterProd.basePrice = newPrice;
-    }
-    saveAllLocalData();
-  }
-
-  saveCartData();
-  closeEditCartItemModal();
-  playAppBeep('check');
-  showAppToast(`"${item.name}" atualizado!`, 'success');
-});
 
 function askFinishPurchase() {
   if (cart.length === 0) return;
@@ -1566,13 +1708,13 @@ function renderCatalogUI() {
       : null;
 
     return `
-      <div class="bg-white rounded-xl p-3 border ${isSelected ? 'border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/20' : 'border-slate-200'} shadow-sm transition-all">
+      <div class="bg-white rounded-xl p-3 border ${isSelected ? "border-emerald-500 ring-1 ring-emerald-500/20 bg-emerald-50/20" : "border-slate-200"} shadow-sm transition-all">
         <div class="flex items-center justify-between gap-2.5">
           <div class="flex items-center space-x-3 flex-1 min-w-0">
             <!-- Checkbox de seleção do item -->
             <input 
               type="checkbox" 
-              ${isSelected ? 'checked' : ''} 
+              ${isSelected ? "checked" : ""} 
               onchange="toggleCatalogProductSelection('${p.id}', this.checked)" 
               class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
             >
@@ -1580,29 +1722,36 @@ function renderCatalogUI() {
             <div class="min-w-0 flex-1">
               <div class="flex items-center space-x-1.5 flex-wrap">
                 <h4 class="font-extrabold text-sm text-slate-800 truncate">${p.name}</h4>
+                <span class="text-[10px] bg-sky-50 text-sky-800 border border-sky-200 px-1.5 py-0.5 rounded font-bold">
+                  Marca: ${p.brand || (p.brands && p.brands[0] ? p.brands[0].name : "Padrão")}
+                </span>
                 
-                ${isSynced ? `
+                ${
+                  isSynced
+                    ? `
                   <span class="inline-flex items-center space-x-1 bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md" title="Produto oficial da Planilha Google">
                     <svg class="w-3 h-3 text-sky-600" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/>
                     </svg>
                     <span>Nuvem</span>
                   </span>
-                ` : `
+                `
+                    : `
                   <span class="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md" title="Produto exclusivo deste aparelho">
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                     <span>Local</span>
                   </span>
-                `}
+                `
+                }
 
-                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">${p.category || 'Geral'}</span>
+                <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">${p.category || "Geral"}</span>
                 <span class="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded">${p.unit}</span>
               </div>
 
               <div class="text-xs text-slate-500 mt-1 flex items-center space-x-2 flex-wrap">
-                <span>Base: <strong class="text-slate-800">${p.basePrice > 0 ? 'R$ ' + formatBRL(p.basePrice) : 'A definir'}</strong></span>
+                <span>Base: <strong class="text-slate-800">${p.basePrice > 0 ? "R$ " + formatBRL(p.basePrice) : "A definir"}</strong></span>
                 <span>•</span>
-                <span>No ${getSelectedMarketName()}: <strong class="${curP ? 'text-emerald-700 font-extrabold' : 'text-slate-400 italic'}">${curP ? 'R$ ' + formatBRL(curP) : 'Sem cotação'}</strong></span>
+                <span>No ${getSelectedMarketName()}: <strong class="${curP ? "text-emerald-700 font-extrabold" : "text-slate-400 italic"}">${curP ? "R$ " + formatBRL(curP) : "Sem cotação"}</strong></span>
               </div>
             </div>
           </div>
@@ -1610,6 +1759,9 @@ function renderCatalogUI() {
           <div class="flex items-center space-x-1.5 shrink-0">
             <button type="button" onclick="openPriceCompareModal('${p.id}')" class="p-2 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition-all" title="Comparar preços entre supermercados">
               <span class="hidden sm:inline">Preços</span> 🏷️
+            </button>
+            <button type="button" onclick="abrirPainelMarcasProduto('${p.id}')" class="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold transition-all" title="Ver todas as marcas e cotações">
+              🏷️ Marcas
             </button>
             <button type="button" onclick="openProductEditModal('${p.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all" title="Editar dados do produto">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

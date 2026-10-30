@@ -1,33 +1,43 @@
-// Constantes estruturais
-const DEFAULT_SUPERMARKETS = [
-  { id: 'm-max', name: 'Max Atacadista', branch: 'Afonso Pena / SJP', promoDay: 'Terça e Quarta de Hortifrúti', notes: 'Destaque em atacado, mercearia e limpeza.' },
-  { id: 'm-goes', name: 'Supermercados Goes', branch: 'Afonso Pena / SJP', promoDay: 'Quinta da Carne e Terça da Feira', notes: 'Destaque em carnes e hortifrúti.' },
-  { id: 'm-local', name: 'Local Supermercado', branch: 'Afonso Pena / SJP', promoDay: 'Terça a Quinta de Laticínios', notes: 'Destaque em laticínios e frios.' },
-  { id: 'm-jacomar', name: 'Jacomar', branch: 'Afonso Pena / SJP', promoDay: 'Quinta da Carne e Terça da Feira', notes: 'Destaque em carnes, laticínios e hortifrúti.' },
-  { id: 'm-atac', name: 'Atacadão', branch: 'Afonso Pena / SJP', promoDay: 'Fim de Semana de Mercearia', notes: 'Preços agressivos em fardos e pacotes fechados.' },
-  { id: 'm-condor', name: 'Condor', branch: 'Afonso Pena / SJP', promoDay: 'Quarta de Hortifrúti e Quinta da Carne', notes: 'Destaque em carnes, laticínios e clube fidelidade.' },
-  { id: 'm-stall', name: 'Stall Supermercados', branch: 'Afonso Pena / SJP', promoDay: 'Ofertas Diárias', notes: 'Rede regional do bairro Afonso Pena.' },
-  { id: 'm-pgula', name: 'Ponto da Gula', branch: 'Afonso Pena / SJP', promoDay: 'Fim de Semana Básicos', notes: 'Destaque em itens básicos de mercearia.' }
-];
+/**
+ * SUPERCOMPRAS PRO - ESTADO GLOBAL E PERSISTÊNCIA
+ */
+const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
 
-const CATEGORIES = ['Todas', 'Açougue', 'Laticínios', 'Mercearia', 'Hortifrúti', 'Limpeza', 'Geral'];
+const MERCADO_PADRAO_GENERICO = {
+  id: 'm-padrao',
+  name: 'Mercado',
+  branch: 'Referência Geral',
+  address: '',
+  promoDay: '',
+  urlEncarte: '',
+  colIndex: null
+};
 
-// Estado volátil da aplicação
+let supermarkets = [ MERCADO_PADRAO_GENERICO ];
 let products = [];
-let supermarkets = [];
 let cart = [];
-let activeMarketId = 'm-max';
+let activeMarketId = 'm-padrao';
 let purchaseHistory = [];
 let currentTab = 'compras';
 let cartFilterMode = 'all';
 let selectedCatalogCategory = 'Todas';
 let isSoundOn = true;
+let pendingSyncPayload = { produtos: [], supermercados: [] };
+let selectedSyncProducts = new Set();
+let selectedSyncMarkets = new Set();
+let activeSyncTab = 'produtos';
+let catalogSyncFilter = 'all';
+let selectedCatalogProductIds = new Set();
 
-// Parsers e utilitários numéricos
+const CATEGORIES = [
+  'Todas', 'Açougue e Carnes', 'Laticínios e Frios', 
+  'Mercearia e Básicos', 'Hortifrúti e Ovos', 'Higiene e Limpeza', 'Geral'
+];
+
 function parseNumberInput(val) {
   if (!val) return 0;
-  const clean = String(val).trim().replace(',', '.');
-  const num = parseFloat(clean);
+  const limpo = String(val).trim().replace(',', '.');
+  const num = parseFloat(limpo);
   return isNaN(num) ? 0 : num;
 }
 
@@ -40,41 +50,52 @@ function formatQty(num) {
   return n % 1 === 0 ? n.toString() : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 }
 
-// Persistência local no navegador
+function getSecurityToken() {
+  return localStorage.getItem('sc_security_token') || '';
+}
+
+function getIgnoredMarkets() {
+  try { return JSON.parse(localStorage.getItem('sc_ignored_markets')) || []; } catch (e) { return []; }
+}
+
+function getSelectedMarketName() {
+  const m = supermarkets.find(x => x.id === activeMarketId);
+  return m ? m.name : 'Mercado';
+}
+
 function loadApplicationData() {
   try {
-    const savedMarkets = localStorage.getItem('sc_supermarkets_v3');
-    supermarkets = savedMarkets ? JSON.parse(savedMarkets) : [...DEFAULT_SUPERMARKETS];
+    const savedM = JSON.parse(localStorage.getItem('sc_supermarkets_v3'));
+    if (Array.isArray(savedM) && savedM.length > 0) {
+      supermarkets = savedM;
+      if (!supermarkets.some(m => m.id === 'm-padrao')) supermarkets.unshift(MERCADO_PADRAO_GENERICO);
+    } else {
+      supermarkets = [ MERCADO_PADRAO_GENERICO ];
+    }
   } catch (e) {
-    supermarkets = [...DEFAULT_SUPERMARKETS];
+    supermarkets = [ MERCADO_PADRAO_GENERICO ];
   }
 
   try {
-    const savedProducts = localStorage.getItem('sc_products_v3');
-    products = savedProducts ? JSON.parse(savedProducts) : [];
-  } catch (e) {
-    products = [];
-  }
+    products = JSON.parse(localStorage.getItem('sc_products_v3')) || [];
+    const mapaUnico = new Map();
+    products.forEach(item => {
+      if (item && item.name) {
+        const chave = item.name.trim().toLowerCase();
+        if (!mapaUnico.has(chave)) mapaUnico.set(chave, item);
+      }
+    });
+    products = Array.from(mapaUnico.values());
+  } catch (e) { products = []; }
+
+  try { cart = JSON.parse(localStorage.getItem('sc_cart_v3')) || []; } catch (e) { cart = []; }
+  try { purchaseHistory = JSON.parse(localStorage.getItem('sc_history_v3')) || []; } catch (e) { purchaseHistory = []; }
 
   const savedActiveMarket = localStorage.getItem('sc_active_market_v3');
   if (savedActiveMarket && supermarkets.some(m => m.id === savedActiveMarket)) {
     activeMarketId = savedActiveMarket;
-  } else if (supermarkets.length > 0) {
-    activeMarketId = supermarkets[0].id;
-  }
-
-  try {
-    const savedCart = localStorage.getItem('sc_cart_v3');
-    cart = savedCart ? JSON.parse(savedCart) : [];
-  } catch (e) {
-    cart = [];
-  }
-
-  try {
-    const savedHist = localStorage.getItem('sc_history_v3');
-    purchaseHistory = savedHist ? JSON.parse(savedHist) : [];
-  } catch (e) {
-    purchaseHistory = [];
+  } else {
+    activeMarketId = 'm-padrao';
   }
 
   saveAllLocalData();
