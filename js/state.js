@@ -1,7 +1,7 @@
 /**
  * SUPERCOMPRAS PRO - ESTADO GLOBAL E PERSISTÊNCIA
  */
-const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
+const API_GOOGLE_SHEETS_URL = "";
 
 const MERCADO_PADRAO_GENERICO = {
   id: 'm-padrao',

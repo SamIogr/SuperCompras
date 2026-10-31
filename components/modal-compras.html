@@ -1,105 +1,160 @@
-<!-- MODAL: EDITAR ITEM DO CARRINHO (LÁPIS) -->
-<div id="modalEditCartItem" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4 max-h-[92vh] overflow-y-auto">
-    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+<!-- MODAL DE EDIÇÃO DO ITEM NO CARRINHO -->
+<div id="modalEditCartItem" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
+  <div class="bg-white rounded-3xl w-full max-w-md p-5 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+    <input type="hidden" id="editCartItemId">
+
+    <!-- Cabeçalho -->
+    <div class="flex items-start justify-between pb-3 border-b border-slate-100">
       <div>
-        <h3 id="modalEditCartTitle" class="font-extrabold text-slate-800 text-base">Editar Item do Carrinho</h3>
-        <p id="modalEditCartSubtitle" class="text-xs text-emerald-700 font-bold mt-0.5"></p>
+        <h3 id="editCartItemTitle" class="text-base font-black text-slate-800">Editar Item</h3>
+        <span id="editCartItemHeaderPrice" class="text-xs font-bold text-emerald-600"></span>
       </div>
-      <button type="button" onclick="closeEditCartItemModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      <button type="button" onclick="closeEditCartItemModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
     </div>
 
-    <form id="formSaveCartItemEdit" class="space-y-3">
-      <div>
-        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl mb-3">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[11px] font-bold text-slate-600">🏷️ Marca do Produto:</span>
-            <span id="editCartItemBrandLabel" class="text-[10px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Padrão</span>
-          </div>
-          <div id="editCartItemBrandChips" class="flex flex-wrap gap-1.5 mb-2"></div>
-          <input type="text" id="editCartItemBrand" placeholder="Ou digite outra marca..." class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:ring-emerald-500 focus:border-emerald-500">
-        </div>
-      </div>
-      <input type="hidden" id="editCartItemId" value="" />
-
-      <div class="grid grid-cols-2 gap-2.5">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1" for="editCartItemPrice">Preço Unit. (R$) <span class="text-rose-500">*</span></label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
-            <input type="text" id="editCartItemPrice" inputmode="decimal" placeholder="0,00" required class="w-full pl-8 pr-2 py-2.5 text-sm font-extrabold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1" for="editCartItemQty">Qtd. / Peso <span class="text-rose-500">*</span></label>
-          <input type="text" id="editCartItemQty" inputmode="decimal" placeholder="Ex: 1,132" class="w-full px-3 py-2.5 text-sm font-extrabold bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none text-center sm:text-left" />
-        </div>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-1.5 text-xs pt-0.5">
-        <span class="text-[11px] text-slate-600 font-medium mr-1">Atalhos:</span>
-        <button type="button" onclick="setEditCartQuickQty('1')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">1</button>
-        <button type="button" onclick="setEditCartQuickQty('2')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">2</button>
-        <button type="button" onclick="setEditCartQuickQty('3')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">3</button>
-        <span class="border-r border-slate-300 h-4 mx-0.5"></span>
-        <button type="button" onclick="setEditCartQuickQty('0.250')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">250g</button>
-        <button type="button" onclick="setEditCartQuickQty('0.500')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">500g</button>
-        <button type="button" onclick="setEditCartQuickQty('1.000')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1 kg</button>
-      </div>
-
-      <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70 space-y-2.5">
-        <span class="block text-xs font-bold text-slate-700">Condição Comercial</span>
-        <div class="flex gap-2 text-xs font-semibold">
-          <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
-            <input type="radio" name="editItemPromoType" value="none" checked class="hidden" onchange="handleEditItemPromoTypeChange(this.value)" /> Nenhum
+    <form id="formSaveCartItemEdit" onsubmit="event.preventDefault(); salvarEdicaoItemCarrinho();" class="mt-4 space-y-4">
+      
+      <!-- Seletor de Marca com Gestão Integrada -->
+      <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3">
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-black text-slate-700 flex items-center space-x-1">
+            <span>🏷️ Marca do Produto</span>
           </label>
-          <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
-            <input type="radio" name="editItemPromoType" value="discount" class="hidden" onchange="handleEditItemPromoTypeChange(this.value)" /> Desconto
-          </label>
-          <label class="flex-1 text-center py-1.5 rounded-lg border border-slate-200 cursor-pointer has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:text-emerald-800">
-            <input type="radio" name="editItemPromoType" value="wholesale" class="hidden" onchange="handleEditItemPromoTypeChange(this.value)" /> Atacado
-          </label>
+          <div id="boxEditMarcaActions" class="hidden flex items-center space-x-1">
+            <button type="button" onclick="iniciarEdicaoNomeMarcaModal()"
+              class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+              title="Renomear marca">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+              </svg>
+            </button>
+            <button type="button" onclick="confirmarExclusaoMarcaModal()"
+              class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+              title="Excluir marca">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                </path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      
+        <div id="boxEditMarcaSelect">
+          <select id="editCartItemBrand"
+            class="w-full text-xs font-bold text-emerald-800 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+            <option value="Padrão">🏷️ Padrão</option>
+          </select>
+        </div>
+      
+        <div id="boxEditMarcaInline" class="hidden flex items-center space-x-1.5 mt-2">
+          <input type="text" id="inputEditNovaMarca" placeholder="Nome da marca..."
+            class="flex-1 text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <button type="button" onclick="confirmarNovaMarcaModalEdicao()"
+            class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold active:scale-95 shadow-xs">✓</button>
+          <button type="button" onclick="cancelarNovaMarcaModalEdicao()"
+            class="px-2.5 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 shadow-xs">✕</button>
+        </div>
+      
+        <div id="boxEditMarcaConfirmDelete"
+          class="hidden mt-2 p-3 bg-rose-50/90 border border-rose-200 rounded-xl text-xs transition-all">
+          <div class="flex items-start space-x-2.5 mb-2">
+            <span class="text-rose-500 font-bold text-sm leading-none mt-0.5">⚠️</span>
+            <div class="text-rose-900 leading-snug">
+              <span>Deseja excluir a marca <strong id="labelMarcaParaExcluir" class="text-rose-700"></strong>?</span>
+              <span class="block text-[11px] text-rose-600 mt-0.5">Os itens vinculados a ela voltarão a ser "Padrão".</span>
+            </div>
+          </div>
+          <div class="flex justify-end items-center space-x-2">
+            <button type="button" onclick="cancelarExclusaoMarcaModal()"
+              class="px-2.5 py-1 text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">Cancelar</button>
+            <button type="button" onclick="executarExclusaoMarcaModal()"
+              class="px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs transition-colors">Excluir</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Preço e Quantidade Diretos -->
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div>
+          <label class="block text-xs font-black text-slate-700 mb-1">Preço Unit. (R$) *</label>
+          <input type="text" id="editCartItemPrice" oninput="atualizarSubtotalModalEdicao()"
+            class="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-black text-slate-700 mb-1">Qtd. / Peso *</label>
+          <input type="number" id="editCartItemQty" step="any" min="0.001" oninput="atualizarSubtotalModalEdicao()"
+            class="w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+        </div>
+      </div>
+
+      <!-- Atalhos de Quantidade -->
+      <div class="flex items-center space-x-1 overflow-x-auto pb-1 text-xs font-bold">
+        <span class="text-[10px] text-slate-400 font-extrabold mr-1">Atalhos:</span>
+        <button type="button" onclick="setEditQty(1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">1</button>
+        <button type="button" onclick="setEditQty(2)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">2</button>
+        <button type="button" onclick="setEditQty(3)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">3</button>
+        <button type="button" onclick="setEditQty(0.25)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">250g</button>
+        <button type="button" onclick="setEditQty(0.5)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">500g</button>
+        <button type="button" onclick="setEditQty(1)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">1 kg</button>
+      </div>
+
+      <!-- Condição Comercial (Desconto / Atacado) -->
+      <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3">
+        <label class="block text-xs font-black text-slate-700 mb-2">Condição Comercial</label>
+        
+        <!-- Botões de Alternância -->
+        <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-200/70 rounded-xl text-xs font-bold">
+          <button type="button" id="btnEditPromoNone" onclick="setEditPromoType('none')" class="py-1.5 rounded-lg text-center transition-all bg-white text-emerald-800 shadow-xs">Nenhum</button>
+          <button type="button" id="btnEditPromoDiscount" onclick="setEditPromoType('discount')" class="py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900">Desconto</button>
+          <button type="button" id="btnEditPromoWholesale" onclick="setEditPromoType('wholesale')" class="py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900">Atacado</button>
         </div>
 
-        <div id="editPromoDiscountFields" class="hidden grid grid-cols-2 gap-2 pt-1">
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tipo</label>
-            <select id="editCartDiscountMode" class="w-full text-xs font-semibold py-2 px-2 bg-white border border-slate-300 rounded-lg">
-              <option value="percent">Porcentagem (%)</option>
-              <option value="fixed">Fixo por unidade (R$)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Valor</label>
-            <input type="text" id="editCartDiscountVal" inputmode="decimal" placeholder="Ex: 10" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg" />
+        <!-- Painel Expansível de Desconto -->
+        <div id="panelEditPromoDiscount" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-[10px] font-bold text-slate-500">Tipo de Abatimento:</span>
+              <select id="editPromoDiscountMode" onchange="atualizarSubtotalModalEdicao()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+                <option value="percentage">% Porcentagem</option>
+                <option value="fixed">R$ Valor Fixo</option>
+              </select>
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-slate-500">Valor do Desconto:</span>
+              <input type="text" id="editPromoDiscountValue" oninput="atualizarSubtotalModalEdicao()" placeholder="Ex: 10% ou 2,00" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+            </div>
           </div>
         </div>
 
-        <div id="editPromoWholesaleFields" class="hidden grid grid-cols-2 gap-2 pt-1">
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">A partir de (Qtd)</label>
-            <input type="text" id="editCartWholesaleMin" inputmode="decimal" placeholder="Ex: 3" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Preço Atacado (R$)</label>
-            <input type="text" id="editCartWholesalePrice" inputmode="decimal" placeholder="Ex: 12,90" class="w-full text-xs font-bold py-2 px-2.5 bg-white border border-slate-300 rounded-lg" />
+        <!-- Painel Expansível de Atacado -->
+        <div id="panelEditPromoWholesale" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-[10px] font-bold text-slate-500">A partir de (Qtd/Kg):</span>
+              <input type="number" id="editPromoWholesaleMinQty" step="any" min="1" value="3" oninput="atualizarSubtotalModalEdicao()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+            </div>
+            <div>
+              <span class="text-[10px] font-bold text-slate-500">Preço Especial (R$):</span>
+              <input type="text" id="editPromoWholesalePrice" oninput="atualizarSubtotalModalEdicao()" placeholder="Ex: 29,90" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-between pt-1">
+      <!-- Subtotal e Botões Finais -->
+      <div class="flex items-center justify-between pt-2">
         <div>
-          <span class="text-[11px] text-slate-500 font-bold uppercase block">Novo Subtotal</span>
-          <div class="flex items-baseline space-x-1.5">
-            <span id="editCartPreviewSubtotal" class="text-lg font-black text-emerald-700">R$ 0,00</span>
-            <span id="editCartPreviewSavings" class="text-xs text-rose-600 font-bold hidden"></span>
-          </div>
+          <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Novo Subtotal</span>
+          <span id="editCartItemSubtotal" class="text-lg font-black text-emerald-700">R$ 0,00</span>
         </div>
         <div class="flex items-center space-x-2">
-          <button type="button" onclick="closeEditCartItemModal()" class="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
-          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md transition-all">Salvar Item</button>
+          <button type="button" onclick="closeEditCartItemModal()" class="px-3.5 py-2 text-xs font-bold text-slate-500 hover:text-slate-700">Cancelar</button>
+          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-md active:scale-95 transition-all">Salvar Item</button>
         </div>
       </div>
+
     </form>
   </div>
 </div>

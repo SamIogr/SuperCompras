@@ -187,3 +187,42 @@ function atualizarEstadoFabMobile(tabName) {
     }
   }
 }
+
+// ============================================================
+// CONTROLE DOS MODAIS DO CABEÇALHO E ÁUDIO
+// ============================================================
+function abrirModalBackup() {
+  const m = document.getElementById('modalBackup');
+  if (m) {
+    const inputToken = document.getElementById('inputSecurityToken');
+    if (inputToken) {
+      inputToken.value = getSecurityToken();
+    }
+    m.classList.remove('hidden');
+  }
+}
+
+function fecharModalBackup() {
+  document.getElementById('modalBackup')?.classList.add('hidden');
+}
+
+function alternarSomApp() {
+  isSoundOn = !isSoundOn;
+  document.getElementById('soundOnIcon')?.classList.toggle('hidden', !isSoundOn);
+  document.getElementById('soundOffIcon')?.classList.toggle('hidden', isSoundOn);
+  showAppToast(isSoundOn ? 'Som ativado' : 'Som desativado', 'info');
+  if (isSoundOn) playAppBeep('click');
+}
+
+function abrirModalHistorico() {
+  const m = document.getElementById('modalHistory') || document.getElementById('modalHistorico');
+  if (m) {
+    if (typeof renderPurchaseHistoryUI === 'function') renderPurchaseHistoryUI();
+    m.classList.remove('hidden');
+  }
+}
+
+function fecharModalHistorico() {
+  const m = document.getElementById('modalHistory') || document.getElementById('modalHistorico');
+  if (m) m.classList.add('hidden');
+}
