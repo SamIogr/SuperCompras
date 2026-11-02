@@ -80,80 +80,96 @@ function openCustomDialog(title, msg, pTxt, sTxt, onP, onS) {
 /**
  * Alterna as abas principais (Compras, Histórico, Dados)
  */
-window.switchActiveTab = function(tabName) {
+window.switchActiveTab = function (tabName) {
   currentTab = tabName;
 
   const mapaAbas = {
-    compras: document.getElementById('tab-compras') || document.getElementById('viewCompras'),
-    historico: document.getElementById('tab-historico'),
-    dados: document.getElementById('tab-dados') || document.getElementById('viewProdutos')
+    compras:
+      document.getElementById("tab-compras") ||
+      document.getElementById("viewCompras"),
+    historico: document.getElementById("tab-historico"),
+    dados:
+      document.getElementById("tab-dados") ||
+      document.getElementById("viewProdutos"),
   };
 
-  if (tabName === 'produtos' || tabName === 'supermercados') {
-    tabName = 'dados';
+  if (tabName === "produtos" || tabName === "supermercados") {
+    tabName = "dados";
   }
 
-  Object.keys(mapaAbas).forEach(chave => {
+  // Dentro de switchActiveTab no js/ui.js:
+  if (tabName === "historico") {
+    if (typeof renderHistoricoUI === "function") renderHistoricoUI();
+  }
+
+  Object.keys(mapaAbas).forEach((chave) => {
     const el = mapaAbas[chave];
     if (el) {
-      el.classList.toggle('hidden', chave !== tabName);
+      el.classList.toggle("hidden", chave !== tabName);
     }
   });
 
   const botoes = {
-    compras: document.getElementById('navBtnCompras'),
-    historico: document.getElementById('navBtnHistorico'),
-    dados: document.getElementById('navBtnDados')
+    compras: document.getElementById("navBtnCompras"),
+    historico: document.getElementById("navBtnHistorico"),
+    dados: document.getElementById("navBtnDados"),
   };
 
-  Object.keys(botoes).forEach(chave => {
+  Object.keys(botoes).forEach((chave) => {
     const btn = botoes[chave];
     if (btn) {
       if (chave === tabName) {
-        btn.classList.add('text-emerald-700', 'font-bold');
-        btn.classList.remove('text-slate-500', 'text-slate-600', 'font-semibold');
+        btn.classList.add("text-emerald-700", "font-bold");
+        btn.classList.remove(
+          "text-slate-500",
+          "text-slate-600",
+          "font-semibold",
+        );
       } else {
-        btn.classList.remove('text-emerald-700', 'font-bold');
-        btn.classList.add('text-slate-500', 'font-semibold');
+        btn.classList.remove("text-emerald-700", "font-bold");
+        btn.classList.add("text-slate-500", "font-semibold");
       }
     }
   });
 
-  const barCheckout = document.getElementById('cartFloatingCheckoutBar');
-  const fabAdd = document.getElementById('fabOpenAddItem');
-  const fabComp = document.getElementById('fabOpenComparator');
+  const barCheckout = document.getElementById("cartFloatingCheckoutBar");
+  const fabAdd = document.getElementById("fabOpenAddItem");
+  const fabComp = document.getElementById("fabOpenComparator");
 
-  if (barCheckout) barCheckout.classList.toggle('hidden', tabName !== 'compras');
-  if (fabAdd) fabAdd.classList.toggle('hidden', tabName !== 'compras');
-  if (fabComp) fabComp.classList.toggle('hidden', tabName !== 'compras');
+  if (barCheckout)
+    barCheckout.classList.toggle("hidden", tabName !== "compras");
+  if (fabAdd) fabAdd.classList.toggle("hidden", tabName !== "compras");
+  if (fabComp) fabComp.classList.toggle("hidden", tabName !== "compras");
 
-  if (tabName === 'compras' && typeof renderCartUI === 'function') {
+  if (tabName === "compras" && typeof renderCartUI === "function") {
     renderCartUI();
-  } else if (tabName === 'historico' && typeof renderHistoricoUI === 'function') {
+  } else if (
+    tabName === "historico" &&
+    typeof renderHistoricoUI === "function"
+  ) {
     renderHistoricoUI();
-  } else if (tabName === 'dados') {
+  } else if (tabName === "dados") {
     // Ao entrar em Dados, atualiza a contagem dos crachás e renderiza a sub-aba ativa
-    const subAtiva = window.currentSubTabDados || 'produtos';
+    const subAtiva = window.currentSubTabDados || "produtos";
     setSubTabDados(subAtiva);
   }
 
-  if (typeof atualizarEstadoFabMobile === 'function') {
+  if (typeof atualizarEstadoFabMobile === "function") {
     atualizarEstadoFabMobile(tabName);
   }
-};
+};;
 
 /**
  * Alterna as sub-visões internas da aba Dados (Produtos vs Supermercados)
  */
-window.setSubTabDados = function(tipo) {
+function setSubTabDados(tipo) {
   window.currentSubTabDados = tipo;
   const isProd = tipo === 'produtos';
 
-  // Suporte híbrido a ambos os formatos de IDs
-  const viewProd = document.getElementById('subViewProdutos') || document.getElementById('secao-catalogo-produtos');
-  const viewMerc = document.getElementById('subViewMercados') || document.getElementById('secao-catalogo-mercados');
-  const btnProd = document.getElementById('subTabBtnProdutos') || document.getElementById('btn-subtab-produtos');
-  const btnMerc = document.getElementById('subTabBtnMercados') || document.getElementById('btn-subtab-mercados');
+  const viewProd = document.getElementById('secao-catalogo-produtos');
+  const viewMerc = document.getElementById('secao-catalogo-mercados');
+  const btnProd = document.getElementById('btn-subtab-produtos');
+  const btnMerc = document.getElementById('btn-subtab-mercados');
 
   if (viewProd) {
     viewProd.classList.toggle('hidden', !isProd);
@@ -165,15 +181,15 @@ window.setSubTabDados = function(tipo) {
   }
 
   if (btnProd && btnMerc) {
-    const classeAtiva = 'flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-1.5 font-bold';
-    const classeInativa = 'flex-1 py-2 rounded-lg text-slate-600 hover:text-slate-800 text-center transition-all flex items-center justify-center space-x-1.5 font-semibold';
+    const classeAtiva = 'flex-1 py-2 px-3 rounded-lg bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-1.5 font-bold text-xs cursor-pointer';
+    const classeInativa = 'flex-1 py-2 px-3 rounded-lg text-slate-600 hover:text-slate-800 text-center transition-all flex items-center justify-center space-x-1.5 font-semibold text-xs cursor-pointer';
     
     btnProd.className = isProd ? classeAtiva : classeInativa;
     btnMerc.className = isProd ? classeInativa : classeAtiva;
   }
 
-  const badgeProd = document.getElementById('badgeSubTabProd') || document.getElementById('badge-total-produtos');
-  const badgeMerc = document.getElementById('badgeSubTabMerc') || document.getElementById('badge-total-mercados');
+  const badgeProd = document.getElementById('badge-total-produtos');
+  const badgeMerc = document.getElementById('badge-total-mercados');
   if (badgeProd && Array.isArray(products)) badgeProd.innerText = products.length;
   if (badgeMerc && Array.isArray(supermarkets)) badgeMerc.innerText = supermarkets.filter(m => m.id !== 'm-padrao').length;
 
@@ -182,8 +198,7 @@ window.setSubTabDados = function(tipo) {
   } else if (!isProd && typeof renderMarketsUI === 'function') {
     renderMarketsUI();
   }
-};
-window.AlternarSubTabDados = window.setSubTabDados;
+}
 
 /**
  * Gestão interna do Hub de Banco de Dados

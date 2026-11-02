@@ -1,3 +1,7 @@
+/**
+ * SUPERCOMPRAS PRO - MÓDULO ÚNICO DE BACKUP E EXPORTAÇÃO (js/io.js)
+ */
+
 function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
   const blob = new Blob([conteudo], { type: tipoMime });
   const url = URL.createObjectURL(blob);
@@ -15,11 +19,11 @@ function exportBackupJSON() {
     app: 'SuperComprasPro',
     version: 3,
     exportDate: new Date().toISOString(),
-    supermarkets: supermarkets,
-    products: products,
-    activeMarketId: activeMarketId,
-    cart: cart,
-    purchaseHistory: purchaseHistory
+    activeMarketId: activeMarketId || 'm-padrao',
+    supermarkets: Array.isArray(supermarkets) ? supermarkets : [],
+    products: Array.isArray(products) ? products : [],
+    purchaseHistory: Array.isArray(purchaseHistory) ? purchaseHistory : [],
+    cart: Array.isArray(cart) ? cart : []
   };
 
   const agora = new Date();
@@ -27,16 +31,17 @@ function exportBackupJSON() {
   const horaFmt = agora.toTimeString().slice(0, 5).replace(':', 'h');
 
   baixarArquivo(
-    JSON.stringify(fullBackup, null, 2), 
-    `SuperCompras_Backup_${dataFmt}_${horaFmt}.json`, 
+    JSON.stringify(fullBackup, null, 2),
+    `SuperCompras_Backup_${dataFmt}_${horaFmt}.json`,
     'application/json;charset=utf-8;'
   );
-  showAppToast('Backup exportado com sucesso!', 'success');
+
+  showAppToast('Backup completo exportado com sucesso!', 'success');
   document.getElementById('modalBackup')?.classList.add('hidden');
 }
 
 function handleRestoreJSON(e) {
-  const file = e.target.files[0];
+  const file = e.target.files && e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
@@ -45,54 +50,86 @@ function handleRestoreJSON(e) {
       const parsed = JSON.parse(event.target.result);
       const payload = parsed.payload || parsed;
 
-      if (!payload.products || !Array.isArray(payload.products)) {
-        throw new Error('Formato de ficheiro inválido: catálogo não encontrado.');
+      const rawProducts = payload.products || payload.produtos;
+      const rawMarkets = payload.supermarkets || payload.supermercados;
+      const rawHistory = payload.purchaseHistory || payload.historico;
+      const rawCart = payload.cart || payload.carrinho;
+
+      if (!Array.isArray(rawProducts) && !Array.isArray(rawMarkets) && !Array.isArray(rawHistory)) {
+        throw new Error('Formato de arquivo inválido: dados não encontrados.');
       }
 
-      // Deduplicação e sanitização de produtos ao restaurar
-      const mapaProdutos = new Map();
-      payload.products.forEach(item => {
-        if (item && item.name && typeof item.name === 'string') {
-          const chave = item.name.trim().toLowerCase();
-          if (!mapaProdutos.has(chave)) {
-            mapaProdutos.set(chave, {
-              ...item,
-              name: item.name.trim(),
-              category: item.category || 'Geral',
-              unit: item.unit || 'un',
-              basePrice: Number(item.basePrice) || 0,
-              marketPrices: (item.marketPrices && typeof item.marketPrices === 'object') ? item.marketPrices : {}
-            });
-          }
-        }
-      });
-      products = Array.from(mapaProdutos.values());
+      // 1. Restauração de Produtos preservando integralmente Marcas e Cotações
+      if (Array.isArray(rawProducts)) {
+        const mapaProdutos = new Map();
+        rawProducts.forEach(item => {
+          if (item && item.name && typeof item.name === 'string') {
+            const chave = item.name.trim().toLowerCase();
+            if (!mapaProdutos.has(chave)) {
+              const marcasLimpa = Array.isArray(item.brands) ? item.brands.map(b => {
+                if (typeof b === 'string') {
+                  return { id: b, name: b, marketPrices: {} };
+                }
+                return {
+                  id: b.id || b.name || 'Padrão',
+                  name: b.name || b.id || 'Padrão',
+                  marketPrices: (b.marketPrices && typeof b.marketPrices === 'object') ? b.marketPrices : {}
+                };
+              }) : [];
 
-      // Higienização de supermercados com salvaguarda do mercado padrão
-      if (payload.supermarkets && Array.isArray(payload.supermarkets)) {
-        let mercadosLimpos = payload.supermarkets.filter(m => m && m.id && m.name);
+              mapaProdutos.set(chave, {
+                ...item,
+                id: item.id || ('p-custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)),
+                name: item.name.trim(),
+                category: item.category || 'Geral',
+                unit: item.unit || 'un',
+                basePrice: Number(item.basePrice) || 0,
+                marketPrices: (item.marketPrices && typeof item.marketPrices === 'object') ? item.marketPrices : {},
+                brands: marcasLimpa
+              });
+            }
+          }
+        });
+        products = Array.from(mapaProdutos.values());
+      }
+
+      // 2. Restauração de Supermercados com garantia do Mercado Referencial
+      if (Array.isArray(rawMarkets)) {
+        const mercadosLimpos = rawMarkets.filter(m => m && m.id && m.name);
         if (!mercadosLimpos.some(m => m.id === 'm-padrao')) {
-          mercadosLimpos.unshift({ id: 'm-padrao', name: 'Mercado Padrão' });
+          mercadosLimpos.unshift(MERCADO_PADRAO_GENERICO);
         }
         supermarkets = mercadosLimpos;
       }
 
-      if (payload.activeMarketId) activeMarketId = payload.activeMarketId;
-      if (Array.isArray(payload.cart)) cart = payload.cart;
-      if (Array.isArray(payload.purchaseHistory)) purchaseHistory = payload.purchaseHistory;
+      // 3. Restauração do Histórico Imutável
+      if (Array.isArray(rawHistory)) {
+        purchaseHistory = rawHistory;
+      }
 
-      // Gravação no armazenamento local e atualização visual imediata
+      // 4. Restauração do Carrinho e Mercado Ativo
+      if (Array.isArray(rawCart)) {
+        cart = rawCart;
+      }
+      if (payload.activeMarketId && supermarkets.some(m => m.id === payload.activeMarketId)) {
+        activeMarketId = payload.activeMarketId;
+      } else {
+        activeMarketId = 'm-padrao';
+      }
+
+      // 5. Persistência unificada V3 e atualização imediata de todas as abas
       saveAllLocalData();
       refreshActiveMarketUI();
       renderCartUI();
       renderCatalogUI();
       renderMarketsUI();
+      renderHistoricoUI();
 
-      showAppToast(`Backup restaurado! ${products.length} produtos carregados.`, 'success');
+      showAppToast(`Backup restaurado: ${products.length} produtos, ${supermarkets.length - 1} redes e ${purchaseHistory.length} compras!`, 'success');
       document.getElementById('modalBackup')?.classList.add('hidden');
     } catch (err) {
       console.error('Falha ao restaurar:', err);
-      showAppToast(err.message || 'Erro ao processar ficheiro de backup', 'error');
+      showAppToast(err.message || 'Erro ao processar arquivo de backup.', 'error');
     }
   };
 
@@ -101,15 +138,15 @@ function handleRestoreJSON(e) {
 }
 
 function exportCartCSV() {
-  let csv = '\uFEFFProduto;Categoria;Unidade;Preco_Unitario;Quantidade;Subtotal;No_Carrinho\n';
+  let csv = '\uFEFFProduto;Marca;Categoria;Unidade;Preco_Unitario;Quantidade;Subtotal;No_Carrinho\n';
   cart.forEach(it => {
     const calc = computeItemFinancials(it.quantity, it.unitPrice, it.promo);
-    csv += `"${it.name.replace(/"/g, '""')}";${it.category || 'Geral'};${it.unit};${it.unitPrice.toFixed(2).replace('.', ',')};${it.quantity.toString().replace('.', ',')};${calc.finalSubtotal.toFixed(2).replace('.', ',')};${it.checked ? 'SIM' : 'NÃO'}\n`;
+    csv += `"${it.name.replace(/"/g, '""')}";"${(it.selectedBrandId || 'Padrão').replace(/"/g, '""')}";${it.category || 'Geral'};${it.unit};${it.unitPrice.toFixed(2).replace('.', ',')};${it.quantity.toString().replace('.', ',')};${calc.finalSubtotal.toFixed(2).replace('.', ',')};${it.checked ? 'SIM' : 'NÃO'}\n`;
   });
 
   baixarArquivo(csv, `Compras_${getSelectedMarketName()}_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
   showAppToast('Planilha CSV gerada!', 'success');
-  document.getElementById('modalExportOptions').classList.add('hidden');
+  document.getElementById('modalExportOptions')?.classList.add('hidden');
 }
 
 function copyCartToWhatsApp() {
@@ -123,7 +160,8 @@ function copyCartToWhatsApp() {
     const calc = computeItemFinancials(it.quantity, it.unitPrice, it.promo);
     total += calc.finalSubtotal;
     const check = it.checked ? '✅' : '⬜';
-    text += `${check} *${it.name}*\n   ${formatQty(it.quantity)} ${it.unit} × R$ ${formatBRL(it.unitPrice)} = *R$ ${formatBRL(calc.finalSubtotal)}*\n`;
+    const marcaTxt = (it.selectedBrandId && it.selectedBrandId !== 'Padrão') ? ` (${it.selectedBrandId})` : '';
+    text += `${check} *${it.name}${marcaTxt}*\n   ${formatQty(it.quantity)} ${it.unit} x R$ ${formatBRL(it.unitPrice)} = *R$ ${formatBRL(calc.finalSubtotal)}*\n`;
   });
 
   text += `------------------------------------\n`;
@@ -138,5 +176,5 @@ function copyCartToWhatsApp() {
   document.execCommand('copy');
   document.body.removeChild(ta);
   showAppToast('Lista copiada para o WhatsApp!', 'success');
-  document.getElementById('modalExportOptions').classList.add('hidden');
+  document.getElementById('modalExportOptions')?.classList.add('hidden');
 }

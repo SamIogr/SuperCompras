@@ -1,531 +1,600 @@
 /**
- * SUPERCOMPRAS PRO - CATÁLOGO MESTRE DE PRODUTOS (DESIGN AUTÔNOMO)
+ * SUPERCOMPRAS PRO - CATÁLOGO MESTRE DE PRODUTOS (js/products.js)
  */
 
 let catalogSortMode = 'az';
 let currentCompareBrand = 'Padrão';
-let catalogMarcaModoEdicao = 'nova';
-let catalogMarcaNomeOriginal = '';
 let activeCatalogProductId = null;
-let redesComparativoMinimizado = false;
+let redesComparativoMinimizado = true;
+let textoNovaMarcaEmEdicao = '';
 
-window.AlternarSubTabDados = function(aba) {
-    const secaoProd = document.getElementById('secao-catalogo-produtos');
-    const secaoMerc = document.getElementById('secao-catalogo-mercados');
-    const btnProd = document.getElementById('btn-subtab-produtos');
-    const btnMerc = document.getElementById('btn-subtab-mercados');
+// 1. OBTENÇÃO DE PREÇOS POR PRODUTO, MARCA E SUPERMERCADO
+function obterPrecoProdutoMarcaMercado(prod, marcaNome, mercadoId) {
+  if (!prod) return 0;
+  const mercado = mercadoId || activeMarketId || 'm-padrao';
+  const marca = (marcaNome || 'Padrão').trim().toLowerCase();
 
-    if (!secaoProd || !secaoMerc) return;
-
-    if (aba === 'produtos') {
-        secaoProd.style.display = 'block';
-        secaoMerc.style.display = 'none';
-        if (btnProd) {
-            btnProd.style.background = 'white';
-            btnProd.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-            btnProd.classList.remove('text-muted');
-        }
-        if (btnMerc) {
-            btnMerc.style.background = 'transparent';
-            btnMerc.style.boxShadow = 'none';
-            btnMerc.classList.add('text-muted');
-        }
-        renderizarCatalogoProdutos();
-    } else {
-        secaoProd.style.display = 'none';
-        secaoMerc.style.display = 'block';
-        if (btnMerc) {
-            btnMerc.style.background = 'white';
-            btnMerc.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-            btnMerc.classList.remove('text-muted');
-        }
-        if (btnProd) {
-            btnProd.style.background = 'transparent';
-            btnProd.style.boxShadow = 'none';
-            btnProd.classList.add('text-muted');
-        }
-        if (typeof renderizarCatalogoMercados === 'function') renderizarCatalogoMercados();
+  if (marca === 'padrão' || marca === 'padrao') {
+    if (prod.marketPrices && prod.marketPrices[mercado] !== undefined && Number(prod.marketPrices[mercado]) > 0) {
+      return Number(prod.marketPrices[mercado]);
     }
-};
-window.setSubTabDados = window.AlternarSubTabDados;
+    if (mercado === 'm-padrao') {
+      return Number(prod.basePrice) || 0;
+    }
+    return 0;
+  }
 
-window.filtrarProdutosCatalogo = function() { renderizarCatalogoProdutos(); };
-window.ordenarProdutosCatalogo = function() {
-    const sel = document.getElementById('select-ordenacao-produtos');
-    if (sel) catalogSortMode = (sel.value === 'nome-desc') ? 'za' : 'az';
-    renderizarCatalogoProdutos();
-};
+  if (Array.isArray(prod.brands)) {
+    const bObj = prod.brands.find(b => (b.name || b.id || '').toLowerCase() === marca);
+    if (bObj && bObj.marketPrices && bObj.marketPrices[mercado] !== undefined && Number(bObj.marketPrices[mercado]) > 0) {
+      return Number(bObj.marketPrices[mercado]);
+    }
+  }
 
-function obterListaProdutosFiltrada() {
-    const input = document.getElementById('input-busca-produtos');
-    const query = (input?.value || '').toLowerCase().trim();
-
-    let lista = (products || []).filter(p => {
-        if (!p || !p.name) return false;
-        const nome = p.name.toLowerCase();
-        const cat = (p.category || '').toLowerCase();
-        return !query || nome.includes(query) || cat.includes(query);
-    });
-
-    lista.sort((a, b) => {
-        const nomeA = (a.name || '').trim();
-        const nomeB = (b.name || '').trim();
-        return catalogSortMode === 'za' 
-            ? nomeB.localeCompare(nomeA, 'pt-BR') 
-            : nomeA.localeCompare(nomeB, 'pt-BR');
-    });
-    return lista;
+  return 0;
 }
 
-window.renderizarCatalogoProdutos = function() {
-    const container = document.getElementById('lista-produtos');
-    const badgeTotal = document.getElementById('badge-total-produtos');
-    const lista = products || [];
+// 2. RENDERIZAÇÃO DO CATÁLOGO DE PRODUTOS (NOME ÚNICO: renderCatalogUI)
+function renderCatalogUI() {
+  const container = document.getElementById('lista-produtos');
+  const badgeTotal = document.getElementById('badge-total-produtos');
+  const lista = Array.isArray(products) ? products : [];
 
-    if (badgeTotal) badgeTotal.textContent = lista.length;
-    if (!container) return;
+  if (badgeTotal) badgeTotal.textContent = lista.length;
+  if (!container) return;
 
-    const visiveis = obterListaProdutosFiltrada();
+  const visiveis = obterListaProdutosFiltrada();
 
-    if (visiveis.length === 0) {
-        container.innerHTML = `
-            <div class="text-center py-12 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200 p-8 my-2">
-                <p class="text-xs font-semibold text-slate-600">Nenhum produto cadastrado no catálogo.</p>
-            </div>`;
-        return;
-    }
-
-    // Se o templates.js estiver ativo, usa ele. Se não estiver, renderiza diretamente sem quebrar!
-    container.innerHTML = visiveis.map(prod => {
-        const precoMercado = (prod.marketPrices && prod.marketPrices[activeMarketId] > 0) ? prod.marketPrices[activeMarketId] : null;
-
-        if (window.AppTemplates && typeof window.AppTemplates.productCard === 'function') {
-            return AppTemplates.productCard(prod, {
-                marketPrice: precoMercado,
-                marketName: getSelectedMarketName()
-            });
-        }
-
-        // Fallback seguro nativo em Tailwind (caso templates.js não carregue)
-        const isLocal = String(prod.id).startsWith('p-custom-') || String(prod.id).startsWith('p-local-');
-        const cotacao = precoMercado ? `R$ ${formatBRL(precoMercado)}` : 'Sem cotação';
-        const baseStr = prod.basePrice > 0 ? `R$ ${formatBRL(prod.basePrice)}` : 'A definir';
-
-        return `
-            <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between gap-3 my-2">
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center space-x-2 flex-wrap">
-                        <strong class="font-extrabold text-sm text-slate-800 truncate">${prod.name}</strong>
-                        ${isLocal 
-                            ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Local</span>` 
-                            : `<span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Nuvem</span>`}
-                        <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md border border-slate-200/60">${prod.category || 'Geral'}</span>
-                        <span class="text-[10px] text-slate-400 font-semibold">${prod.unit || 'un'}</span>
-                    </div>
-                    <div class="text-xs text-slate-500 mt-1 truncate">
-                        Base: <span class="font-bold text-slate-700">${baseStr}</span> • 
-                        No ${getSelectedMarketName()}: <span class="font-bold ${precoMercado ? 'text-emerald-700' : 'text-slate-400'}">${cotacao}</span>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-1.5 shrink-0">
-                    <button type="button" onclick="openProductEditModal('${prod.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors" title="Editar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    </button>
-                    <button type="button" onclick="askDeleteSingleProduct('${prod.id}')" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors" title="Excluir">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                    <button type="button" onclick="quickAddToCartFromCatalog('${prod.id}')" class="p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs" title="Adicionar">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-};
-
-window.quickAddToCartFromCatalog = function(productId) {
-    if (typeof selectProductForCart === 'function') selectProductForCart(productId);
-    switchActiveTab('compras');
-    showAppToast('Produto selecionado para a compra!', 'info');
-};
-
-window.askDeleteSingleProduct = function(productId) {
-    const p = (products || []).find(x => x.id === productId);
-    if (!p) return;
-    if (confirm(`Deseja remover "${p.name}" do aplicativo?`)) {
-        products = products.filter(x => x.id !== p.id);
-        cart = cart.filter(c => c.productId !== p.id);
-        saveAllLocalData();
-        saveCartData();
-        renderizarCatalogoProdutos();
-        if (typeof renderCartUI === 'function') renderCartUI();
-        showAppToast(`"${p.name}" foi excluído.`, 'info');
-    }
-};
-
-window.openProductEditModal = function(productId = null) {
-  const modal = document.getElementById('modalProductEdit');
-  const title = document.getElementById('modalProductEditTitle');
-  const idInput = document.getElementById('editProdId');
-  const nameInput = document.getElementById('editProdName');
-  const catInput = document.getElementById('editProdCategory');
-  const unitInput = document.getElementById('editProdUnit');
-  const priceInput = document.getElementById('editProdBasePrice');
-  const precosMarcasContainer = document.getElementById('containerPrecosMarcasEdit');
-
-  const isEditing = typeof productId === 'string' && productId.trim().length > 0;
-
-  if (isEditing) {
-    const p = products.find(x => x.id === productId);
-    if (!p) return;
-
-    activeCatalogProductId = p.id;
-    currentCompareBrand = 'Padrão';
-
-    if (title) title.innerText = `Editar: ${p.name}`;
-    if (idInput) idInput.value = p.id;
-    if (nameInput) nameInput.value = p.name || '';
-    if (catInput) catInput.value = p.category || 'Geral';
-    if (unitInput) unitInput.value = p.unit || 'un';
-    if (priceInput) priceInput.value = p.basePrice > 0 ? formatBRL(p.basePrice) : '';
-    if (precosMarcasContainer) precosMarcasContainer.classList.remove('hidden');
-
-    if (!p.brands) p.brands = [];
-    if (!p.marketPrices) p.marketPrices = {};
-
-    window.atualizarSelectMarcasCompareModal(p);
-
-    const selMarket = document.getElementById('compareSelectMarket');
-    if (selMarket) {
-      selMarket.innerHTML = (supermarkets || []).filter(m => m.id !== 'm-padrao').map(m => `
-        <option value="${m.id}" ${m.id === activeMarketId ? 'selected' : ''}>${m.name}</option>
-      `).join('');
-    }
-
-    window.syncPriceFieldToSelectedMarket(p.id, selMarket ? selMarket.value : activeMarketId);
-    window.renderPriceCompareTable(p);
-    window.sincronizarAcoesMarcaCatalogo();
-  } else {
-    activeCatalogProductId = null;
-    if (title) title.innerText = 'Cadastrar Produto';
-    if (idInput) idInput.value = '';
-    if (nameInput) nameInput.value = '';
-    if (catInput) catInput.value = 'Geral';
-    if (unitInput) unitInput.value = 'un';
-    if (priceInput) priceInput.value = '';
-    if (precosMarcasContainer) precosMarcasContainer.classList.add('hidden');
-  }
-
-  modal?.classList.remove('hidden');
-  setTimeout(() => nameInput?.focus(), 50);
-};
-
-window.closeProductEditModal = function() {
-  document.getElementById('modalProductEdit')?.classList.add('hidden');
-  window.cancelarEdicaoMarcaCatalogo();
-};
-
-window.sincronizarAcoesMarcaCatalogo = function() {
-  const select = document.getElementById('compareSelectBrand');
-  const boxActions = document.getElementById('boxCatalogMarcaActions');
-  if (!select || !boxActions) return;
-  const val = (select.value || 'Padrão').trim();
-  const ehPadrao = val.toLowerCase() === 'padrão' || val.toLowerCase() === 'padrao';
-  boxActions.classList.toggle('hidden', ehPadrao || val === '');
-};
-
-window.atualizarSelectMarcasCompareModal = function(product) {
-  const select = document.getElementById('compareSelectBrand');
-  if (!select || !product) return;
-
-  const marcas = new Set(['Padrão']);
-  if (Array.isArray(product.brands)) {
-    product.brands.forEach(b => {
-      const n = typeof b === 'string' ? b : (b.name || b.id);
-      if (n && n !== '__NOVA__') marcas.add(n);
-    });
-  }
-
-  (cart || []).forEach(c => {
-    if (c.name.toLowerCase() === product.name.toLowerCase() && c.selectedBrandId) {
-      if (c.selectedBrandId !== '__NOVA__') marcas.add(c.selectedBrandId);
-    }
-  });
-
-  select.innerHTML = Array.from(marcas).map(m => `<option value="${m}" ${m.toLowerCase() === currentCompareBrand.toLowerCase() ? 'selected' : ''}>🏷️ ${m}</option>`).join('') + `<option value="__NOVA__">+ Nova marca...</option>`;
-
-  document.getElementById('boxCatalogMarcaInline')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaSelect')?.classList.remove('hidden');
-  window.sincronizarAcoesMarcaCatalogo();
-};
-
-window.onCompareBrandChanged = function(val) {
-  if (val === '__NOVA__') {
-    document.getElementById('boxCatalogMarcaSelect')?.classList.add('hidden');
-    document.getElementById('boxCatalogMarcaActions')?.classList.add('hidden');
-    const boxInput = document.getElementById('boxCatalogMarcaInline');
-    const campo = document.getElementById('inputCatalogNovaMarca');
-    if (boxInput) boxInput.classList.remove('hidden');
-    if (campo) { campo.value = ''; campo.focus(); }
-    return;
-  }
-  currentCompareBrand = val || 'Padrão';
-  const p = (products || []).find(x => x.id === activeCatalogProductId);
-  if (p) {
-    const selMarket = document.getElementById('compareSelectMarket');
-    window.syncPriceFieldToSelectedMarket(p.id, selMarket ? selMarket.value : activeMarketId);
-    window.renderPriceCompareTable(p);
-  }
-  window.sincronizarAcoesMarcaCatalogo();
-};
-
-window.iniciarEdicaoNomeMarcaCatalogo = function() {
-  const select = document.getElementById('compareSelectBrand');
-  const val = select?.value;
-  if (!val || val === 'Padrão' || val === '__NOVA__') return;
-  catalogMarcaModoEdicao = 'renomear';
-  catalogMarcaNomeOriginal = val;
-
-  document.getElementById('boxCatalogMarcaSelect')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaActions')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaInline')?.classList.remove('hidden');
-
-  const input = document.getElementById('inputCatalogNovaMarca');
-  if (input) { input.value = val; input.focus(); input.select(); }
-};
-
-window.confirmarEdicaoMarcaCatalogo = function() {
-  const input = document.getElementById('inputCatalogNovaMarca');
-  const novoNome = (input?.value || '').trim();
-  if (!novoNome || novoNome === '__NOVA__') {
-    window.cancelarEdicaoMarcaCatalogo();
+  if (visiveis.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-400 my-2">
+        <p class="text-xs font-bold text-slate-600">Nenhum produto encontrado no catálogo.</p>
+      </div>`;
     return;
   }
 
-  const p = (products || []).find(x => x.id === activeCatalogProductId);
-  if (catalogMarcaModoEdicao === 'renomear') {
-    if (p && Array.isArray(p.brands)) {
-      p.brands.forEach(b => {
-        const nomeObj = typeof b === 'string' ? b : (b.name || b.id);
-        if (nomeObj && nomeObj.toLowerCase() === catalogMarcaNomeOriginal.toLowerCase()) {
-          if (typeof b === 'object') { b.id = novoNome; b.name = novoNome; }
-        }
-      });
-    }
-    (cart || []).forEach(c => {
-      if (c.selectedBrandId && c.selectedBrandId.toLowerCase() === catalogMarcaNomeOriginal.toLowerCase()) c.selectedBrandId = novoNome;
-    });
-    saveAllLocalData();
-    saveCartData();
-  } else {
-    if (p) {
-      if (!p.brands) p.brands = [];
-      const existe = p.brands.some(b => (b.name || b.id || '').toLowerCase() === novoNome.toLowerCase());
-      if (!existe) { p.brands.push({ id: novoNome, name: novoNome, marketPrices: {} }); saveAllLocalData(); }
-    }
-  }
+  const nomeMercadoAtivo = getSelectedMarketName();
 
-  currentCompareBrand = novoNome;
-  window.cancelarEdicaoMarcaCatalogo();
-  if (p) {
-    window.atualizarSelectMarcasCompareModal(p);
-    const selMarket = document.getElementById('compareSelectMarket');
-    window.syncPriceFieldToSelectedMarket(p.id, selMarket ? selMarket.value : activeMarketId);
-    window.renderPriceCompareTable(p);
-  }
-};
+  container.innerHTML = visiveis.map(prod => {
+    const isLocal = String(prod.id).startsWith('p-custom-') || String(prod.id).startsWith('p-local-');
+    const precoBase = Number(prod.basePrice) || (prod.marketPrices ? Number(prod.marketPrices['m-padrao']) : 0) || 0;
 
-window.cancelarEdicaoMarcaCatalogo = function() {
-  document.getElementById('boxCatalogMarcaInline')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaSelect')?.classList.remove('hidden');
-  catalogMarcaModoEdicao = 'nova';
-  catalogMarcaNomeOriginal = '';
-  const select = document.getElementById('compareSelectBrand');
-  if (select && select.value === '__NOVA__') select.value = currentCompareBrand || 'Padrão';
-  window.sincronizarAcoesMarcaCatalogo();
-};
-
-window.confirmarExclusaoMarcaCatalogo = function() {
-  const select = document.getElementById('compareSelectBrand');
-  const marcaAlvo = (select?.value || '').trim();
-  if (!marcaAlvo || marcaAlvo === 'Padrão') return;
-  const label = document.getElementById('labelCatalogMarcaParaExcluir');
-  if (label) label.innerText = `"${marcaAlvo}"`;
-  document.getElementById('boxCatalogMarcaSelect')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaActions')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaConfirmDelete')?.classList.remove('hidden');
-};
-
-window.cancelarExclusaoMarcaCatalogo = function() {
-  document.getElementById('boxCatalogMarcaConfirmDelete')?.classList.add('hidden');
-  document.getElementById('boxCatalogMarcaSelect')?.classList.remove('hidden');
-  window.sincronizarAcoesMarcaCatalogo();
-};
-
-window.executarExclusaoMarcaCatalogo = function() {
-  const select = document.getElementById('compareSelectBrand');
-  const marcaAlvo = (select?.value || currentCompareBrand || '').trim();
-  const p = (products || []).find(x => x.id === activeCatalogProductId);
-  if (!marcaAlvo || marcaAlvo === 'Padrão' || !p) { window.cancelarExclusaoMarcaCatalogo(); return; }
-
-  if (Array.isArray(p.brands)) {
-    p.brands = p.brands.filter(b => {
-      const n = typeof b === 'string' ? b : (b.name || b.id);
-      return (n || '').toLowerCase() !== marcaAlvo.toLowerCase();
-    });
-  }
-  currentCompareBrand = 'Padrão';
-  saveAllLocalData();
-  
-  window.cancelarExclusaoMarcaCatalogo();
-  window.atualizarSelectMarcasCompareModal(p);
-  const selMarket = document.getElementById('compareSelectMarket');
-  window.syncPriceFieldToSelectedMarket(p.id, selMarket ? selMarket.value : activeMarketId);
-  window.renderPriceCompareTable(p);
-  showAppToast(`Marca "${marcaAlvo}" excluída com sucesso!`, 'success');
-};
-
-window.toggleComparativoRedesCatalogo = function() {
-  redesComparativoMinimizado = !redesComparativoMinimizado;
-  const container = document.getElementById('containerTabelaRedesCatalogo');
-  const label = document.getElementById('labelToggleRedesCatalogo');
-  const arrow = document.getElementById('arrowToggleRedesCatalogo');
-  if (container) container.classList.toggle('hidden', redesComparativoMinimizado);
-  if (label) label.innerText = redesComparativoMinimizado ? 'Maximizar' : 'Minimizar';
-  if (arrow) arrow.innerText = redesComparativoMinimizado ? '▼' : '▲';
-};
-
-window.syncPriceFieldToSelectedMarket = function(pId, mId) {
-  const p = (products || []).find(x => x.id === (pId || activeCatalogProductId));
-  const input = document.getElementById('compareInputPrice');
-  if (!input || !p) return;
-
-  let preco = 0;
-  if (currentCompareBrand === 'Padrão') {
-    if (p.marketPrices && p.marketPrices[mId] !== undefined) preco = p.marketPrices[mId];
-  } else if (p.brands) {
-    const bObj = p.brands.find(b => (b.name || b.id).toLowerCase() === currentCompareBrand.toLowerCase());
-    if (bObj && bObj.marketPrices && bObj.marketPrices[mId] !== undefined) preco = bObj.marketPrices[mId];
-  }
-  input.value = preco > 0 ? formatBRL(preco) : '';
-};
-
-window.salvarPrecoComparativoModal = function() {
-  const pId = activeCatalogProductId || document.getElementById('editProdId')?.value;
-  const mId = document.getElementById('compareSelectMarket')?.value;
-  const preco = parseNumberInput(document.getElementById('compareInputPrice')?.value);
-  const p = (products || []).find(x => x.id === pId);
-
-  if (!p || !mId) return;
-  if (typeof window.atualizarPrecoUnificado === 'function') {
-    window.atualizarPrecoUnificado(p.id, currentCompareBrand, mId, preco);
-  }
-  showAppToast(`Preço de "${p.name} (${currentCompareBrand})" atualizado!`, 'success');
-};
-
-window.renderPriceCompareTable = function(product) {
-  const p = product || (products || []).find(x => x.id === activeCatalogProductId);
-  const table = document.getElementById('comparePricesTable');
-  const badgeContador = document.getElementById('badgeContadorRedesCatalogo');
-  if (!p || !table) return;
-
-  const redesReais = (supermarkets || []).filter(m => m.id !== 'm-padrao');
-  if (badgeContador) badgeContador.innerText = `${redesReais.length} Redes`;
-
-  table.innerHTML = redesReais.map(m => {
-    let pr = null;
-    if (currentCompareBrand === 'Padrão') {
-      if (p.marketPrices?.[m.id] > 0) pr = p.marketPrices[m.id];
-    } else if (p.brands) {
-      const bObj = p.brands.find(b => (b.name || b.id).toLowerCase() === currentCompareBrand.toLowerCase());
-      if (bObj && bObj.marketPrices && bObj.marketPrices[m.id] > 0) pr = bObj.marketPrices[m.id];
+    let cotacaoMercado = null;
+    if (activeMarketId === 'm-padrao') {
+      cotacaoMercado = precoBase > 0 ? precoBase : null;
+    } else if (prod.marketPrices && Number(prod.marketPrices[activeMarketId]) > 0) {
+      cotacaoMercado = Number(prod.marketPrices[activeMarketId]);
     }
 
-    const isMenor = pr > 0 && pr === Math.min(...redesReais.map(rm => {
-        if (currentCompareBrand === 'Padrão') return p.marketPrices?.[rm.id] || Infinity;
-        const b = (p.brands || []).find(xb => (xb.name || xb.id).toLowerCase() === currentCompareBrand.toLowerCase());
-        return (b && b.marketPrices?.[rm.id]) || Infinity;
-    }));
+    const baseStr = precoBase > 0 ? `R$ ${formatBRL(precoBase)}` : 'A definir';
+    const cotacaoStr = cotacaoMercado ? `R$ ${formatBRL(cotacaoMercado)}` : 'Sem cotação';
+    const qtdMarcas = Array.isArray(prod.brands) ? prod.brands.length : 0;
 
     return `
-      <div class="p-2 rounded-xl border ${isMenor ? 'border-emerald-400 bg-emerald-50/70' : 'border-slate-200 bg-white'} flex items-center justify-between gap-2 shadow-2xs">
+      <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs hover:border-slate-300 transition-all flex items-center justify-between gap-3 my-2">
         <div class="flex-1 min-w-0">
-          <div class="flex items-center space-x-1.5 flex-wrap">
-            <span class="font-bold text-xs text-slate-800">${m.name}</span>
-            <span class="text-[10px] text-slate-500">(${m.branch || 'SJP'})</span>
-            ${isMenor ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 rounded-full">MENOR</span>` : ''}
+          <div class="flex items-center space-x-2 flex-wrap">
+            <strong class="font-extrabold text-sm text-slate-800 truncate">${prod.name}</strong>
+            ${isLocal 
+              ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Local</span>` 
+              : `<span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Nuvem</span>`}
+            <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md border border-slate-200/60">${prod.category || 'Geral'}</span>
+            <span class="text-[10px] text-slate-400 font-semibold">${prod.unit || 'un'}</span>
+            ${qtdMarcas > 0 ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-md border border-emerald-200">+${qtdMarcas} marca${qtdMarcas > 1 ? 's' : ''}</span>` : ''}
           </div>
-          <div class="text-[10px] text-slate-400 truncate mt-0.5">${m.promoDay || 'Sem dia fixo'}</div>
+          <div class="text-xs text-slate-500 mt-1 truncate">
+            Base: <span class="font-bold text-slate-700">${baseStr}</span> • 
+            No ${nomeMercadoAtivo}: <span class="font-bold ${cotacaoMercado ? 'text-emerald-700' : 'text-slate-400'}">${cotacaoStr}</span>
+          </div>
         </div>
-        <div class="text-right shrink-0 flex items-center space-x-2">
-          <span class="text-xs font-black text-slate-800">${pr ? 'R$ ' + formatBRL(pr) : 'Sem cotação'}</span>
-          <button type="button" onclick="loadMarketToDirectEdit('${p.id}', '${m.id}')" class="p-1.5 bg-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg transition-colors text-slate-700 text-xs" title="Editar">✎</button>
+
+        <div class="flex items-center space-x-1.5 shrink-0">
+          <button type="button" onclick="openProductEditModal('${prod.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors" title="Editar produto">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+          </button>
+          <button type="button" onclick="askDeleteSingleProduct('${prod.id}')" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors" title="Excluir produto">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          </button>
+          <button type="button" onclick="quickAddToCartFromCatalog('${prod.id}')" class="p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs" title="Adicionar ao carrinho">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+          </button>
         </div>
       </div>
     `;
   }).join('');
-};
+}
 
-window.loadMarketToDirectEdit = function(pId, mId) {
-  const sel = document.getElementById('compareSelectMarket');
-  if (sel) sel.value = mId;
-  window.syncPriceFieldToSelectedMarket(pId || activeCatalogProductId, mId);
-  const input = document.getElementById('compareInputPrice');
-  if (input) { input.focus(); input.select(); }
-};
+function obterListaProdutosFiltrada() {
+  const input = document.getElementById('input-busca-produtos');
+  const query = (input?.value || '').toLowerCase().trim();
 
-document.getElementById('formSaveProductCatalog')?.addEventListener('submit', (e) => {
-  e.preventDefault();
+  const lista = (Array.isArray(products) ? products : []).filter(p => {
+    if (!p || !p.name) return false;
+    const nome = p.name.toLowerCase();
+    const cat = (p.category || '').toLowerCase();
+    return !query || nome.includes(query) || cat.includes(query);
+  });
 
-  const boxInline = document.getElementById('boxCatalogMarcaInline');
-  const inputNova = document.getElementById('inputCatalogNovaMarca');
-  if (boxInline && !boxInline.classList.contains('hidden') && inputNova && inputNova.value.trim()) {
-    window.confirmarEdicaoMarcaCatalogo();
+  lista.sort((a, b) => {
+    const nomeA = (a.name || '').trim();
+    const nomeB = (b.name || '').trim();
+    if (catalogSortMode === 'za' || catalogSortMode === 'nome-desc') {
+      return nomeB.localeCompare(nomeA, 'pt-BR');
+    }
+    if (catalogSortMode === 'setor') {
+      const catComp = (a.category || '').localeCompare(b.category || '', 'pt-BR');
+      return catComp !== 0 ? catComp : nomeA.localeCompare(nomeB, 'pt-BR');
+    }
+    return nomeA.localeCompare(nomeB, 'pt-BR');
+  });
+
+  return lista;
+}
+
+function filtrarProdutosCatalogo() {
+  renderCatalogUI();
+}
+
+function ordenarProdutosCatalogo() {
+  const select = document.getElementById('select-ordenacao-produtos');
+  if (select) catalogSortMode = select.value;
+  renderCatalogUI();
+}
+
+// 3. MODAL DE EDIÇÃO DE PRODUTO, MARCAS E COTAÇÕES (NOME ÚNICO: openProductEditModal)
+function openProductEditModal(id = null) {
+  let prod = null;
+  if (id) {
+    prod = (products || []).find(p => String(p.id) === String(id));
   }
 
-  const id = document.getElementById('editProdId')?.value;
-  const name = document.getElementById('editProdName')?.value.trim();
-  const category = document.getElementById('editProdCategory')?.value || 'Geral';
-  const unit = document.getElementById('editProdUnit')?.value || 'un';
-  const bp = parseNumberInput(document.getElementById('editProdBasePrice')?.value);
+  activeCatalogProductId = prod ? prod.id : null;
+  currentCompareBrand = 'Padrão';
+  textoNovaMarcaEmEdicao = '';
 
-  if (!name) return;
+  document.querySelectorAll('#modalProductEdit').forEach(el => el.remove());
 
-  let p = null;
-  if (id) {
-    p = products.find(x => x.id === id);
-    if (p) {
-      p.name = name;
-      p.category = category;
-      p.unit = unit;
-      p.basePrice = bp;
+  const nome = prod ? prod.name : '';
+  const cat = prod ? (prod.category || 'Geral') : 'Geral';
+  const unit = prod ? (prod.unit || 'un') : 'un';
+
+  const modalContainer = document.createElement('div');
+  modalContainer.id = 'modalProductEdit';
+  modalContainer.className = 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs';
+  modalContainer.onclick = function(e) {
+    if (e.target === this) closeProductEditModal();
+  };
+
+  modalContainer.innerHTML = `
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-4 sm:p-5 border border-slate-200 flex flex-col relative" style="max-height: 90vh;">
+      
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+        <h3 class="font-extrabold text-slate-800 text-base">${prod ? 'Editar Produto' : 'Novo Produto'}</h3>
+        <button type="button" onclick="closeProductEditModal()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="Fechar">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <form id="formProductEditModal" onsubmit="salvarEdicaoProdutoForm(event)" class="flex flex-col flex-1 overflow-hidden space-y-3.5 pt-3">
+        
+        <div class="space-y-3 overflow-y-auto flex-1 pr-1">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Nome do Produto *</label>
+            <input type="text" id="prodModalInputName" value="${nome}" required class="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Setor / Categoria</label>
+              <input type="text" id="prodModalInputCat" value="${cat}" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Unidade</label>
+              <select id="prodModalInputUnit" class="w-full text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
+                <option value="un" ${unit === 'un' ? 'selected' : ''}>un (Unidade)</option>
+                <option value="kg" ${unit === 'kg' ? 'selected' : ''}>kg (Quilo)</option>
+                <option value="g" ${unit === 'g' ? 'selected' : ''}>g (Grama)</option>
+                <option value="l" ${unit === 'l' ? 'selected' : ''}>l (Litro)</option>
+                <option value="ml" ${unit === 'ml' ? 'selected' : ''}>ml (Mililitro)</option>
+                <option value="cx" ${unit === 'cx' ? 'selected' : ''}>cx (Caixa)</option>
+                <option value="pct" ${unit === 'pct' ? 'selected' : ''}>pct (Pacote)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- SEÇÃO: MARCA DO PRODUTO -->
+          <div class="pt-2 border-t border-slate-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-extrabold text-slate-800">Marca do Produto</label>
+              <span class="text-[10px] text-slate-400">Selecione para cotar</span>
+            </div>
+
+            <div id="prodModalBrandsContainer"></div>
+
+            <!-- Campo Inline quando "+ Nova Marca..." está selecionada -->
+            <div id="containerNovaMarcaInline" class="hidden flex items-center space-x-2 pt-1">
+              <input type="text" 
+                     id="inputNovaMarcaCatalogo" 
+                     placeholder="Nome da nova marca (salva direto ao gravar)..." 
+                     oninput="textoNovaMarcaEmEdicao = this.value"
+                     onkeydown="if(event.key === 'Enter'){ event.preventDefault(); adicionarMarcaInlineModal(); }"
+                     class="flex-1 text-xs font-bold text-slate-800 bg-emerald-50/50 border border-emerald-300 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
+              <button type="button" 
+                      onclick="adicionarMarcaInlineModal()" 
+                      class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all shrink-0">
+                + Adicionar Marca
+              </button>
+            </div>
+          </div>
+
+          <!-- SEÇÃO: COTAÇÕES NOS SUPERMERCADOS DA MARCA ATIVA -->
+          <div class="pt-2.5 border-t border-slate-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-xs font-extrabold text-slate-800 block">Cotações por Rede</span>
+                <span class="text-[10px] text-slate-500">Marca ativa: <strong id="labelMarcaAtivaCotacoes" class="text-emerald-700">${currentCompareBrand}</strong></span>
+              </div>
+              <button type="button" id="btnToggleMinimizarRedes" onclick="alternarMinimizarRedesModal()" class="px-2.5 py-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center space-x-1 shadow-2xs">
+                <span id="labelToggleMinimizarRedes">${redesComparativoMinimizado ? '📋 Ver Todas as Redes' : '👁️ Apenas Ativa + Base'}</span>
+              </button>
+            </div>
+
+            <div id="prodModalPriceList" class="space-y-1.5 pt-1"></div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-3 flex items-center justify-end space-x-2 shrink-0 bg-white">
+          <button type="button" onclick="closeProductEditModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all">
+            Salvar Produto
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modalContainer);
+
+  renderizarSelectMarcasModal(prod);
+  renderizarComparativoPrecosModal(prod);
+}
+
+function closeProductEditModal() {
+  document.querySelectorAll('#modalProductEdit').forEach(el => el.remove());
+  activeCatalogProductId = null;
+  currentCompareBrand = 'Padrão';
+  textoNovaMarcaEmEdicao = '';
+}
+
+function alternarMinimizarRedesModal() {
+  redesComparativoMinimizado = !redesComparativoMinimizado;
+  const label = document.getElementById('labelToggleMinimizarRedes');
+  if (label) {
+    label.innerText = redesComparativoMinimizado ? '📋 Ver Todas as Redes' : '👁️ Apenas Ativa + Base';
+  }
+  const prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
+  renderizarComparativoPrecosModal(prod);
+}
+
+function renderizarSelectMarcasModal(prod) {
+  const containerMarcas = document.getElementById('prodModalBrandsContainer');
+  if (!containerMarcas) return;
+
+  const marcas = new Set(['Padrão']);
+  if (prod && Array.isArray(prod.brands)) {
+    prod.brands.forEach(b => marcas.add(typeof b === 'string' ? b : (b.name || b.id)));
+  }
+
+  const marcasArr = Array.from(marcas);
+  const isNovaMarcaSelecionada = currentCompareBrand === '__NOVA_MARCA__';
+  const isCustomBrand = !isNovaMarcaSelecionada && currentCompareBrand.toLowerCase() !== 'padrão';
+
+  containerMarcas.innerHTML = `
+    <div class="flex items-center space-x-2">
+      <select id="prodModalSelectBrand" 
+              onchange="aoMudarSelectMarcaModal(this.value)" 
+              class="flex-1 text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
+        ${marcasArr.map(m => `
+          <option value="${m}" ${(!isNovaMarcaSelecionada && m.toLowerCase() === currentCompareBrand.toLowerCase()) ? 'selected' : ''}>
+            🏷️ ${m}
+          </option>
+        `).join('')}
+        <option value="__NOVA_MARCA__" ${isNovaMarcaSelecionada ? 'selected' : ''} class="font-extrabold text-emerald-700">
+          + Nova Marca...
+        </option>
+      </select>
+
+      ${isCustomBrand ? `
+        <button type="button" 
+                onclick="excluirMarcaModalEdicao('${currentCompareBrand}')" 
+                class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-all border border-rose-200 shrink-0" 
+                title="Excluir marca selecionada">
+          Excluir
+        </button>
+      ` : ''}
+    </div>
+  `;
+
+  const boxInline = document.getElementById('containerNovaMarcaInline');
+  if (boxInline) {
+    if (isNovaMarcaSelecionada) {
+      boxInline.classList.remove('hidden');
+      const input = document.getElementById('inputNovaMarcaCatalogo');
+      if (input) {
+        input.value = textoNovaMarcaEmEdicao;
+        setTimeout(() => input.focus(), 50);
+      }
+    } else {
+      boxInline.classList.add('hidden');
     }
-  } else {
-    p = {
+  }
+}
+
+function aoMudarSelectMarcaModal(valor) {
+  const prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
+
+  if (valor === '__NOVA_MARCA__') {
+    currentCompareBrand = '__NOVA_MARCA__';
+    const label = document.getElementById('labelMarcaAtivaCotacoes');
+    if (label) label.innerText = textoNovaMarcaEmEdicao || 'Nova Marca';
+    renderizarSelectMarcasModal(prod);
+    renderizarComparativoPrecosModal(prod);
+    return;
+  }
+
+  currentCompareBrand = (valor || 'Padrão').trim();
+  const label = document.getElementById('labelMarcaAtivaCotacoes');
+  if (label) label.innerText = currentCompareBrand;
+
+  renderizarSelectMarcasModal(prod);
+  renderizarComparativoPrecosModal(prod);
+}
+
+function adicionarMarcaInlineModal() {
+  const input = document.getElementById('inputNovaMarcaCatalogo');
+  const nomeMarca = (textoNovaMarcaEmEdicao || input?.value || '').trim();
+  if (!nomeMarca) return;
+
+  const prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
+
+  if (prod) {
+    if (!prod.brands) prod.brands = [];
+    if (!prod.brands.some(b => (b.name || b.id || '').toLowerCase() === nomeMarca.toLowerCase())) {
+      prod.brands.push({ id: nomeMarca, name: nomeMarca, marketPrices: {} });
+      saveAllLocalData();
+    }
+  }
+
+  currentCompareBrand = nomeMarca;
+  textoNovaMarcaEmEdicao = '';
+  if (input) input.value = '';
+
+  const label = document.getElementById('labelMarcaAtivaCotacoes');
+  if (label) label.innerText = nomeMarca;
+
+  renderizarSelectMarcasModal(prod);
+  renderizarComparativoPrecosModal(prod);
+  showAppToast(`Marca "${nomeMarca}" cadastrada e selecionada!`, 'success');
+}
+
+function excluirMarcaModalEdicao(marca) {
+  if (!marca || marca.toLowerCase() === 'padrão') return;
+  if (!confirm(`Deseja remover a marca "${marca}" deste produto?`)) return;
+
+  const prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
+  if (prod && Array.isArray(prod.brands)) {
+    prod.brands = prod.brands.filter(b => (b.name || b.id || '').toLowerCase() !== marca.toLowerCase());
+    saveAllLocalData();
+  }
+
+  currentCompareBrand = 'Padrão';
+  const label = document.getElementById('labelMarcaAtivaCotacoes');
+  if (label) label.innerText = 'Padrão';
+
+  renderizarSelectMarcasModal(prod);
+  renderizarComparativoPrecosModal(prod);
+}
+
+function renderizarComparativoPrecosModal(prod) {
+  const container = document.getElementById('prodModalPriceList');
+  if (!container) return;
+
+  const listaCompleta = [
+    { id: 'm-padrao', name: 'Mercado', branch: 'Referência Geral (Preço Base)', isRef: true },
+    ...(supermarkets || []).filter(m => m.id !== 'm-padrao')
+  ];
+
+  let listaExibida = listaCompleta;
+  if (redesComparativoMinimizado) {
+    listaExibida = listaCompleta.filter(m => m.id === 'm-padrao' || m.id === activeMarketId);
+  }
+
+  const marcaParaConsultar = (currentCompareBrand === '__NOVA_MARCA__') ? '' : currentCompareBrand;
+
+  container.innerHTML = listaExibida.map(m => {
+    let preco = 0;
+    if (prod && marcaParaConsultar) {
+      preco = obterPrecoProdutoMarcaMercado(prod, marcaParaConsultar, m.id);
+    }
+
+    const isAtivaNoApp = m.id === activeMarketId && m.id !== 'm-padrao';
+    const nomeExibicaoMarca = marcaParaConsultar || 'Nova Marca';
+
+    return `
+      <div class="p-2.5 rounded-xl border ${m.isRef ? 'border-amber-300 bg-amber-50/60' : (isAtivaNoApp ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200 bg-white')} flex items-center justify-between gap-2 shadow-2xs my-1.5 transition-all">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center space-x-1.5 flex-wrap">
+            <strong class="text-xs font-black text-slate-800">${m.name}</strong>
+            <span class="text-[10px] text-slate-500">(${m.branch || 'SJP'})</span>
+            ${m.isRef ? `<span class="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-md">BASE GERAL</span>` : ''}
+            ${isAtivaNoApp ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.2 rounded-md">MERCADO ATIVO</span>` : ''}
+          </div>
+          <span class="text-[10px] text-slate-400">Marca: <strong>${nomeExibicaoMarca}</strong></span>
+        </div>
+        <div class="flex items-center space-x-1.5 shrink-0">
+          <span class="text-xs font-semibold text-slate-500">R$</span>
+          <input type="text" 
+                 value="${preco > 0 ? formatBRL(preco) : ''}" 
+                 placeholder="0,00"
+                 onchange="salvarPrecoDiretoModal('${m.id}', this.value)"
+                 class="w-20 px-2 py-1 text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-lg text-right focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (redesComparativoMinimizado && listaCompleta.length > listaExibida.length) {
+    const ocultas = listaCompleta.length - listaExibida.length;
+    container.innerHTML += `
+      <div class="text-center pt-1">
+        <button type="button" onclick="alternarMinimizarRedesModal()" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
+          + Exibir mais ${ocultas} rede${ocultas === 1 ? '' : 's'} de supermercados...
+        </button>
+      </div>
+    `;
+  }
+}
+
+function salvarPrecoDiretoModal(mercadoId, valorStr) {
+  const preco = parseNumberInput(valorStr);
+  let prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
+
+  if (!prod) {
+    const nomeProv = (document.getElementById('prodModalInputName')?.value || '').trim();
+    if (!nomeProv) {
+      showAppToast('Preencha o nome do produto antes de cotar.', 'warning');
+      return;
+    }
+    prod = {
       id: 'p-custom-' + Date.now(),
-      name: name,
-      category: category,
-      unit: unit,
-      basePrice: bp,
-      marketPrices: {},
+      name: nomeProv,
+      category: (document.getElementById('prodModalInputCat')?.value || 'Geral').trim(),
+      unit: document.getElementById('prodModalInputUnit')?.value || 'un',
+      basePrice: 0,
+      marketPrices: { 'm-padrao': 0 },
       brands: []
     };
-    products.unshift(p);
+    products.unshift(prod);
+    activeCatalogProductId = prod.id;
   }
 
-  const inputPrecoModal = document.getElementById('compareInputPrice');
-  const selMercadoModal = document.getElementById('compareSelectMarket');
-  const precoDigitado = parseNumberInput(inputPrecoModal?.value);
+  let marcaAlvo = currentCompareBrand;
+  if (marcaAlvo === '__NOVA_MARCA__') {
+    const input = document.getElementById('inputNovaMarcaCatalogo');
+    const nomeDigitado = (textoNovaMarcaEmEdicao || input?.value || '').trim();
+    marcaAlvo = nomeDigitado || 'Padrão';
+    currentCompareBrand = marcaAlvo;
+  }
 
-  if (p && selMercadoModal && selMercadoModal.value && precoDigitado > 0) {
-    const marcaAlvo = (currentCompareBrand && currentCompareBrand !== '__NOVA__') ? currentCompareBrand : 'Padrão';
-    if (typeof window.atualizarPrecoUnificado === 'function') {
-      window.atualizarPrecoUnificado(p.id, marcaAlvo, selMercadoModal.value, precoDigitado);
+  atualizarPrecoUnificado(prod.id, marcaAlvo, mercadoId, preco);
+  showAppToast(`Preço de "${marcaAlvo}" salvo!`, 'success');
+}
+
+function salvarEdicaoProdutoForm(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const modal = document.getElementById('modalProductEdit');
+  const inputNome = modal ? modal.querySelector('#prodModalInputName') : document.getElementById('prodModalInputName');
+  const inputCat = modal ? modal.querySelector('#prodModalInputCat') : document.getElementById('prodModalInputCat');
+  const selectUnit = modal ? modal.querySelector('#prodModalInputUnit') : document.getElementById('prodModalInputUnit');
+  const selectMarca = modal ? modal.querySelector('#prodModalSelectBrand') : document.getElementById('prodModalSelectBrand');
+  const inputNovaMarca = modal ? modal.querySelector('#inputNovaMarcaCatalogo') : document.getElementById('inputNovaMarcaCatalogo');
+
+  const nome = (inputNome?.value || '').trim();
+  if (!nome) {
+    showAppToast('Informe o nome do produto.', 'warning');
+    return;
+  }
+
+  const categoria = (inputCat?.value || 'Geral').trim();
+  const unidade = selectUnit?.value || 'un';
+
+  const valorSelect = selectMarca ? selectMarca.value : 'Padrão';
+  const textoDigitado = (textoNovaMarcaEmEdicao || inputNovaMarca?.value || '').trim();
+
+  let marcaFinal = 'Padrão';
+  if (valorSelect === '__NOVA_MARCA__' || currentCompareBrand === '__NOVA_MARCA__') {
+    marcaFinal = textoDigitado || 'Padrão';
+  } else if (valorSelect) {
+    marcaFinal = valorSelect.trim();
+  }
+
+  let prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
+
+  if (!prod) {
+    prod = {
+      id: 'p-custom-' + Date.now(),
+      name: nome,
+      category: categoria,
+      unit: unidade,
+      basePrice: 0,
+      marketPrices: { 'm-padrao': 0 },
+      brands: []
+    };
+    products.unshift(prod);
+  } else {
+    prod.name = nome;
+    prod.category = categoria;
+    prod.unit = unidade;
+  }
+
+  if (marcaFinal.toLowerCase() !== 'padrão') {
+    if (!prod.brands) prod.brands = [];
+    if (!prod.brands.some(b => (b.name || b.id || '').toLowerCase() === marcaFinal.toLowerCase())) {
+      prod.brands.push({ id: marcaFinal, name: marcaFinal, marketPrices: {} });
     }
   }
 
+  currentCompareBrand = marcaFinal;
+  textoNovaMarcaEmEdicao = '';
+
   saveAllLocalData();
-  renderizarCatalogoProdutos();
+  renderCatalogUI();
   closeProductEditModal();
-  showAppToast('Produto salvo com sucesso!', 'success');
+  showAppToast(`Produto salvo com a marca "${marcaFinal}"!`, 'success');
+}
+
+function askDeleteSingleProduct(id) {
+  const prod = (products || []).find(p => String(p.id) === String(id));
+  if (!prod) return;
+
+  if (confirm(`Excluir permanentemente o produto "${prod.name}" do catálogo?`)) {
+    products = (products || []).filter(p => String(p.id) !== String(id));
+    cart = (cart || []).filter(c => String(c.productId) !== String(id));
+    saveAllLocalData();
+    saveCartData();
+    renderCatalogUI();
+    showAppToast('Produto excluído.', 'info');
+  }
+}
+
+function quickAddToCartFromCatalog(id) {
+  const prod = (products || []).find(p => String(p.id) === String(id));
+  if (!prod) return;
+
+  const preco = obterPrecoProdutoMarcaMercado(prod, 'Padrão', activeMarketId);
+
+  cart.unshift({
+    id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    productId: prod.id,
+    selectedBrandId: 'Padrão',
+    name: prod.name,
+    category: prod.category || 'Geral',
+    unit: prod.unit || 'un',
+    unitPrice: preco,
+    quantity: 1,
+    checked: false,
+    promo: { type: 'none' }
+  });
+
+  saveCartData();
+  renderCartUI();
+  playAppBeep('add');
+  showAppToast(`"${prod.name}" adicionado ao carrinho!`, 'success');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeProductEditModal();
 });

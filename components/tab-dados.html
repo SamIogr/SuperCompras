@@ -1,59 +1,73 @@
-<div class="tab-dados-wrapper p-2 sm:p-4">
-    <!-- Seletor de Sub-Abas -->
-    <div class="subtabs-nav d-flex justify-content-center mb-4 bg-light rounded p-1 shadow-sm" style="display: flex; background: #f1f5f9; padding: 4px; border-radius: 8px;">
-        <button id="btn-subtab-produtos" class="btn btn-sm flex-fill active-subtab font-weight-bold" style="flex: 1; background: white; border: none; border-radius: 6px; padding: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); color: #1e293b;" onclick="AlternarSubTabDados('produtos')">
-            <span class="icon">📦</span> Produtos (<span id="badge-total-produtos">0</span>)
-        </button>
-        <button id="btn-subtab-mercados" class="btn btn-sm flex-fill text-muted font-weight-bold" style="flex: 1; background: transparent; border: none; border-radius: 6px; padding: 8px; color: #64748b;" onclick="AlternarSubTabDados('mercados')">
-            <span class="icon">🏢</span> Supermercados (<span id="badge-total-mercados">0</span>)
-        </button>
+<div class="tab-dados-wrapper p-2 sm:p-4 space-y-4 pb-24">
+
+  <!-- 1. SELETOR DE SUB-ABAS (PRODUTOS X SUPERMERCADOS) -->
+  <div class="bg-slate-200/80 p-1 rounded-xl flex items-center gap-1 border border-slate-300 shadow-2xs">
+    <button type="button" 
+            id="btn-subtab-produtos" 
+            onclick="setSubTabDados('produtos')" 
+            class="flex-1 py-2 px-3 rounded-lg bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-1.5 font-bold text-xs cursor-pointer">
+      <span>📦 Produtos (<span id="badge-total-produtos">0</span>)</span>
+    </button>
+    
+    <button type="button" 
+            id="btn-subtab-mercados" 
+            onclick="setSubTabDados('mercados')" 
+            class="flex-1 py-2 px-3 rounded-lg text-slate-600 hover:text-slate-800 text-center transition-all flex items-center justify-center space-x-1.5 font-semibold text-xs cursor-pointer">
+      <span>🏢 Supermercados (<span id="badge-total-mercados">0</span>)</span>
+    </button>
+  </div>
+
+  <!-- 2. SUB-ABA: CATÁLOGO DE PRODUTOS -->
+  <section id="secao-catalogo-produtos" class="space-y-3">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="font-extrabold text-sm text-slate-800">Catálogo Mestre de Produtos</h3>
+        <p class="text-[11px] text-slate-500">Cotações por rede e marcas vinculadas</p>
+      </div>
+      <button type="button" 
+              onclick="openProductEditModal(null)" 
+              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1 shadow-xs cursor-pointer">
+        <span>+ Novo Produto</span>
+      </button>
     </div>
 
-    <!-- SEÇÃO 1: CATÁLOGO DE PRODUTOS -->
-    <section id="secao-catalogo-produtos" class="subtab-content">
-        <div class="d-flex justify-content-between align-items-center mb-3" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <div>
-                <h3 class="h5 mb-0 font-weight-bold text-dark" style="margin: 0; font-weight: 800; font-size: 1.1rem; color: #1e293b;">Catálogo Mestre de Produtos</h3>
-                <small class="text-muted" style="font-size: 0.7rem; color: #64748b;">Cotações por rede e marcas vinculadas</small>
-            </div>
-            <button class="btn btn-success btn-sm font-weight-bold px-3" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;" onclick="openProductEditModal()">
-                + Novo Produto
-            </button>
-        </div>
+    <!-- Busca e Ordenação -->
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-2 flex-wrap">
+      <input type="text" 
+             id="input-busca-produtos" 
+             placeholder="Buscar por nome ou setor (ex: Acém, Feijão, Arroz)..." 
+             oninput="filtrarProdutosCatalogo()" 
+             class="flex-1 min-w-[180px] text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
 
-        <!-- Barra de Busca, Ordenação e Filtros -->
-        <div class="card p-3 mb-3 border-0 shadow-sm" style="background: white; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1rem;">
-            <div class="row g-2 align-items-center" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <div class="col-md-7" style="flex: 1; min-width: 200px;">
-                    <input type="text" id="input-busca-produtos" class="form-control form-control-sm" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; outline: none;" placeholder="Buscar por nome ou setor (ex: Acém, Feijão, Mercearia)..." oninput="filtrarProdutosCatalogo()">
-                </div>
-                <div class="col-md-5 d-flex align-items-center justify-content-end gap-2" style="display: flex; align-items: center; gap: 8px;">
-                    <label class="small text-muted mb-0 text-nowrap" style="font-size: 0.75rem;">Ordenar:</label>
-                    <select id="select-ordenacao-produtos" class="form-select form-select-sm" style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; background: white; outline: none;" onchange="ordenarProdutosCatalogo()">
-                        <option value="nome-asc">🔤 Nome (A → Z)</option>
-                        <option value="nome-desc">🔤 Nome (Z → A)</option>
-                    </select>
-                </div>
-            </div>
-        </div>
+      <select id="select-ordenacao-produtos" 
+              onchange="ordenarProdutosCatalogo()" 
+              class="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 shrink-0">
+        <option value="az">🔤 Nome (A -> Z)</option>
+        <option value="za">🔤 Nome (Z -> A)</option>
+        <option value="setor">📂 Por Setor</option>
+      </select>
+    </div>
 
-        <!-- CONTÊINER DOS PRODUTOS -->
-        <div id="lista-produtos" class="d-flex flex-column gap-2" style="display: flex; flex-direction: column; gap: 8px;"></div>
-    </section>
+    <!-- Contêiner de Produtos -->
+    <div id="lista-produtos" class="space-y-2 pt-1"></div>
+  </section>
 
-    <!-- SEÇÃO 2: SUPERMERCADOS -->
-    <section id="secao-catalogo-mercados" class="subtab-content" style="display: none;">
-        <div class="d-flex justify-content-between align-items-center mb-3" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <div>
-                <h3 class="h5 mb-0 font-weight-bold text-dark" style="margin: 0; font-weight: 800; font-size: 1.1rem; color: #1e293b;">Supermercados Cadastrados</h3>
-                <small class="text-muted" style="font-size: 0.7rem; color: #64748b;">Redes mapeadas com a sua folha de cálculo</small>
-            </div>
-            <button class="btn btn-dark btn-sm font-weight-bold px-3" style="background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;" onclick="openMarketEditModal()">
-                + Novo Supermercado
-            </button>
-        </div>
+  <!-- 3. SUB-ABA: SUPERMERCADOS -->
+  <section id="secao-catalogo-mercados" class="space-y-3 hidden">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="font-extrabold text-sm text-slate-800">Supermercados Cadastrados</h3>
+        <p class="text-[11px] text-slate-500">Redes disponíveis para cotação e compras</p>
+      </div>
+      <button type="button" 
+              onclick="openMarketEditModal(null)" 
+              class="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1 shadow-xs cursor-pointer">
+        <span>+ Novo Supermercado</span>
+      </button>
+    </div>
 
-        <!-- CONTÊINER DOS MERCADOS -->
-        <div id="lista-supermercados" class="d-flex flex-column gap-2" style="display: flex; flex-direction: column; gap: 8px;"></div>
-    </section>
+    <!-- Contêiner de Supermercados -->
+    <div id="lista-supermercados" class="space-y-2 pt-1"></div>
+  </section>
+
 </div>
