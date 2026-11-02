@@ -1,0 +1,74 @@
+<!-- Painel Superior: Resumo de Gastos e Economia -->
+<div class="mb-5 space-y-3">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-xl font-extrabold text-slate-800">Histórico de Compras</h2>
+      <p class="text-xs text-slate-500">Acompanhe seus fechamentos e evolução de gastos</p>
+    </div>
+    <button type="button" onclick="limparTodoHistorico()" class="text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition-colors" title="Apagar todos os registros locais">
+      Limpar Histórico
+    </button>
+  </div>
+
+  <!-- Cards de Indicadores -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total no Mês</span>
+      <span id="histMetricaGastoMes" class="text-base font-black text-slate-800 mt-0.5 block">R$ 0,00</span>
+    </div>
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Média por Compra</span>
+      <span id="histMetricaMediaCompra" class="text-base font-black text-emerald-600 mt-0.5 block">R$ 0,00</span>
+    </div>
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
+      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total de Fechamentos</span>
+      <span id="histMetricaQtdCompras" class="text-base font-black text-sky-600 mt-0.5 block">0 compras</span>
+    </div>
+  </div>
+</div>
+
+<!-- Filtro Rápido por Supermercado ou Período -->
+<div class="mb-3 flex items-center gap-2">
+  <div class="relative flex-1">
+    <input type="text" id="inputBuscaHistorico" oninput="filtrarHistoricoUI(this.value)" placeholder="Buscar por mercado ou data..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+  </div>
+</div>
+
+<!-- Lista de Compras Arquivadas -->
+<div id="historicoListaContainer" class="space-y-3">
+  <!-- Itens gerados dinamicamente via renderHistoricoUI() -->
+</div>
+
+<!-- Estado Vazio -->
+<div id="historicoVazioContainer" class="hidden text-center py-12 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200 p-8 my-3">
+  <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-2 text-xl">🛒</div>
+  <p class="text-sm font-semibold text-slate-600">Nenhum fechamento registrado.</p>
+  <p class="text-xs text-slate-400 mt-1">Ao finalizar suas compras no carrinho, os registros detalhados aparecerão aqui.</p>
+</div>
+
+<!-- Modal de Detalhes da Compra Arquivada -->
+<div id="modalDetalhesHistorico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-100 flex flex-col max-h-[85vh] overflow-hidden">
+    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <h3 id="modalHistTitulo" class="font-black text-sm text-slate-800">Detalhes da Compra</h3>
+        <p id="modalHistSubtitulo" class="text-[11px] text-slate-400 mt-0.5"></p>
+      </div>
+      <button type="button" onclick="fecharModalDetalhesHistorico()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
+    </div>
+    
+    <div id="modalHistItensLista" class="p-4 overflow-y-auto space-y-2 flex-1">
+      <!-- Lista de produtos adquiridos naquela compra -->
+    </div>
+
+    <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+      <div>
+        <span class="text-[10px] text-slate-400 font-bold block uppercase">Valor Total</span>
+        <span id="modalHistValorTotal" class="text-base font-black text-emerald-600">R$ 0,00</span>
+      </div>
+      <button type="button" id="btnRepetirCompraCarrinho" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-xs">
+        Repetir no Carrinho
+      </button>
+    </div>
+  </div>
+</div>

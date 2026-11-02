@@ -26,6 +26,9 @@ async function sincronizarComPlanilha() {
     localStorage.setItem('sc_security_token', token);
   }
 
+  // Remove bloqueios acidentais de testes anteriores
+  localStorage.removeItem('sc_ignored_markets');
+
   const btn = document.getElementById('btnSyncPlanilha');
   if (btn) btn.classList.add('animate-spin');
   showAppToast('Sincronizando com a planilha...', 'info');
@@ -35,24 +38,24 @@ async function sincronizarComPlanilha() {
     const json = await res.json();
 
     if (json.status === 'success') {
-      if (Array.isArray(json.supermercados) && json.supermercados.length > 0) {
+      // Suporte flexível para 'supermercados' ou 'mercados'
+      const redesRemotas = json.supermercados || json.mercados || [];
+
+      if (Array.isArray(redesRemotas) && redesRemotas.length > 0) {
         const mercadosCriadosNoApp = supermarkets.filter(m => m.id && m.id.startsWith('m-custom-'));
         supermarkets = [ MERCADO_PADRAO_GENERICO ];
-        const ignoredMarkets = getIgnoredMarkets();
 
-        json.supermercados.forEach(m => {
-          if (!ignoredMarkets.includes(m.id)) {
-            supermarkets.push({
-              id: m.id,
-              name: m.name,
-              sigla: m.sigla || '',
-              branch: m.branch || 'São José dos Pinhais',
-              address: m.address || '',
-              colIndex: m.colIndex || null,
-              urlEncarte: m.urlEncarte || '',
-              promoDay: m.promoDay || ''
-            });
-          }
+        redesRemotas.forEach(m => {
+          supermarkets.push({
+            id: m.id,
+            name: m.name,
+            sigla: m.sigla || '',
+            branch: m.branch || 'São José dos Pinhais',
+            address: m.address || '',
+            colIndex: m.colIndex || null,
+            urlEncarte: m.urlEncarte || '',
+            promoDay: m.promoDay || ''
+          });
         });
 
         mercadosCriadosNoApp.forEach(mLocal => {
@@ -80,7 +83,9 @@ async function sincronizarComPlanilha() {
       if (typeof renderCartUI === 'function') renderCartUI();
       if (typeof renderCatalogUI === 'function') renderCatalogUI();
       if (typeof renderMarketsUI === 'function') renderMarketsUI();
-      showAppToast(`Sincronizado: ${products.length} itens e ${supermarkets.length - 1} redes.`, 'success');
+      
+      const totalRedesReais = supermarkets.filter(m => m.id !== 'm-padrao').length;
+      showAppToast(`Sincronizado: ${products.length} itens e ${totalRedesReais} redes!`, 'success');
     } else {
       if (json.message && json.message.includes('não autorizado')) localStorage.removeItem('sc_security_token');
       throw new Error(json.message || 'Falha na resposta da API');

@@ -9,7 +9,6 @@
     <form id="formSaveProductCatalog" class="space-y-3">
       <input type="hidden" id="editProdId" value="" />
       
-      <!-- Dados Principais -->
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1" for="editProdName">Nome do Produto <span class="text-rose-500">*</span></label>
         <input type="text" id="editProdName" required placeholder="Ex: Acém, Sassami, Feijão..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
@@ -42,59 +41,39 @@
 
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1" for="editProdBasePrice">Preço Base de Referência (R$) (Opcional)</label>
-        <input type="text" id="editProdBasePrice" inputmode="decimal" placeholder="0,00 (deixe em branco se for cotar depois)" class="w-full text-xs font-bold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
+        <input type="text" id="editProdBasePrice" inputmode="decimal" placeholder="0,00" class="w-full text-xs font-bold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
       </div>
 
-      <!-- SEÇÃO UNIFICADA: GESTÃO DE MARCAS E COTAÇÕES POR REDE -->
       <div id="containerPrecosMarcasEdit" class="hidden border-t border-slate-200/80 pt-3 space-y-3">
         
-        <!-- 1. Gestão de Marcas e Cotação Pontual -->
         <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 space-y-2.5">
           <div class="flex items-center justify-between">
             <label class="text-xs font-black text-slate-700 flex items-center space-x-1">
               <span>🏷️ Marca Ativa:</span>
             </label>
             <div id="boxCatalogMarcaActions" class="hidden flex items-center space-x-1">
-              <button type="button" onclick="iniciarEdicaoNomeMarcaCatalogo()"
-                class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                title="Renomear marca">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                </svg>
+              <button type="button" onclick="iniciarEdicaoNomeMarcaCatalogo()" class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors" title="Renomear marca">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
               </button>
-              <button type="button" onclick="confirmarExclusaoMarcaCatalogo()"
-                class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                title="Excluir marca">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                  </path>
-                </svg>
+              <button type="button" onclick="confirmarExclusaoMarcaCatalogo()" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Excluir marca">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
               </button>
             </div>
           </div>
 
           <div id="boxCatalogMarcaSelect">
-            <select id="compareSelectBrand" onchange="onCompareBrandChanged(this.value)"
-              class="w-full text-xs font-bold text-emerald-800 bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+            <select id="compareSelectBrand" onchange="onCompareBrandChanged(this.value)" class="w-full text-xs font-bold text-emerald-800 bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
               <option value="Padrão">🏷️ Padrão</option>
             </select>
           </div>
 
           <div id="boxCatalogMarcaInline" class="hidden flex items-center space-x-1.5">
-            <input type="text" id="inputCatalogNovaMarca" placeholder="Nome da marca..."
-              class="flex-1 text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <button type="button" onclick="confirmarEdicaoMarcaCatalogo()"
-              class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold active:scale-95 shadow-xs"
-              title="Salvar">✓</button>
-            <button type="button" onclick="cancelarEdicaoMarcaCatalogo()"
-              class="px-2.5 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 shadow-xs"
-              title="Cancelar">✕</button>
+            <input type="text" id="inputCatalogNovaMarca" placeholder="Nome da marca..." class="flex-1 text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" onclick="confirmarEdicaoMarcaCatalogo()" class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold active:scale-95 shadow-xs">✓</button>
+            <button type="button" onclick="cancelarEdicaoMarcaCatalogo()" class="px-2.5 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 shadow-xs">✕</button>
           </div>
 
-          <div id="boxCatalogMarcaConfirmDelete"
-            class="hidden p-2.5 bg-rose-50/90 border border-rose-200 rounded-xl text-xs transition-all">
+          <div id="boxCatalogMarcaConfirmDelete" class="hidden p-2.5 bg-rose-50/90 border border-rose-200 rounded-xl text-xs transition-all">
             <div class="flex items-start space-x-2 mb-2">
               <span class="text-rose-500 font-bold text-sm leading-none mt-0.5">⚠️</span>
               <div class="text-rose-900 leading-snug">
@@ -103,18 +82,11 @@
               </div>
             </div>
             <div class="flex justify-end items-center space-x-2">
-              <button type="button" onclick="cancelarExclusaoMarcaCatalogo()"
-                class="px-2.5 py-1 text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">
-                Cancelar
-              </button>
-              <button type="button" onclick="executarExclusaoMarcaCatalogo()"
-                class="px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs transition-colors">
-                Excluir
-              </button>
+              <button type="button" onclick="cancelarExclusaoMarcaCatalogo()" class="px-2.5 py-1 text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">Cancelar</button>
+              <button type="button" onclick="executarExclusaoMarcaCatalogo()" class="px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs transition-colors">Excluir</button>
             </div>
           </div>
 
-          <!-- Lançamento Direto no Supermercado -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-emerald-200/60">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Supermercado</label>
@@ -124,15 +96,12 @@
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Preço Unit. (R$)</label>
               <div class="flex items-center space-x-1">
                 <input type="text" id="compareInputPrice" inputmode="decimal" placeholder="0,00" class="w-full text-xs font-bold bg-white border border-slate-300 rounded-lg p-1.5 text-slate-800 focus:ring-emerald-500">
-                <button type="button" onclick="salvarPrecoComparativoModal()" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-transform shrink-0" title="Gravar preço neste mercado">
-                  ✓
-                </button>
+                <button type="button" onclick="salvarPrecoComparativoModal()" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-lg shadow-xs transition-transform shrink-0" title="Gravar preço neste mercado">✓</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 2. Comparativo na Região (Painel Retrátil: Minimizar / Maximizar) -->
         <div class="border border-slate-200 rounded-2xl p-2.5 bg-slate-50/70">
           <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleComparativoRedesCatalogo()">
             <div class="flex items-center space-x-2">
@@ -140,45 +109,16 @@
               <span id="badgeContadorRedesCatalogo" class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">Redes</span>
             </div>
             <button type="button" id="btnToggleRedesCatalogo" class="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center space-x-1 py-0.5 px-2 rounded-lg hover:bg-emerald-100/60 transition-colors">
-              <span id="labelToggleRedesCatalogo">Minimizar</span>
-              <span id="arrowToggleRedesCatalogo">▲</span>
+              <span id="labelToggleRedesCatalogo">Maximizar</span>
+              <span id="arrowToggleRedesCatalogo">▼</span>
             </button>
           </div>
-          
-          <div id="containerTabelaRedesCatalogo" class="mt-2 transition-all">
-            <div id="comparePricesTable" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              <!-- Renderizado dinamicamente via JS -->
-            </div>
+          <div id="containerTabelaRedesCatalogo" class="hidden mt-2 transition-all">
+            <div id="comparePricesTable" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
           </div>
         </div>
-
       </div>
 
-      <!-- Gestão Nuvem / Local -->
-      <div id="containerPromoverProduto" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 mt-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-emerald-900">Produto Local</span>
-          <span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded">Apenas no Aparelho</span>
-        </div>
-        <p class="text-[11px] text-emerald-700 leading-tight">Deseja cadastrar este produto na planilha Google? Ele será incluído na matriz de preços e no catálogo oficial.</p>
-        <button type="button" id="btnPromoverProduto" onclick="promoverProdutoEmEdicaoParaPlanilha()" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center space-x-1.5">
-          <span>Sincronizar este produto com a planilha</span>
-        </button>
-      </div>
-
-      <div id="containerGestaoProdutoPlanilha" class="hidden p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 mt-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-800">Origem: Planilha Google</span>
-          <span class="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">Oficial</span>
-        </div>
-        <p class="text-[11px] text-slate-500 leading-tight">Você pode dessincronizar para editar de forma independente no telefone ou remover permanentemente da planilha na nuvem.</p>
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <button type="button" onclick="dessincronizarProdutoEmEdicao()" class="py-2 px-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs rounded-xl transition-all">Dessincronizar (Local)</button>
-          <button type="button" id="btnExcluirProdutoPlanilha" onclick="solicitarExclusaoProdutoPlanilha()" class="py-2 px-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs rounded-xl transition-all">Excluir da Planilha</button>
-        </div>
-      </div>
-
-      <!-- Rodapé de Ações -->
       <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="closeProductEditModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Fechar</button>
         <button type="submit" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all">Salvar Produto</button>
@@ -187,7 +127,7 @@
   </div>
 </div>
 
-<!-- MODAL: CADASTRAR / EDITAR SUPERMERCADO -->
+<!-- MODAL CADASTRAR / EDITAR SUPERMERCADO -->
 <div id="modalMarketEdit" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
   <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -198,63 +138,25 @@
     <form id="formSaveMarket" class="space-y-3">
       <input type="hidden" id="editMarketId" value="" />
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1" for="editMarketName">Nome da Rede <span class="text-rose-500">*</span></label>
-        <input type="text" id="editMarketName" required placeholder="Ex: Jacomar, Condor, Max Atacadista..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Nome da Rede <span class="text-rose-500">*</span></label>
+        <input type="text" id="editMarketName" required class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
       </div>
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1" for="editMarketBranch">Região / Bairro</label>
-        <input type="text" id="editMarketBranch" placeholder="Ex: Afonso Pena, Centro, Iná..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Região / Bairro</label>
+        <input type="text" id="editMarketBranch" class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
       </div>
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1" for="editMarketAddress">Endereço Completo</label>
-        <input type="text" id="editMarketAddress" placeholder="Ex: Av. Rui Barbosa, 6131, São José dos Pinhais - PR" class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Endereço Completo</label>
+        <input type="text" id="editMarketAddress" class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
       </div>
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1" for="editMarketPromoDay">Dia de Ofertas</label>
-        <input type="text" id="editMarketPromoDay" placeholder="Ex: Terça e Quarta de Hortifrúti..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Dia de Ofertas</label>
+        <input type="text" id="editMarketPromoDay" class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
       </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1" for="editMarketUrlEncarte">Link do Encarte</label>
-        <input type="text" id="editMarketUrlEncarte" placeholder="https://..." class="w-full text-xs font-semibold py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none" />
-      </div>
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1" for="editMarketNotes">Observações</label>
-        <textarea id="editMarketNotes" rows="2" class="w-full text-xs font-semibold py-2 px-3 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none"></textarea>
-      </div>
-
-      <div id="containerPromoverMercado" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 mt-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-emerald-900">Mercado Local</span>
-          <span class="text-[10px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded">Apenas Local</span>
-        </div>
-        <p class="text-[11px] text-emerald-700 leading-tight">Deseja exportar este supermercado para a planilha Google?</p>
-        <button type="button" id="btnPromoverMercado" onclick="promoverMercadoEmEdicaoParaPlanilha()" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all">Sincronizar com a planilha</button>
-      </div>
-
-      <div id="containerExcluirMercadoPlanilha" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-2 mt-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-rose-900">Zona de Risco: Nuvem</span>
-          <span class="text-[10px] bg-rose-200 text-rose-800 font-extrabold px-1.5 py-0.5 rounded">Irreversível</span>
-        </div>
-        <p class="text-[11px] text-rose-700 leading-tight">Remove este mercado e apaga a coluna dele na planilha.</p>
-        <button type="button" id="btnExcluirMercadoPlanilha" onclick="solicitarExclusaoMercadoPlanilha()" class="w-full py-2.5 px-3 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all">Excluir da planilha</button>
-      </div>
-
       <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="closeMarketEditModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
         <button type="submit" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all">Salvar Supermercado</button>
       </div>
     </form>
-  </div>
-</div>
-
-<!-- MODAL FLUTUANTE DE DETALHES DE MARCAS E COTAÇÕES -->
-<div id="modalMarcasDetalhes" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-white w-full max-w-lg rounded-2xl p-5 shadow-2xl max-h-[90vh] flex flex-col">
-    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-      <h3 id="modalMarcasTitulo" class="font-extrabold text-sm text-slate-800">Marcas e Preços</h3>
-      <button type="button" onclick="document.getElementById('modalMarcasDetalhes').classList.add('hidden')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 text-lg">✕</button>
-    </div>
-    <div id="modalMarcasConteudo" class="overflow-y-auto flex-1 mt-3 pr-1"></div>
   </div>
 </div>

@@ -1,5 +1,5 @@
 /**
- * SUPERCOMPRAS PRO - INTERFACE, MODAIS E ÁUDIO
+ * SUPERCOMPRAS PRO (Interface, Modais, Navegação e Áudio)
  */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioInst = null;
@@ -77,30 +77,142 @@ function openCustomDialog(title, msg, pTxt, sTxt, onP, onS) {
   d.classList.remove('hidden');
 }
 
-function switchActiveTab(tabName) {
+/**
+ * Alterna as abas principais (Compras, Histórico, Dados)
+ */
+window.switchActiveTab = function(tabName) {
   currentTab = tabName;
-  document.getElementById('viewCompras').classList.toggle('hidden', tabName !== 'compras');
-  document.getElementById('viewProdutos').classList.toggle('hidden', tabName !== 'produtos');
-  document.getElementById('viewSupermercados').classList.toggle('hidden', tabName !== 'supermercados');
-  document.getElementById('cartFloatingCheckoutBar').classList.toggle('hidden', tabName !== 'compras');
 
-  ['compras', 'produtos', 'supermercados'].forEach(name => {
-    const el = document.getElementById('navBtn' + name.charAt(0).toUpperCase() + name.slice(1));
+  const mapaAbas = {
+    compras: document.getElementById('tab-compras') || document.getElementById('viewCompras'),
+    historico: document.getElementById('tab-historico'),
+    dados: document.getElementById('tab-dados') || document.getElementById('viewProdutos')
+  };
+
+  if (tabName === 'produtos' || tabName === 'supermercados') {
+    tabName = 'dados';
+  }
+
+  Object.keys(mapaAbas).forEach(chave => {
+    const el = mapaAbas[chave];
     if (el) {
-      if (name === tabName) {
-        el.classList.add('text-emerald-700', 'font-extrabold');
-        el.classList.remove('text-slate-600', 'font-semibold');
+      el.classList.toggle('hidden', chave !== tabName);
+    }
+  });
+
+  const botoes = {
+    compras: document.getElementById('navBtnCompras'),
+    historico: document.getElementById('navBtnHistorico'),
+    dados: document.getElementById('navBtnDados')
+  };
+
+  Object.keys(botoes).forEach(chave => {
+    const btn = botoes[chave];
+    if (btn) {
+      if (chave === tabName) {
+        btn.classList.add('text-emerald-700', 'font-bold');
+        btn.classList.remove('text-slate-500', 'text-slate-600', 'font-semibold');
       } else {
-        el.classList.add('text-slate-600', 'font-semibold');
-        el.classList.remove('text-emerald-700', 'font-extrabold');
+        btn.classList.remove('text-emerald-700', 'font-bold');
+        btn.classList.add('text-slate-500', 'font-semibold');
       }
     }
   });
 
-  if (tabName === 'produtos' && typeof renderCatalogUI === 'function') renderCatalogUI();
-  if (tabName === 'supermercados' && typeof renderMarketsUI === 'function') renderMarketsUI();
-  atualizarEstadoFabMobile(tabName);
-}
+  const barCheckout = document.getElementById('cartFloatingCheckoutBar');
+  const fabAdd = document.getElementById('fabOpenAddItem');
+  const fabComp = document.getElementById('fabOpenComparator');
+
+  if (barCheckout) barCheckout.classList.toggle('hidden', tabName !== 'compras');
+  if (fabAdd) fabAdd.classList.toggle('hidden', tabName !== 'compras');
+  if (fabComp) fabComp.classList.toggle('hidden', tabName !== 'compras');
+
+  if (tabName === 'compras' && typeof renderCartUI === 'function') {
+    renderCartUI();
+  } else if (tabName === 'historico' && typeof renderHistoricoUI === 'function') {
+    renderHistoricoUI();
+  } else if (tabName === 'dados') {
+    // Ao entrar em Dados, atualiza a contagem dos crachás e renderiza a sub-aba ativa
+    const subAtiva = window.currentSubTabDados || 'produtos';
+    setSubTabDados(subAtiva);
+  }
+
+  if (typeof atualizarEstadoFabMobile === 'function') {
+    atualizarEstadoFabMobile(tabName);
+  }
+};
+
+/**
+ * Alterna as sub-visões internas da aba Dados (Produtos vs Supermercados)
+ */
+window.setSubTabDados = function(tipo) {
+  window.currentSubTabDados = tipo;
+  const isProd = tipo === 'produtos';
+
+  // Suporte híbrido a ambos os formatos de IDs
+  const viewProd = document.getElementById('subViewProdutos') || document.getElementById('secao-catalogo-produtos');
+  const viewMerc = document.getElementById('subViewMercados') || document.getElementById('secao-catalogo-mercados');
+  const btnProd = document.getElementById('subTabBtnProdutos') || document.getElementById('btn-subtab-produtos');
+  const btnMerc = document.getElementById('subTabBtnMercados') || document.getElementById('btn-subtab-mercados');
+
+  if (viewProd) {
+    viewProd.classList.toggle('hidden', !isProd);
+    viewProd.style.display = isProd ? 'block' : 'none';
+  }
+  if (viewMerc) {
+    viewMerc.classList.toggle('hidden', isProd);
+    viewMerc.style.display = isProd ? 'none' : 'block';
+  }
+
+  if (btnProd && btnMerc) {
+    const classeAtiva = 'flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-1.5 font-bold';
+    const classeInativa = 'flex-1 py-2 rounded-lg text-slate-600 hover:text-slate-800 text-center transition-all flex items-center justify-center space-x-1.5 font-semibold';
+    
+    btnProd.className = isProd ? classeAtiva : classeInativa;
+    btnMerc.className = isProd ? classeInativa : classeAtiva;
+  }
+
+  const badgeProd = document.getElementById('badgeSubTabProd') || document.getElementById('badge-total-produtos');
+  const badgeMerc = document.getElementById('badgeSubTabMerc') || document.getElementById('badge-total-mercados');
+  if (badgeProd && Array.isArray(products)) badgeProd.innerText = products.length;
+  if (badgeMerc && Array.isArray(supermarkets)) badgeMerc.innerText = supermarkets.filter(m => m.id !== 'm-padrao').length;
+
+  if (isProd && typeof renderCatalogUI === 'function') {
+    renderCatalogUI();
+  } else if (!isProd && typeof renderMarketsUI === 'function') {
+    renderMarketsUI();
+  }
+};
+window.AlternarSubTabDados = window.setSubTabDados;
+
+/**
+ * Gestão interna do Hub de Banco de Dados
+ */
+window.abrirPaginaGestao = function(tipo) {
+  const hub = document.getElementById('hubDadosMenu');
+  const pagProd = document.getElementById('paginaGestaoProdutos');
+  const pagMerc = document.getElementById('paginaGestaoMercados');
+
+  if (hub) hub.classList.add('hidden');
+  if (pagProd) pagProd.classList.toggle('hidden', tipo !== 'produtos');
+  if (pagMerc) pagMerc.classList.toggle('hidden', tipo !== 'mercados');
+
+  if (tipo === 'produtos' && typeof renderCatalogUI === 'function') {
+    renderCatalogUI();
+  } else if (tipo === 'mercados' && typeof renderMarketsUI === 'function') {
+    renderMarketsUI();
+  }
+};
+
+window.voltarAoHubDados = function() {
+  const hub = document.getElementById('hubDadosMenu');
+  const pagProd = document.getElementById('paginaGestaoProdutos');
+  const pagMerc = document.getElementById('paginaGestaoMercados');
+
+  if (pagProd) pagProd.classList.add('hidden');
+  if (pagMerc) pagMerc.classList.add('hidden');
+  if (hub) hub.classList.remove('hidden');
+};
 
 function refreshActiveMarketUI() {
   const sel = document.getElementById('selectActiveMarket');
@@ -179,18 +291,16 @@ function atualizarEstadoFabMobile(tabName) {
   if (compBtn) compBtn.classList.toggle('hidden', tabName !== 'compras');
   if (fab) {
     if (tabName === 'compras') {
+      fab.classList.remove('hidden');
       fab.setAttribute('title', 'Adicionar Produto ao Carrinho');
-      fab.classList.remove('bottom-24'); fab.classList.add('bottom-36');
+      fab.classList.remove('bottom-24');
+      fab.classList.add('bottom-36');
     } else {
-      fab.setAttribute('title', tabName === 'produtos' ? 'Novo Produto' : 'Novo Supermercado');
-      fab.classList.remove('bottom-36'); fab.classList.add('bottom-24');
+      fab.classList.add('hidden');
     }
   }
 }
 
-// ============================================================
-// CONTROLE DOS MODAIS DO CABEÇALHO E ÁUDIO
-// ============================================================
 function abrirModalBackup() {
   const m = document.getElementById('modalBackup');
   if (m) {
