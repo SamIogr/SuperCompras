@@ -1,11 +1,15 @@
 /**
- * SUPERCOMPRAS PRO - CARRINHO, COTAÇÕES E SELEÇÃO DE MARCAS
- * Renderização delegada integralmente ao AppTemplates.
+ * SUPERCOMPRAS PRO - CARRINHO DE COMPRAS
+ * Suporte completo a edição de itens, cálculo de promoções e persistência.
  */
 
+/**
+ * SUPERCOMPRAS PRO - GERENCIADOR UNIFICADO DE PREÇOS
+ */
 window.atualizarPrecoUnificado = function(produtoIdOuNome, marcaAlvo, mercadoId, novoPreco) {
-  if (!produtoIdOuNome || !mercadoId) return;
+  if (!produtoIdOuNome) return;
 
+  const mercado = mercadoId || activeMarketId || 'm-padrao';
   const marca = (marcaAlvo || 'Padrão').trim();
   const preco = Number(novoPreco) || 0;
 
@@ -20,7 +24,7 @@ window.atualizarPrecoUnificado = function(produtoIdOuNome, marcaAlvo, mercadoId,
       name: String(produtoIdOuNome).trim(),
       category: 'Geral',
       unit: 'un',
-      basePrice: preco > 0 ? preco : 0,
+      basePrice: preco,
       marketPrices: {},
       brands: []
     };
@@ -28,59 +32,57 @@ window.atualizarPrecoUnificado = function(produtoIdOuNome, marcaAlvo, mercadoId,
     products.unshift(masterProd);
   }
 
-  if (marca.toLowerCase() === 'padrão' || marca.toLowerCase() === 'padrao') {
-    if (!masterProd.marketPrices) masterProd.marketPrices = {};
-    masterProd.marketPrices[mercadoId] = preco;
+  if (!masterProd.marketPrices) masterProd.marketPrices = {};
+
+  // REGRA DE SINCRONIZAÇÃO TOTAL:
+  // Se for o mercado referencial ('m-padrao'), o Preço Base e a cotação m-padrao são idênticos
+  if (mercado === 'm-padrao') {
+    masterProd.basePrice = preco;
+    masterProd.marketPrices['m-padrao'] = preco;
   } else {
-    if (!masterProd.brands) masterProd.brands = [];
-    let bObj = masterProd.brands.find(b => (b.name || b.id || '').toLowerCase() === marca.toLowerCase());
-    if (!bObj) {
-      bObj = { id: marca, name: marca, marketPrices: {} };
-      masterProd.brands.push(bObj);
+    // Se for outro supermercado e o produto ainda não tiver Preço Base, adota este como referência
+    if (!masterProd.basePrice || masterProd.basePrice <= 0) {
+      masterProd.basePrice = preco;
+      masterProd.marketPrices['m-padrao'] = preco;
     }
-    if (!bObj.marketPrices) bObj.marketPrices = {};
-    bObj.marketPrices[mercadoId] = preco;
-  }
 
-  if (Array.isArray(cart)) {
-    cart.forEach(item => {
-      const matchProd = (item.productId && item.productId === masterProd.id) || 
-                        (item.name && item.name.toLowerCase() === masterProd.name.toLowerCase());
-      const matchMarca = (item.selectedBrandId || 'Padrão').toLowerCase() === marca.toLowerCase();
-
-      if (matchProd && matchMarca) {
-        if (!item.productId) item.productId = masterProd.id;
-        if (mercadoId === activeMarketId) {
-          item.unitPrice = preco;
-        }
+    if (marca.toLowerCase() === 'padrão' || marca.toLowerCase() === 'padrao') {
+      masterProd.marketPrices[mercado] = preco;
+    } else {
+      if (!masterProd.brands) masterProd.brands = [];
+      let bObj = masterProd.brands.find(b => (b.name || b.id || '').toLowerCase() === marca.toLowerCase());
+      if (!bObj) {
+        bObj = { id: marca, name: marca, marketPrices: {} };
+        masterProd.brands.push(bObj);
       }
-    });
+      if (!bObj.marketPrices) bObj.marketPrices = {};
+      bObj.marketPrices[mercado] = preco;
+    }
+
+    // Sincroniza com a nuvem (Google Sheets) caso configurado
+    if (typeof enviarProdutoParaPlanilha === 'function') {
+      enviarProdutoParaPlanilha(masterProd, mercado, preco, marca);
+    }
   }
 
   saveAllLocalData();
   saveCartData();
 
-  if (typeof renderCartUI === 'function') renderCartUI();
   if (typeof renderCatalogUI === 'function') renderCatalogUI();
-  if (typeof renderPriceCompareTable === 'function' && typeof activeCatalogProductId !== 'undefined') {
-    renderPriceCompareTable(masterProd);
-  }
-
-  if (activeMarketId !== 'm-padrao' && preco > 0 && typeof enviarProdutoParaPlanilha === 'function') {
-    enviarProdutoParaPlanilha(masterProd, mercadoId, preco, marca);
-  }
+  if (typeof renderCartUI === 'function') renderCartUI();
+  if (typeof renderizarCatalogoProdutos === 'function') renderizarCatalogoProdutos();
 };
 
 function computeItemFinancials(qty, unitPrice, promo = {}) {
-  qty = Math.max(0, qty);
-  unitPrice = Math.max(0, unitPrice);
+  qty = Math.max(0, Number(qty) || 0);
+  unitPrice = Math.max(0, Number(unitPrice) || 0);
   const standardSubtotal = qty * unitPrice;
   let finalSubtotal = standardSubtotal;
   let savings = 0;
   let badgeText = '';
 
-  if (promo.type === 'discount') {
-    const val = promo.value || 0;
+  if (promo && promo.type === 'discount') {
+    const val = Number(promo.value) || 0;
     if (promo.mode === 'percent' && val > 0) {
       savings = standardSubtotal * (Math.min(val, 100) / 100);
       finalSubtotal = standardSubtotal - savings;
@@ -90,9 +92,9 @@ function computeItemFinancials(qty, unitPrice, promo = {}) {
       finalSubtotal = standardSubtotal - savings;
       badgeText = `Desc. R$ ${formatBRL(val)}/un`;
     }
-  } else if (promo.type === 'wholesale') {
-    const minQ = promo.minQty || 0;
-    const wPrice = promo.wholesalePrice || 0;
+  } else if (promo && promo.type === 'wholesale') {
+    const minQ = Number(promo.minQty) || 0;
+    const wPrice = Number(promo.wholesalePrice) || 0;
     if (minQ > 0 && wPrice > 0 && qty >= minQ) {
       const wholesaleTotal = qty * wPrice;
       if (wholesaleTotal < standardSubtotal) {
@@ -187,9 +189,6 @@ function higienizarInputsCarrinho() {
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el && (el.value === 'null' || el.value === 'undefined')) el.value = '';
-    if (el && (el.placeholder === 'null' || el.placeholder === 'undefined')) {
-      el.placeholder = (id === 'cartSearchFilter') ? 'Buscar no carrinho...' : 'Digite para buscar...';
-    }
   });
 }
 
@@ -201,11 +200,7 @@ function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') 
   if (!select) return;
 
   if (container) {
-    if (nomeProduto && nomeProduto.trim().length > 0) {
-      container.classList.remove('hidden');
-    } else {
-      container.classList.add('hidden');
-    }
+    container.classList.toggle('hidden', !nomeProduto || nomeProduto.trim().length === 0);
   }
 
   const marcas = new Set(['Padrão']);
@@ -227,44 +222,6 @@ function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') 
   if (inputHidden) inputHidden.value = marcaSelecionada;
 }
 
-function confirmarNovaMarcaInline() {
-  const campo = document.getElementById('inputNovaMarcaInline');
-  const select = document.getElementById('cartSelectProductBrand');
-  const inputHidden = document.getElementById('cartInputProductBrand');
-  const boxSelect = document.getElementById('boxSelectMarca');
-  const boxInput = document.getElementById('boxInputNovaMarcaInline');
-
-  const novaMarca = (campo?.value || '').trim();
-
-  if (novaMarca) {
-    let opt = Array.from(select.options).find(o => o.value.toLowerCase() === novaMarca.toLowerCase());
-    if (!opt) {
-      opt = document.createElement('option');
-      opt.value = novaMarca;
-      opt.textContent = `🏷️ ${novaMarca}`;
-      select.insertBefore(opt, select.lastElementChild);
-    }
-    opt.selected = true;
-    if (inputHidden) inputHidden.value = novaMarca;
-  } else {
-    if (select && inputHidden) select.value = inputHidden.value || 'Padrão';
-  }
-
-  boxInput?.classList.add('hidden');
-  boxSelect?.classList.remove('hidden');
-  sincronizarPrecoFormularioCarrinho();
-}
-
-function cancelarNovaMarcaInline() {
-  document.getElementById('boxInputNovaMarcaInline')?.classList.add('hidden');
-  document.getElementById('boxSelectMarca')?.classList.remove('hidden');
-  const select = document.getElementById('cartSelectProductBrand');
-  const inputHidden = document.getElementById('cartInputProductBrand');
-  if (select && inputHidden) {
-    select.value = inputHidden.value || 'Padrão';
-  }
-}
-
 function selectProductForCart(productId) {
   const p = (products || []).find(it => it.id === productId);
   if (p) {
@@ -282,7 +239,6 @@ function selectProductForCart(productId) {
     document.getElementById('cartAutocompleteDropdown')?.classList.add('hidden');
     document.getElementById('cartBtnClearProduct')?.classList.remove('hidden');
     document.getElementById('cartInputQuantity')?.focus();
-    document.getElementById('cartInputQuantity')?.select();
     updateCartItemPreview();
   }
   sincronizarPrecoFormularioCarrinho();
@@ -290,24 +246,21 @@ function selectProductForCart(productId) {
 
 function obterPrecoProdutoMarcaMercado(produto, marcaNome, mercadoId) {
   if (!produto || !mercadoId) return 0;
-
-  const mId = mercadoId;
   const marca = (marcaNome || 'Padrão').trim().toLowerCase();
 
   if (marca === 'padrão' || marca === 'padrao') {
-    if (produto.marketPrices && produto.marketPrices[mId] !== undefined && Number(produto.marketPrices[mId]) > 0) {
-      return Number(produto.marketPrices[mId]);
+    if (produto.marketPrices && produto.marketPrices[mercadoId] !== undefined) {
+      return Number(produto.marketPrices[mercadoId]) || 0;
     }
     return 0;
   }
 
   if (Array.isArray(produto.brands)) {
     const bObj = produto.brands.find(b => (b.name || b.id || '').toLowerCase() === marca);
-    if (bObj && bObj.marketPrices && bObj.marketPrices[mId] !== undefined && Number(bObj.marketPrices[mId]) > 0) {
-      return Number(bObj.marketPrices[mId]);
+    if (bObj && bObj.marketPrices && bObj.marketPrices[mercadoId] !== undefined) {
+      return Number(bObj.marketPrices[mercadoId]) || 0;
     }
   }
-
   return 0;
 }
 
@@ -327,10 +280,7 @@ function sincronizarPrecoFormularioCarrinho() {
   const precoEncontrado = obterPrecoProdutoMarcaMercado(p, marcaSelecionada, mercadoAtualId);
 
   inputPreco.value = precoEncontrado > 0 ? formatBRL(precoEncontrado) : '';
-
-  if (typeof updateCartItemPreview === 'function') {
-    updateCartItemPreview();
-  }
+  updateCartItemPreview();
 }
 
 function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
@@ -353,10 +303,8 @@ function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
   saveAllLocalData();
   saveCartData();
   if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
-  if (typeof sincronizarPrecoFormularioCarrinho === 'function') sincronizarPrecoFormularioCarrinho();
   renderCartUI();
 }
-
 window.recalcularPrecosCarrinhoPorMercado = recalcularPrecosCarrinhoPorMercado;
 
 function renderCartUI() {
@@ -389,18 +337,183 @@ function renderCartUI() {
   } else {
     emptyCard.classList.add('hidden');
     if (displayList.length === 0) {
-      container.innerHTML = AppTemplates.emptyState('Nenhum produto encontrado neste filtro.');
+      container.innerHTML = `
+        <div class="text-center py-10 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200 p-6 my-2">
+          <p class="text-xs font-semibold text-slate-600">Nenhum item encontrado no filtro.</p>
+        </div>`;
     } else {
-      // Delegação de cada cartão ao AppTemplates
       container.innerHTML = displayList.map(item => {
         const calc = computeItemFinancials(item.quantity, item.unitPrice, item.promo);
-        return AppTemplates.cartItemCard(item, calc);
+        const isChecked = Boolean(item.checked);
+
+        return `
+          <div class="bg-white rounded-2xl p-3.5 border ${isChecked ? 'border-emerald-200 bg-emerald-50/40 opacity-75' : 'border-slate-200 shadow-2xs hover:border-slate-300'} transition-all my-2">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center space-x-3 flex-1 min-w-0">
+                <button type="button" onclick="toggleCartItemCheck('${item.id}')" class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-300'}">
+                  <svg class="w-4 h-4 ${isChecked ? 'block' : 'hidden'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center space-x-1.5 flex-wrap">
+                    <h4 class="font-extrabold text-sm text-slate-800 truncate ${isChecked ? 'line-through text-slate-400' : ''}">${item.name}</h4>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">${item.unit || 'un'}</span>
+                    <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-black border border-emerald-300">🏷️ ${item.selectedBrandId || 'Padrão'}</span>
+                  </div>
+                  <div class="text-xs text-slate-500 flex items-center space-x-1.5 mt-0.5">
+                    <span>${formatQty(item.quantity)} ${item.unit} × R$ ${formatBRL(item.unitPrice)}</span>
+                    ${calc.badgeText ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-1.5 py-0.2 rounded">${calc.badgeText}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 shrink-0">
+                <div class="text-right mr-1">
+                  <div class="text-sm font-black text-slate-900 leading-tight">R$ ${formatBRL(calc.finalSubtotal || 0)}</div>
+                  ${calc.savings > 0 ? `<div class="text-[10px] font-bold text-emerald-600">-R$ ${formatBRL(calc.savings)}</div>` : ''}
+                </div>
+                <div class="flex items-center bg-slate-100 rounded-xl p-0.5">
+                  <button type="button" onclick="stepCartQty('${item.id}', -1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs">–</button>
+                  <button type="button" onclick="stepCartQty('${item.id}', 1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs">+</button>
+                </div>
+                <button type="button" onclick="openEditCartItemModal('${item.id}')" class="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors" title="Editar item">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                </button>
+                <button type="button" onclick="removeCartItem('${item.id}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Remover item">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
       }).join('');
     }
   }
 
   updateCartTotals(totalItems, checkedItems);
 }
+
+// ============================================================
+// MODAL DE EDIÇÃO DE ITEM DO CARRINHO (IMPLEMENTAÇÃO COMPLETA)
+// ============================================================
+let editingCartItemId = null;
+
+function garantirModalEdicaoCarrinhoNoDOM() {
+  if (document.getElementById('modalEditCartItem')) return;
+
+  const modalHtml = `
+    <div id="modalEditCartItem" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-4 sm:p-5 space-y-3.5 border border-slate-200">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div>
+            <h3 class="font-black text-slate-800 text-sm sm:text-base">Editar Item do Carrinho</h3>
+            <p id="editCartItemSubname" class="text-[11px] text-slate-500 font-semibold truncate">Produto</p>
+          </div>
+          <button type="button" onclick="closeEditCartItemModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+        </div>
+
+        <form id="formModalEditCartItem" class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Marca:</label>
+            <select id="editCartItemBrand" class="w-full text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"></select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Preço Unitário (R$):</label>
+              <input type="text" id="editCartItemPrice" class="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0,00">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Qtd. / Peso:</label>
+              <input type="text" id="editCartItemQty" class="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Unidade de Medida:</label>
+            <select id="editCartItemUnit" class="w-full text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+              <option value="un">un (Unidade)</option>
+              <option value="kg">kg (Quilo)</option>
+              <option value="g">g (Grama)</option>
+              <option value="l">l (Litro)</option>
+              <option value="ml">ml (Mililitro)</option>
+              <option value="cx">cx (Caixa)</option>
+              <option value="pct">pct (Pacote)</option>
+            </select>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-end space-x-2">
+            <button type="button" onclick="closeEditCartItemModal()" class="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all">Cancelar</button>
+            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all">Salvar Alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+  document.getElementById('formModalEditCartItem').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!editingCartItemId) return;
+
+    const item = (cart || []).find(x => x.id === editingCartItemId);
+    if (!item) return;
+
+    const novaMarca = document.getElementById('editCartItemBrand').value || 'Padrão';
+    const novoPreco = parseNumberInput(document.getElementById('editCartItemPrice').value) || 0;
+    const novaQtd = parseNumberInput(document.getElementById('editCartItemQty').value) || 1;
+    const novaUnidade = document.getElementById('editCartItemUnit').value || 'un';
+
+    item.selectedBrandId = novaMarca;
+    item.unitPrice = novoPreco;
+    item.quantity = novaQtd;
+    item.unit = novaUnidade;
+
+    saveCartData();
+    renderCartUI();
+    closeEditCartItemModal();
+    showAppToast(`"${item.name}" atualizado com sucesso!`, 'success');
+  });
+}
+
+window.openEditCartItemModal = function(id) {
+  garantirModalEdicaoCarrinhoNoDOM();
+  const item = (cart || []).find(x => x.id === id);
+  if (!item) return;
+
+  editingCartItemId = id;
+
+  const modal = document.getElementById('modalEditCartItem');
+  const subname = document.getElementById('editCartItemSubname');
+  const selectBrand = document.getElementById('editCartItemBrand');
+  const inputPrice = document.getElementById('editCartItemPrice');
+  const inputQty = document.getElementById('editCartItemQty');
+  const selectUnit = document.getElementById('editCartItemUnit');
+
+  if (subname) subname.innerText = item.name;
+  if (inputPrice) inputPrice.value = item.unitPrice > 0 ? formatBRL(item.unitPrice) : '';
+  if (inputQty) inputQty.value = item.quantity;
+  if (selectUnit) selectUnit.value = item.unit || 'un';
+
+  const marcas = new Set(['Padrão']);
+  const p = (products || []).find(prod => prod.name.toLowerCase() === item.name.toLowerCase());
+  if (p && Array.isArray(p.brands)) {
+    p.brands.forEach(b => marcas.add(typeof b === 'string' ? b : (b.name || b.id)));
+  }
+  if (item.selectedBrandId) marcas.add(item.selectedBrandId);
+
+  if (selectBrand) {
+    selectBrand.innerHTML = Array.from(marcas).map(m => `
+      <option value="${m}" ${m.toLowerCase() === (item.selectedBrandId || 'Padrão').toLowerCase() ? 'selected' : ''}>🏷️ ${m}</option>
+    `).join('');
+  }
+
+  modal.classList.remove('hidden');
+};
+
+window.closeEditCartItemModal = function() {
+  document.getElementById('modalEditCartItem')?.classList.add('hidden');
+  editingCartItemId = null;
+};
 
 function updateCartTotals(totalItems, checkedItems) {
   let grandTotal = 0;
@@ -491,59 +604,76 @@ function askFinishPurchase() {
 function executeFinishPurchase(clearAfter) {
   let gT = 0;
   let tS = 0;
-  cart.forEach(item => {
+
+  // 1. Processa cada item do carrinho e grava os novos preços no banco de dados (products)
+  const itensSnapshot = cart.map(item => {
     const calc = computeItemFinancials(item.quantity, item.unitPrice, item.promo);
     gT += calc.finalSubtotal;
     tS += calc.savings;
-    let p = (products || []).find(prod => prod.name.toLowerCase() === item.name.toLowerCase());
-    if (p && activeMarketId !== 'm-padrao') {
-      if (!p.marketPrices) p.marketPrices = {};
-      p.marketPrices[activeMarketId] = item.unitPrice;
-      enviarProdutoParaPlanilha(p, activeMarketId, item.unitPrice, item.selectedBrandId || 'Padrão');
+
+    const unitPrice = Number(item.unitPrice) || 0;
+    const marca = item.selectedBrandId || 'Padrão';
+
+    // Grava o preço pago no banco de dados (catálogo mestre)
+    if (unitPrice > 0) {
+      window.atualizarPrecoUnificado(item.productId || item.name, marca, activeMarketId, unitPrice);
     }
+
+    // Snapshot estático imutável para o histórico
+    return {
+      productId: item.productId || null,
+      name: item.name,
+      selectedBrandId: marca,
+      unitPrice: unitPrice,
+      quantity: Number(item.quantity) || 1,
+      unit: item.unit || 'un',
+      subtotal: calc.finalSubtotal,
+      savings: calc.savings,
+      promo: item.promo ? JSON.parse(JSON.stringify(item.promo)) : { type: 'none' }
+    };
   });
 
-  purchaseHistory.unshift({
+  // 2. Arquiva o cupom fechado no histórico
+  const novaCompra = {
     id: 'pur-' + Date.now(),
     date: new Date().toISOString(),
     marketId: activeMarketId,
     marketName: getSelectedMarketName(),
     total: gT,
     savings: tS,
-    itemCount: cart.length,
-    items: JSON.parse(JSON.stringify(cart))
-  });
+    itemCount: itensSnapshot.length,
+    items: itensSnapshot
+  };
 
+  if (!Array.isArray(window.purchaseHistory)) window.purchaseHistory = [];
+  window.purchaseHistory.unshift(novaCompra);
+
+  try {
+    localStorage.setItem('sc_history_v3', JSON.stringify(window.purchaseHistory));
+    localStorage.setItem('sc_purchase_history', JSON.stringify(window.purchaseHistory));
+  } catch (e) {
+    console.error(e);
+  }
+
+  // 3. Limpa ou desmarca o carrinho
   if (clearAfter) cart = [];
   else cart.forEach(it => it.checked = false);
 
+  // 4. Salva o catálogo atualizado no LocalStorage e atualiza todas as UIs
   saveAllLocalData();
   saveCartData();
+
   if (typeof renderCatalogUI === 'function') renderCatalogUI();
   if (typeof renderMarketsUI === 'function') renderMarketsUI();
-  playAppBeep('finish');
-  showAppToast('Compra concluída e preços gravados!', 'success');
+  if (typeof renderHistoricoUI === 'function') renderHistoricoUI();
+
+  if (typeof playAppBeep === 'function') playAppBeep('finish');
+  showAppToast('Compra finalizada e preços atualizados no catálogo!', 'success');
 }
 
 document.addEventListener('change', (e) => {
   if (e.target && (e.target.id === 'selectActiveMarket' || e.target.id === 'cartSelectSupermarket')) {
     recalcularPrecosCarrinhoPorMercado(e.target.value);
-  }
-
-  if (e.target && e.target.id === 'cartSelectProductBrand') {
-    const val = e.target.value;
-    const hiddenInput = document.getElementById('cartInputProductBrand');
-
-    if (val === '__NOVA__') {
-      document.getElementById('boxSelectMarca')?.classList.add('hidden');
-      document.getElementById('boxInputNovaMarcaInline')?.classList.remove('hidden');
-      const campo = document.getElementById('inputNovaMarcaInline');
-      if (campo) { campo.value = ''; campo.focus(); }
-      return;
-    }
-
-    if (hiddenInput) hiddenInput.value = val;
-    sincronizarPrecoFormularioCarrinho();
   }
 });
 
@@ -586,35 +716,23 @@ inputProdName?.addEventListener('input', (e) => {
       </div>
     ` + matches.map(p => {
       const pPrice = obterPrecoProdutoMarcaMercado(p, 'Padrão', activeMarketId) || p.basePrice;
-      return AppTemplates.cartAutocompleteRow(p, pPrice);
+      return `
+        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart('${p.id}')">
+          <div class="min-w-0 pr-2">
+            <span class="font-bold text-slate-800 block truncate">${p.name}</span>
+            <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${p.category || 'Geral'}</span>
+          </div>
+          <div class="text-right text-emerald-700 font-black shrink-0">
+            ${pPrice > 0 ? 'R$ ' + formatBRL(pPrice) : 'A cotar'}
+            <span class="text-[10px] text-slate-500 font-normal"> / ${p.unit || 'un'}</span>
+          </div>
+        </div>
+      `;
     }).join('');
     dropdownProd.classList.remove('hidden');
   } else if (dropdownProd) {
     dropdownProd.classList.add('hidden');
     dropdownProd.innerHTML = '';
-  }
-});
-
-function fecharDropdownSugestoes() {
-  const dropdown = document.getElementById('cartAutocompleteDropdown');
-  if (dropdown) dropdown.classList.add('hidden');
-}
-
-document.addEventListener('click', (e) => {
-  const dropdown = document.getElementById('cartAutocompleteDropdown');
-  const input = document.getElementById('cartInputProductName');
-  if (!dropdown || !input) return;
-
-  if (!input.contains(e.target) && !dropdown.contains(e.target)) {
-    dropdown.classList.add('hidden');
-  }
-});
-
-['cartInputUnitPrice', 'cartInputQuantity', 'cartInputUnit'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) {
-    el.addEventListener('focus', fecharDropdownSugestoes);
-    el.addEventListener('click', fecharDropdownSugestoes);
   }
 });
 
@@ -703,3 +821,114 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
 
 higienizarInputsCarrinho();
 setCartPromoMode('none');
+// ============================================================
+// FUNÇÕES GLOBAIS DE EDIÇÃO DO ITEM NO CARRINHO (INDEX.HTML)
+// ============================================================
+
+let idItemSendoEditado = null;
+
+// Função chamada quando você clica no ícone de lápis no carrinho
+window.abrirModalEdicaoItem = function(id) {
+  idItemSendoEditado = id;
+  const item = (cart || []).find(x => x.id === id);
+  if (!item) return;
+
+  const modal = document.querySelector('#modalEditarItemCarrinho, #modalEditCartItem, [id*="modalEdit"], [id*="modalEditar"]');
+  if (!modal) return;
+
+  // Preenche a marca
+  const selectMarca = modal.querySelector('select[name="marca"], select#editItemMarca, select#editCartItemBrand, select');
+  if (selectMarca) {
+    const marcas = new Set(['Padrão']);
+    const p = (products || []).find(prod => prod.name.toLowerCase() === item.name.toLowerCase());
+    if (p && Array.isArray(p.brands)) {
+      p.brands.forEach(b => marcas.add(typeof b === 'string' ? b : (b.name || b.id)));
+    }
+    if (item.selectedBrandId) marcas.add(item.selectedBrandId);
+
+    selectMarca.innerHTML = Array.from(marcas).map(m => `
+      <option value="${m}" ${m.toLowerCase() === (item.selectedBrandId || 'Padrão').toLowerCase() ? 'selected' : ''}>${m}</option>
+    `).join('');
+  }
+
+  // Preenche preço e quantidade
+  const inputPreco = modal.querySelector('input[placeholder*="0,00"], input[name*="preco"], input#editItemPreco, input#editCartItemPrice');
+  const inputQtd = modal.querySelector('input[name*="qtd"], input#editItemQtd, input#editCartItemQty, input[type="number"]');
+
+  if (inputPreco) inputPreco.value = item.unitPrice > 0 ? formatBRL(item.unitPrice) : '';
+  if (inputQtd) inputQtd.value = item.quantity || 1;
+
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+
+  window.atualizarSubtotalModalEdicao();
+};
+window.openEditCartItemModal = window.abrirModalEdicaoItem;
+
+// 1. Recalcula o "NOVO SUBTOTAL" ao digitar preço ou quantidade
+window.atualizarSubtotalModalEdicao = function() {
+  const modal = document.querySelector('#modalEditarItemCarrinho, #modalEditCartItem, [id*="modalEdit"], [id*="modalEditar"]');
+  if (!modal) return;
+
+  const inputPreco = modal.querySelector('input[placeholder*="0,00"], input[name*="preco"], input#editItemPreco, input#editCartItemPrice');
+  const inputQtd = modal.querySelector('input[name*="qtd"], input#editItemQtd, input#editCartItemQty, input[type="number"]');
+  
+  const preco = parseNumberInput(inputPreco?.value) || 0;
+  const qtd = parseNumberInput(inputQtd?.value) || 1;
+  const subtotal = preco * qtd;
+
+  // Atualiza qualquer indicador de subtotal no modal
+  const elSubtotal = modal.querySelector('#editItemSubtotal, #modalEditSubtotal, #subtotalModalEdicao, [id*="Subtotal"], strong.text-emerald-600') ||
+                     Array.from(modal.querySelectorAll('strong, span, p')).find(el => el.textContent.includes('R$') && el.closest('div').textContent.includes('SUBTOTAL'));
+
+  if (elSubtotal) {
+    elSubtotal.innerText = `R$ ${formatBRL(subtotal)}`;
+  }
+};
+
+// 2. Salva as alterações no item do carrinho
+window.salvarEdicaoItemCarrinho = function(event) {
+  if (event && event.preventDefault) event.preventDefault();
+
+  if (!idItemSendoEditado) {
+    window.fecharModalEdicaoItem();
+    return;
+  }
+
+  const item = (cart || []).find(x => x.id === idItemSendoEditado);
+  if (!item) {
+    window.fecharModalEdicaoItem();
+    return;
+  }
+
+  const modal = document.querySelector('#modalEditarItemCarrinho, #modalEditCartItem, [id*="modalEdit"], [id*="modalEditar"]');
+  if (!modal) return;
+
+  const selectMarca = modal.querySelector('select[name="marca"], select#editItemMarca, select#editCartItemBrand, select');
+  const inputPreco = modal.querySelector('input[placeholder*="0,00"], input[name*="preco"], input#editItemPreco, input#editCartItemPrice');
+  const inputQtd = modal.querySelector('input[name*="qtd"], input#editItemQtd, input#editCartItemQty, input[type="number"]');
+
+  const novaMarca = selectMarca ? selectMarca.value : (item.selectedBrandId || 'Padrão');
+  const novoPreco = parseNumberInput(inputPreco?.value) || 0;
+  const novaQtd = parseNumberInput(inputQtd?.value) || 1;
+
+  // Atualiza as propriedades no carrinho ativo
+  item.selectedBrandId = novaMarca;
+  item.unitPrice = novoPreco;
+  item.quantity = novaQtd;
+
+  saveCartData();
+  renderCartUI();
+  window.fecharModalEdicaoItem();
+  showAppToast(`"${item.name}" atualizado para R$ ${formatBRL(novoPreco)}!`, 'success');
+};
+
+window.fecharModalEdicaoItem = function() {
+  const modal = document.querySelector('#modalEditarItemCarrinho, #modalEditCartItem, [id*="modalEdit"], [id*="modalEditar"]');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
+  idItemSendoEditado = null;
+};
+window.closeEditCartItemModal = window.fecharModalEdicaoItem;
