@@ -1,74 +1,89 @@
-<!-- Painel Superior: Resumo de Gastos e Economia -->
-<div class="mb-5 space-y-3">
-  <div class="flex items-center justify-between">
+<div class="max-w-4xl mx-auto space-y-4 pt-1">
+  <!-- Topo: Título e Botão Limpar -->
+  <div class="flex items-center justify-between pb-2 border-b border-slate-200">
     <div>
-      <h2 class="text-xl font-extrabold text-slate-800">Histórico de Compras</h2>
-      <p class="text-xs text-slate-500">Acompanhe seus fechamentos e evolução de gastos</p>
+      <h2 class="text-base font-extrabold text-slate-800">Histórico de Compras</h2>
+      <p class="text-[11px] text-slate-500">Registros fixos e imutáveis de compras realizadas</p>
     </div>
-    <button type="button" onclick="limparTodoHistorico()" class="text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg transition-colors" title="Apagar todos os registros locais">
-      Limpar Histórico
+    <button type="button" onclick="limparTodoHistorico()" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl text-xs font-bold transition-all border border-slate-200 shadow-2xs flex items-center space-x-1">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+      </svg>
+      <span>Limpar Tudo</span>
     </button>
   </div>
 
-  <!-- Cards de Indicadores -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total no Mês</span>
-      <span id="histMetricaGastoMes" class="text-base font-black text-slate-800 mt-0.5 block">R$ 0,00</span>
+  <!-- Métricas do Mês -->
+  <div class="grid grid-cols-3 gap-2.5">
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs text-center">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gasto no Mês</span>
+      <strong id="histMetricaGastoMes" class="text-sm sm:text-base font-black text-slate-800 block mt-0.5">R$ 0,00</strong>
     </div>
-    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Média por Compra</span>
-      <span id="histMetricaMediaCompra" class="text-base font-black text-emerald-600 mt-0.5 block">R$ 0,00</span>
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs text-center">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ticket Médio</span>
+      <strong id="histMetricaMediaCompra" class="text-sm sm:text-base font-black text-emerald-600 block mt-0.5">R$ 0,00</strong>
     </div>
-    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs col-span-2 sm:col-span-1">
-      <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total de Fechamentos</span>
-      <span id="histMetricaQtdCompras" class="text-base font-black text-sky-600 mt-0.5 block">0 compras</span>
+    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs text-center">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Compras</span>
+      <strong id="histMetricaQtdCompras" class="text-sm sm:text-base font-black text-slate-700 block mt-0.5">0</strong>
     </div>
   </div>
-</div>
 
-<!-- Filtro Rápido por Supermercado ou Período -->
-<div class="mb-3 flex items-center gap-2">
-  <div class="relative flex-1">
-    <input type="text" id="inputBuscaHistorico" oninput="filtrarHistoricoUI(this.value)" placeholder="Buscar por mercado ou data..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
-  </div>
-</div>
-
-<!-- Lista de Compras Arquivadas -->
-<div id="historicoListaContainer" class="space-y-3">
-  <!-- Itens gerados dinamicamente via renderHistoricoUI() -->
-</div>
-
-<!-- Estado Vazio -->
-<div id="historicoVazioContainer" class="hidden text-center py-12 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200 p-8 my-3">
-  <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-2 text-xl">🛒</div>
-  <p class="text-sm font-semibold text-slate-600">Nenhum fechamento registrado.</p>
-  <p class="text-xs text-slate-400 mt-1">Ao finalizar suas compras no carrinho, os registros detalhados aparecerão aqui.</p>
-</div>
-
-<!-- Modal de Detalhes da Compra Arquivada -->
-<div id="modalDetalhesHistorico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-100 flex flex-col max-h-[85vh] overflow-hidden">
-    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-      <div>
-        <h3 id="modalHistTitulo" class="font-black text-sm text-slate-800">Detalhes da Compra</h3>
-        <p id="modalHistSubtitulo" class="text-[11px] text-slate-400 mt-0.5"></p>
-      </div>
-      <button type="button" onclick="fecharModalDetalhesHistorico()" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">✕</button>
+  <!-- Estado Vazio -->
+  <div id="historicoVazioContainer" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-200 p-8 my-2">
+    <div class="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-2 text-slate-400">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
     </div>
+    <p class="text-xs font-bold text-slate-700">Nenhum cupom ou compra arquivada ainda.</p>
+    <p class="text-[11px] text-slate-400 mt-1">Ao finalizar um carrinho na aba Compras, ele será arquivado aqui.</p>
+  </div>
+
+  <!-- Lista de Compras -->
+  <div id="historicoListaContainer" class="space-y-2.5 pt-1"></div>
+</div>
+
+<!-- MODAL DE DETALHES DA COMPRA (CUPOM NÃO EDITÁVEL) -->
+<div id="modalDetalhesHistorico" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs" onclick="if(event.target === this) fecharModalDetalhesHistorico();">
+  <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-4 sm:p-5 border border-slate-200 relative" style="display: flex; flex-direction: column; min-height: 380px; max-height: 85vh;">
     
-    <div id="modalHistItensLista" class="p-4 overflow-y-auto space-y-2 flex-1">
-      <!-- Lista de produtos adquiridos naquela compra -->
+    <!-- Topo do Cupom -->
+    <div class="flex items-start justify-between border-b border-slate-100 pb-3" style="flex-shrink: 0;">
+      <div class="min-w-0 pr-3">
+        <div class="flex items-center space-x-1.5 flex-wrap">
+          <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md uppercase">Supermercado</span>
+          <h3 id="modalHistTitulo" class="font-black text-slate-800 text-base truncate">Supermercado</h3>
+        </div>
+        <p id="modalHistSubtitulo" class="text-xs text-slate-500 mt-1">Data e hora do fechamento</p>
+      </div>
+      <button type="button" onclick="fecharModalDetalhesHistorico()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="Fechar">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
     </div>
 
-    <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+    <!-- Lista de Itens Não Editáveis -->
+    <div id="modalHistItensLista" class="py-3 space-y-2" style="flex: 1 1 auto; overflow-y: auto; min-height: 160px;"></div>
+
+    <!-- Rodapé: Total e Ações -->
+    <div class="border-t border-slate-100 pt-3 flex items-center justify-between bg-white" style="flex-shrink: 0;">
       <div>
-        <span class="text-[10px] text-slate-400 font-bold block uppercase">Valor Total</span>
-        <span id="modalHistValorTotal" class="text-base font-black text-emerald-600">R$ 0,00</span>
+        <span class="text-[10px] font-bold text-slate-400 block uppercase">Total da Compra</span>
+        <strong id="modalHistValorTotal" class="text-base sm:text-lg font-black text-emerald-600 block leading-tight">R$ 0,00</strong>
       </div>
-      <button type="button" id="btnRepetirCompraCarrinho" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-xs">
-        Repetir no Carrinho
-      </button>
+      <div class="flex items-center space-x-2">
+        <button type="button" onclick="fecharModalDetalhesHistorico()" class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+          ← Voltar
+        </button>
+        <button type="button" id="btnRepetirCompraCarrinho" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>Repetir Lista</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
