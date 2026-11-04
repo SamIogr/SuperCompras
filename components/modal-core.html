@@ -80,22 +80,24 @@
 </div>
 
 <!-- MODAL: EXPORTAR (WHATSAPP / CSV) -->
-<div id="modalExportOptions" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+<div id="modalExportOptions" 
+     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+     onclick="if(event.target === this) closeExportOptionsModal();">
   <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-3.5">
     <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
       <h3 class="font-bold text-slate-800 text-base">Exportar Lista de Compras</h3>
-      <button onclick="document.getElementById('modalExportOptions').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      <button type="button" onclick="closeExportOptionsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1 leading-none cursor-pointer">✕</button>
     </div>
     <div class="space-y-2">
-      <button onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+      <button type="button" onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
         <span>Copiar Formatado para WhatsApp</span>
       </button>
-      <button onclick="exportCartCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+      <button type="button" onclick="exportCartCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
         <span>Baixar Planilha CSV</span>
       </button>
     </div>
     <div class="pt-2 text-right">
-      <button onclick="document.getElementById('modalExportOptions').classList.add('hidden')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Fechar</button>
+      <button type="button" onclick="closeExportOptionsModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Fechar</button>
     </div>
   </div>
 </div>

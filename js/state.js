@@ -1,5 +1,5 @@
 /**
- * SUPERCOMPRAS PRO - ESTADO GLOBAL E PERSISTÊNCIA
+ * SUPERCOMPRAS PRO - ESTADO GLOBAL E PERSISTÊNCIA (js/state.js)
  */
 const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
 
@@ -12,6 +12,57 @@ const MERCADO_PADRAO_GENERICO = {
   urlEncarte: '',
   colIndex: null
 };
+
+// DECLARAÇÃO ÚNICA DA BASE DE ITENS FREQUENTES (SEM PREÇO E COM MARCA PADRÃO)
+window.ITENS_BASICOS_SUGERIDOS = [
+  // Mercearia e Básicos
+  { name: 'Arroz Branco', category: 'Mercearia e Básicos', unit: 'kg' },
+  { name: 'Feijão Carioca', category: 'Mercearia e Básicos', unit: 'kg' },
+  { name: 'Feijão Preto', category: 'Mercearia e Básicos', unit: 'kg' },
+  { name: 'Açúcar Refinado', category: 'Mercearia e Básicos', unit: 'kg' },
+  { name: 'Sal Refinado', category: 'Mercearia e Básicos', unit: 'kg' },
+  { name: 'Café Torrado e Moído', category: 'Mercearia e Básicos', unit: 'un' },
+  { name: 'Óleo de Soja', category: 'Mercearia e Básicos', unit: 'un' },
+  { name: 'Farinha de Trigo', category: 'Mercearia e Básicos', unit: 'kg' },
+  { name: 'Macarrão Espaguete', category: 'Mercearia e Básicos', unit: 'un' },
+  { name: 'Molho de Tomate', category: 'Mercearia e Básicos', unit: 'un' },
+  { name: 'Fubá Mimoso', category: 'Mercearia e Básicos', unit: 'un' },
+
+  // Açougue e Carnes
+  { name: 'Peito de Frango', category: 'Açougue e Carnes', unit: 'kg' },
+  { name: 'Filé Sassami', category: 'Açougue e Carnes', unit: 'kg' },
+  { name: 'Carne Moída de Primeira', category: 'Açougue e Carnes', unit: 'kg' },
+  { name: 'Acém em Pedaço', category: 'Açougue e Carnes', unit: 'kg' },
+  { name: 'Bisteca Suína', category: 'Açougue e Carnes', unit: 'kg' },
+  { name: 'Linguiça Calabresa', category: 'Açougue e Carnes', unit: 'kg' },
+
+  // Laticínios e Frios
+  { name: 'Leite Integral', category: 'Laticínios e Frios', unit: 'un' },
+  { name: 'Queijo Mussarela', category: 'Laticínios e Frios', unit: 'kg' },
+  { name: 'Presunto Cozido', category: 'Laticínios e Frios', unit: 'kg' },
+  { name: 'Manteiga com Sal', category: 'Laticínios e Frios', unit: 'un' },
+  { name: 'Margarina', category: 'Laticínios e Frios', unit: 'un' },
+  { name: 'Creme de Leite', category: 'Laticínios e Frios', unit: 'un' },
+  { name: 'Leite Condensado', category: 'Laticínios e Frios', unit: 'un' },
+
+  // Hortifrúti e Ovos
+  { name: 'Ovos Brancos', category: 'Hortifrúti e Ovos', unit: 'dz' },
+  { name: 'Batata Inglesa', category: 'Hortifrúti e Ovos', unit: 'kg' },
+  { name: 'Cebola Nacional', category: 'Hortifrúti e Ovos', unit: 'kg' },
+  { name: 'Alho', category: 'Hortifrúti e Ovos', unit: 'kg' },
+  { name: 'Tomate Longa Vida', category: 'Hortifrúti e Ovos', unit: 'kg' },
+  { name: 'Banana Prata', category: 'Hortifrúti e Ovos', unit: 'kg' },
+  { name: 'Maçã Nacional', category: 'Hortifrúti e Ovos', unit: 'kg' },
+
+  // Higiene e Limpeza
+  { name: 'Detergente Líquido', category: 'Higiene e Limpeza', unit: 'un' },
+  { name: 'Sabão em Pó', category: 'Higiene e Limpeza', unit: 'un' },
+  { name: 'Água Sanitária', category: 'Higiene e Limpeza', unit: 'un' },
+  { name: 'Desinfetante', category: 'Higiene e Limpeza', unit: 'un' },
+  { name: 'Papel Higiênico', category: 'Higiene e Limpeza', unit: 'un' },
+  { name: 'Creme Dental', category: 'Higiene e Limpeza', unit: 'un' },
+  { name: 'Sabonete em Barra', category: 'Higiene e Limpeza', unit: 'un' }
+];
 
 let supermarkets = [ MERCADO_PADRAO_GENERICO ];
 let products = [];
@@ -27,7 +78,7 @@ let selectedSyncProducts = new Set();
 let selectedSyncMarkets = new Set();
 let activeSyncTab = 'produtos';
 let catalogSyncFilter = 'all';
-let selectedCatalogProductIds = new Set();
+window.selectedCatalogProductIds = new Set();
 
 const CATEGORIES = [
   'Todas', 'Açougue e Carnes', 'Laticínios e Frios', 
@@ -35,10 +86,15 @@ const CATEGORIES = [
 ];
 
 function parseNumberInput(val) {
-  if (!val) return 0;
-  const limpo = String(val).trim().replace(',', '.');
-  const num = parseFloat(limpo);
-  return isNaN(num) ? 0 : num;
+  if (val === null || val === undefined || val === '') return 0;
+  let s = String(val).trim().replace(/[^\d.,-]/g, '');
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');       // "1.299,90" -> "1299.90"
+  } else if ((s.match(/\./g) || []).length > 1) {
+    s = s.replace(/\./g, '');                          // "1.299.900" -> "1299900"
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
 }
 
 function formatBRL(num) {
@@ -52,10 +108,6 @@ function formatQty(num) {
 
 function getSecurityToken() {
   return localStorage.getItem('sc_security_token') || '';
-}
-
-function getIgnoredMarkets() {
-  try { return JSON.parse(localStorage.getItem('sc_ignored_markets')) || []; } catch (e) { return []; }
 }
 
 function getSelectedMarketName() {
@@ -77,16 +129,34 @@ function loadApplicationData() {
   }
 
   try {
-    products = JSON.parse(localStorage.getItem('sc_products_v3')) || [];
-    const mapaUnico = new Map();
-    products.forEach(item => {
-      if (item && item.name) {
-        const chave = item.name.trim().toLowerCase();
-        if (!mapaUnico.has(chave)) mapaUnico.set(chave, item);
-      }
-    });
-    products = Array.from(mapaUnico.values());
+    const savedP = localStorage.getItem('sc_products_v3');
+    if (savedP) {
+      products = JSON.parse(savedP) || [];
+      const mapaUnico = new Map();
+      products.forEach(item => {
+        if (item && item.name) {
+          const chave = item.name.trim().toLowerCase();
+          if (!mapaUnico.has(chave)) mapaUnico.set(chave, item);
+        }
+      });
+      products = Array.from(mapaUnico.values());
+    } else {
+      products = [];
+    }
   } catch (e) { products = []; }
+
+  // INSERÇÃO AUTOMÁTICA SE A BASE ESTIVER TOTALMENTE VAZIA
+  if (!Array.isArray(products) || products.length === 0) {
+    products = window.ITENS_BASICOS_SUGERIDOS.map((it, idx) => ({
+      id: 'p-custom-' + Date.now() + '-' + idx,
+      name: it.name,
+      category: it.category,
+      unit: it.unit,
+      basePrice: 0,
+      marketPrices: { 'm-padrao': 0 },
+      brands: []
+    }));
+  }
 
   try { cart = JSON.parse(localStorage.getItem('sc_cart_v3')) || []; } catch (e) { cart = []; }
   try { purchaseHistory = JSON.parse(localStorage.getItem('sc_history_v3')) || []; } catch (e) { purchaseHistory = []; }
@@ -113,3 +183,10 @@ function saveCartData() {
   localStorage.setItem('sc_cart_v3', JSON.stringify(cart));
   if (typeof renderCartUI === 'function') renderCartUI();
 }
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+window.esc = esc;

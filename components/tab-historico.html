@@ -1,16 +1,32 @@
 <div class="max-w-4xl mx-auto space-y-4 pt-1">
-  <!-- Topo: Título e Botão Limpar -->
+  <!-- Topo: Título e Ações Gerais -->
   <div class="flex items-center justify-between pb-2 border-b border-slate-200">
     <div>
       <h2 class="text-base font-extrabold text-slate-800">Histórico de Compras</h2>
       <p class="text-[11px] text-slate-500">Registros fixos e imutáveis de compras realizadas</p>
     </div>
-    <button type="button" onclick="limparTodoHistorico()" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl text-xs font-bold transition-all border border-slate-200 shadow-2xs flex items-center space-x-1">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-      </svg>
-      <span>Limpar Tudo</span>
-    </button>
+    <div class="flex items-center space-x-2">
+      <!-- Botão Excluir Selecionadas (aparece quando há compras marcadas) -->
+      <button type="button" 
+              id="btnExcluirSelecionadosHistorico" 
+              onclick="excluirHistoricosSelecionados()" 
+              class="hidden px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        <span id="btnExcluirSelecionadosLabel">Excluir</span>
+      </button>
+
+      <!-- Botão Limpar Tudo com Dupla Confirmação -->
+      <button type="button" 
+              onclick="limparTodoHistorico()" 
+              class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl text-xs font-bold transition-all border border-slate-200 shadow-2xs flex items-center space-x-1 cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        <span>Limpar Tudo</span>
+      </button>
+    </div>
   </div>
 
   <!-- Métricas do Mês -->
@@ -27,6 +43,18 @@
       <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Compras</span>
       <strong id="histMetricaQtdCompras" class="text-sm sm:text-base font-black text-slate-700 block mt-0.5">0</strong>
     </div>
+  </div>
+
+  <!-- Barra de Seleção em Lote -->
+  <div id="barraSelecaoHistorico" class="hidden bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs shadow-2xs">
+    <label class="flex items-center space-x-2 cursor-pointer font-bold text-slate-700 select-none">
+      <input type="checkbox" 
+             id="checkSelectAllHistorico" 
+             onchange="toggleSelectAllHistorico(this.checked)" 
+             class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
+      <span>Selecionar Todas as Compras</span>
+    </label>
+    <span id="contadorSelecaoHistorico" class="text-[11px] font-extrabold text-slate-500">0 selecionadas</span>
   </div>
 
   <!-- Estado Vazio -->
@@ -49,7 +77,7 @@
   <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-4 sm:p-5 border border-slate-200 relative" style="display: flex; flex-direction: column; min-height: 380px; max-height: 85vh;">
     
     <!-- Topo do Cupom -->
-    <div class="flex items-start justify-between border-b border-slate-100 pb-3" style="flex-shrink: 0;">
+    <div class="flex items-start justify-between border-b border-slate-100 pb-3 shrink-0">
       <div class="min-w-0 pr-3">
         <div class="flex items-center space-x-1.5 flex-wrap">
           <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md uppercase">Supermercado</span>
@@ -64,11 +92,11 @@
       </button>
     </div>
 
-    <!-- Lista de Itens Não Editáveis -->
-    <div id="modalHistItensLista" class="py-3 space-y-2" style="flex: 1 1 auto; overflow-y: auto; min-height: 160px;"></div>
+    <!-- Lista de Itens Não Editáveis (Imutável) -->
+    <div id="modalHistItensLista" class="py-3 space-y-2 flex-1 overflow-y-auto min-h-[160px]"></div>
 
     <!-- Rodapé: Total e Ações -->
-    <div class="border-t border-slate-100 pt-3 flex items-center justify-between bg-white" style="flex-shrink: 0;">
+    <div class="border-t border-slate-100 pt-3 flex items-center justify-between bg-white shrink-0">
       <div>
         <span class="text-[10px] font-bold text-slate-400 block uppercase">Total da Compra</span>
         <strong id="modalHistValorTotal" class="text-base sm:text-lg font-black text-emerald-600 block leading-tight">R$ 0,00</strong>

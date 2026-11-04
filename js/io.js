@@ -14,6 +14,27 @@ function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
   URL.revokeObjectURL(url);
 }
 
+
+// CONTROLE DO MODAL DE EXPORTAÇÃO (WHATSAPP / CSV)
+window.openExportOptionsModal = function() {
+  const m = document.getElementById('modalExportOptions');
+  if (m) {
+    m.classList.remove('hidden');
+    m.style.removeProperty('display');
+  } else {
+    showAppToast('Modal de exportação não encontrado no DOM.', 'error');
+  }
+};
+
+window.closeExportOptionsModal = function() {
+  const m = document.getElementById('modalExportOptions');
+  if (m) {
+    m.classList.add('hidden');
+    m.style.removeProperty('display');
+  }
+};
+
+// BACKUP COMPLETO UNIFICADO (JSON)
 function exportBackupJSON() {
   const fullBackup = {
     app: 'SuperComprasPro',
@@ -59,7 +80,6 @@ function handleRestoreJSON(e) {
         throw new Error('Formato de arquivo inválido: dados não encontrados.');
       }
 
-      // 1. Restauração de Produtos preservando integralmente Marcas e Cotações
       if (Array.isArray(rawProducts)) {
         const mapaProdutos = new Map();
         rawProducts.forEach(item => {
@@ -93,21 +113,18 @@ function handleRestoreJSON(e) {
         products = Array.from(mapaProdutos.values());
       }
 
-      // 2. Restauração de Supermercados com garantia do Mercado Referencial
       if (Array.isArray(rawMarkets)) {
-        const mercadosLimpos = rawMarkets.filter(m => m && m.id && m.name);
+        let mercadosLimpos = rawMarkets.filter(m => m && m.id && m.name);
         if (!mercadosLimpos.some(m => m.id === 'm-padrao')) {
           mercadosLimpos.unshift(MERCADO_PADRAO_GENERICO);
         }
         supermarkets = mercadosLimpos;
       }
 
-      // 3. Restauração do Histórico Imutável
       if (Array.isArray(rawHistory)) {
         purchaseHistory = rawHistory;
       }
 
-      // 4. Restauração do Carrinho e Mercado Ativo
       if (Array.isArray(rawCart)) {
         cart = rawCart;
       }
@@ -117,15 +134,14 @@ function handleRestoreJSON(e) {
         activeMarketId = 'm-padrao';
       }
 
-      // 5. Persistência unificada V3 e atualização imediata de todas as abas
       saveAllLocalData();
       refreshActiveMarketUI();
       renderCartUI();
       renderCatalogUI();
       renderMarketsUI();
-      renderHistoricoUI();
+      if (typeof renderHistoricoUI === 'function') renderHistoricoUI();
 
-      showAppToast(`Backup restaurado: ${products.length} produtos, ${supermarkets.length - 1} redes e ${purchaseHistory.length} compras!`, 'success');
+      showAppToast(`Backup restaurado: ${products.length} produtos carregados!`, 'success');
       document.getElementById('modalBackup')?.classList.add('hidden');
     } catch (err) {
       console.error('Falha ao restaurar:', err);
@@ -137,35 +153,62 @@ function handleRestoreJSON(e) {
   e.target.value = '';
 }
 
+// EXPORTAÇÃO CSV COMPLETA (COM DESCONTO E ATACADO)
 function exportCartCSV() {
-  let csv = '\uFEFFProduto;Marca;Categoria;Unidade;Preco_Unitario;Quantidade;Subtotal;No_Carrinho\n';
+  if (!Array.isArray(cart) || cart.length === 0) {
+    showAppToast('O carrinho está vazio para exportar.', 'warning');
+    return;
+  }
+
+  let csv = '\uFEFFProduto;Marca;Categoria;Unidade;Preco_Base;Condicao_Comercial;Economia;Quantidade;Subtotal;No_Carrinho\n';
   cart.forEach(it => {
     const calc = computeItemFinancials(it.quantity, it.unitPrice, it.promo);
-    csv += `"${it.name.replace(/"/g, '""')}";"${(it.selectedBrandId || 'Padrão').replace(/"/g, '""')}";${it.category || 'Geral'};${it.unit};${it.unitPrice.toFixed(2).replace('.', ',')};${it.quantity.toString().replace('.', ',')};${calc.finalSubtotal.toFixed(2).replace('.', ',')};${it.checked ? 'SIM' : 'NÃO'}\n`;
+    const condicaoTxt = calc.badgeText ? calc.badgeText.replace(/"/g, '""') : 'Normal';
+    const econTxt = calc.savings > 0 ? calc.savings.toFixed(2).replace('.', ',') : '0,00';
+
+    csv += `"${it.name.replace(/"/g, '""')}";"${(it.selectedBrandId || 'Padrão').replace(/"/g, '""')}";${it.category || 'Geral'};${it.unit};${it.unitPrice.toFixed(2).replace('.', ',')};"${condicaoTxt}";${econTxt};${it.quantity.toString().replace('.', ',')};${calc.finalSubtotal.toFixed(2).replace('.', ',')};${it.checked ? 'SIM' : 'NÃO'}\n`;
   });
 
   baixarArquivo(csv, `Compras_${getSelectedMarketName()}_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
-  showAppToast('Planilha CSV gerada!', 'success');
-  document.getElementById('modalExportOptions')?.classList.add('hidden');
+  showAppToast('Planilha CSV gerada com sucesso!', 'success');
+  closeExportOptionsModal();
 }
+window.exportCartCSV = exportCartCSV;
 
+// EXPORTAÇÃO WHATSAPP COM INDICAÇÃO DE ATACADO/DESCONTO
 function copyCartToWhatsApp() {
+  if (!Array.isArray(cart) || cart.length === 0) {
+    showAppToast('O carrinho está vazio para exportar.', 'warning');
+    return;
+  }
+
   const marketName = getSelectedMarketName();
   let text = `🛒 *LISTA DE COMPRAS (${marketName.toUpperCase()})*\n`;
   text += `📅 Data: ${new Date().toLocaleDateString('pt-BR')}\n`;
   text += `------------------------------------\n`;
 
-  let total = 0;
+  let totalGeral = 0;
+  let totalEconomia = 0;
+
   cart.forEach(it => {
     const calc = computeItemFinancials(it.quantity, it.unitPrice, it.promo);
-    total += calc.finalSubtotal;
+    totalGeral += calc.finalSubtotal;
+    totalEconomia += calc.savings;
+
     const check = it.checked ? '✅' : '⬜';
     const marcaTxt = (it.selectedBrandId && it.selectedBrandId !== 'Padrão') ? ` (${it.selectedBrandId})` : '';
-    text += `${check} *${it.name}${marcaTxt}*\n   ${formatQty(it.quantity)} ${it.unit} x R$ ${formatBRL(it.unitPrice)} = *R$ ${formatBRL(calc.finalSubtotal)}*\n`;
+    const condicaoPromo = calc.badgeText ? ` 🏷️ _[${calc.badgeText}]_` : '';
+    const economiaTxt = calc.savings > 0 ? ` (Econ. R$ ${formatBRL(calc.savings)})` : '';
+
+    text += `${check} *${it.name}${marcaTxt}*\n`;
+    text += `   ${formatQty(it.quantity)} ${it.unit} × R$ ${formatBRL(it.unitPrice)}${condicaoPromo} = *R$ ${formatBRL(calc.finalSubtotal)}*${economiaTxt}\n`;
   });
 
   text += `------------------------------------\n`;
-  text += `💰 *TOTAL PREVISTO: R$ ${formatBRL(total)}* (${cart.length} itens)\n`;
+  text += `💰 *TOTAL PREVISTO: R$ ${formatBRL(totalGeral)}* (${cart.length} itens)\n`;
+  if (totalEconomia > 0) {
+    text += `🎉 *ECONOMIA TOTAL: R$ ${formatBRL(totalEconomia)}*\n`;
+  }
 
   const ta = document.createElement('textarea');
   ta.value = text;
@@ -175,6 +218,8 @@ function copyCartToWhatsApp() {
   ta.select();
   document.execCommand('copy');
   document.body.removeChild(ta);
-  showAppToast('Lista copiada para o WhatsApp!', 'success');
-  document.getElementById('modalExportOptions')?.classList.add('hidden');
+
+  showAppToast('Lista com descontos copiada para o WhatsApp!', 'success');
+  closeExportOptionsModal();
 }
+window.copyCartToWhatsApp = copyCartToWhatsApp;

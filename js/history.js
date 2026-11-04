@@ -1,20 +1,29 @@
 /**
- * SUPERCOMPRAS PRO - HISTÓRICO DE COMPRAS (SNAPSHOTS IMUTÁVEIS E MODAL DINÂMICO)
+ * SUPERCOMPRAS PRO (js/history.js)
+ * Snapshots imutáveis, seleção múltipla e modal flutuante de dupla confirmação.
  */
+
+let selectedHistoryIds = new Set();
 
 function obterHistoricoLocal() {
   if (Array.isArray(window.purchaseHistory) && window.purchaseHistory.length > 0) {
     return window.purchaseHistory;
   }
+  if (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory) && purchaseHistory.length > 0) {
+    window.purchaseHistory = purchaseHistory;
+    return purchaseHistory;
+  }
   try {
     const salvoV3 = JSON.parse(localStorage.getItem('sc_history_v3'));
     if (Array.isArray(salvoV3) && salvoV3.length > 0) {
       window.purchaseHistory = salvoV3;
+      if (typeof purchaseHistory !== 'undefined') purchaseHistory = salvoV3;
       return salvoV3;
     }
     const salvoPadrao = JSON.parse(localStorage.getItem('sc_purchase_history'));
     if (Array.isArray(salvoPadrao) && salvoPadrao.length > 0) {
       window.purchaseHistory = salvoPadrao;
+      if (typeof purchaseHistory !== 'undefined') purchaseHistory = salvoPadrao;
       return salvoPadrao;
     }
   } catch (e) {
@@ -25,6 +34,7 @@ function obterHistoricoLocal() {
 
 function salvarHistoricoLocal(lista) {
   window.purchaseHistory = lista;
+  if (typeof purchaseHistory !== 'undefined') purchaseHistory = lista;
   try {
     localStorage.setItem('sc_history_v3', JSON.stringify(lista));
     localStorage.setItem('sc_purchase_history', JSON.stringify(lista));
@@ -40,21 +50,32 @@ function resolverNomeMercado(compra) {
   if (compra.mercadoNome && compra.mercadoNome !== 'Mercado' && compra.mercadoNome.trim().length > 0) {
     return compra.mercadoNome;
   }
-  if (compra.marketId && Array.isArray(window.supermarkets)) {
-    const m = window.supermarkets.find(x => x.id === compra.marketId);
+  const listaMercados = (typeof supermarkets !== 'undefined' && Array.isArray(supermarkets))
+    ? supermarkets
+    : (Array.isArray(window.supermarkets) ? window.supermarkets : []);
+
+  if (compra.marketId && listaMercados.length > 0) {
+    const m = listaMercados.find(x => x.id === compra.marketId);
     if (m && m.name) return m.name + (m.branch ? ` (${m.branch})` : '');
   }
   return 'Supermercado (Referência Geral)';
 }
 
+function obterIdCompra(compra, idx) {
+  if (!compra.id) {
+    compra.id = 'pur-' + (compra.date || compra.dataISO || Date.now()) + '-' + idx;
+  }
+  return String(compra.id);
+}
+
 window.renderHistoricoUI = function() {
   const container = document.getElementById('historicoListaContainer');
   const emptyState = document.getElementById('historicoVazioContainer');
+  const barraSelecao = document.getElementById('barraSelecaoHistorico');
   if (!container) return;
 
   const historico = obterHistoricoLocal();
 
-  // Métricas do Mês
   const agora = new Date();
   const mesAtual = agora.getMonth();
   const anoAtual = agora.getFullYear();
@@ -74,68 +95,285 @@ window.renderHistoricoUI = function() {
   const elMedia = document.getElementById('histMetricaMediaCompra');
   const elQtd = document.getElementById('histMetricaQtdCompras');
 
-  if (elTotalMes) elTotalMes.innerText = 'R$ ' + (typeof formatBRL === 'function' ? formatBRL(totalMes) : totalMes.toFixed(2));
-  if (elMedia) elMedia.innerText = 'R$ ' + (typeof formatBRL === 'function' ? formatBRL(mediaCompra) : mediaCompra.toFixed(2));
+  const fmt = (typeof formatBRL === 'function') ? formatBRL : (v) => Number(v || 0).toFixed(2);
+  if (elTotalMes) elTotalMes.innerText = 'R$ ' + fmt(totalMes);
+  if (elMedia) elMedia.innerText = 'R$ ' + fmt(mediaCompra);
   if (elQtd) elQtd.innerText = `${historico.length} compra${historico.length === 1 ? '' : 's'}`;
+
+  const idsValidos = new Set(historico.map((c, i) => obterIdCompra(c, i)));
+  selectedHistoryIds.forEach(id => {
+    if (!idsValidos.has(id)) selectedHistoryIds.delete(id);
+  });
 
   if (historico.length === 0) {
     container.innerHTML = '';
     emptyState?.classList.remove('hidden');
+    barraSelecao?.classList.add('hidden');
+    atualizarBarraSelecaoHistorico();
     return;
   }
 
   emptyState?.classList.add('hidden');
+  barraSelecao?.classList.remove('hidden');
 
   container.innerHTML = historico.map((compra, idx) => {
+    const compraId = obterIdCompra(compra, idx);
+    const isChecked = selectedHistoryIds.has(compraId);
+
     const rawData = compra.date || compra.dataISO || compra.data;
     const dataFormatada = rawData ? new Date(rawData).toLocaleDateString('pt-BR', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }) : 'Data recente';
 
     const mercadoNome = resolverNomeMercado(compra);
-    const valorTotal = typeof formatBRL === 'function' ? formatBRL(compra.total || 0) : Number(compra.total || 0).toFixed(2);
+    const valorTotal = fmt(compra.total || 0);
     const itens = compra.items || compra.itens || [];
     const qtdItens = itens.length || compra.itemCount || 1;
     const economia = Number(compra.savings) || 0;
 
     return `
-      <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs transition-all hover:border-slate-300 my-2">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div>
-            <strong class="text-xs font-black text-slate-800 block">${mercadoNome}</strong>
-            <span class="text-[10px] text-slate-400 block">${dataFormatada}</span>
+      <div class="bg-white p-3.5 rounded-2xl border ${isChecked ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'} shadow-2xs transition-all hover:border-slate-300 my-2">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
+          <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+            <input type="checkbox" 
+                   ${isChecked ? 'checked' : ''} 
+                   onchange="toggleSelectHistoryItem('${compraId}', this.checked)" 
+                   class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0" />
+            <div class="min-w-0 truncate cursor-pointer" onclick="abrirDetalhesCompraHistorico(${idx})">
+              <strong class="text-xs font-black text-slate-800 block truncate">${esc(mercadoNome)}</strong>              <span class="text-[10px] text-slate-400 block">${dataFormatada}</span>
+            </div>
           </div>
-          <div class="text-right">
+          <div class="text-right shrink-0">
             <span class="text-sm font-black text-emerald-600 block leading-tight">R$ ${valorTotal}</span>
-            ${economia > 0 ? `<span class="text-[10px] font-bold text-amber-600">Econ. R$ ${typeof formatBRL === 'function' ? formatBRL(economia) : economia.toFixed(2)}</span>` : ''}
+            ${economia > 0 ? `<span class="text-[10px] font-bold text-amber-600">Econ. R$ ${fmt(economia)}</span>` : ''}
           </div>
         </div>
 
         <div class="flex items-center justify-between pt-2.5 text-xs">
           <span class="text-slate-500 text-[11px] font-semibold">${qtdItens} produto${qtdItens === 1 ? '' : 's'}</span>
           <div class="flex items-center space-x-1.5">
-            <button type="button" onclick="abrirDetalhesCompraHistorico(${idx})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors">
+            <button type="button" onclick="abrirDetalhesCompraHistorico(${idx})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer">
               Ver Itens
             </button>
-            <button type="button" onclick="restaurarCompraParaCarrinho(${idx})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-[11px] transition-colors">
+            <button type="button" onclick="restaurarCompraParaCarrinho(${idx})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer">
               Repetir
+            </button>
+            <button type="button" onclick="excluirCompraHistorico(${idx})" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Excluir este cupom">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
             </button>
           </div>
         </div>
       </div>
     `;
   }).join('');
+
+  atualizarBarraSelecaoHistorico();
 };
 
+window.toggleSelectHistoryItem = function(id, isChecked) {
+  if (isChecked) {
+    selectedHistoryIds.add(id);
+  } else {
+    selectedHistoryIds.delete(id);
+  }
+  atualizarBarraSelecaoHistorico();
+  window.renderHistoricoUI();
+};
+
+window.toggleSelectAllHistorico = function(isChecked) {
+  const historico = obterHistoricoLocal();
+  if (isChecked) {
+    historico.forEach((c, i) => selectedHistoryIds.add(obterIdCompra(c, i)));
+  } else {
+    selectedHistoryIds.clear();
+  }
+  atualizarBarraSelecaoHistorico();
+  window.renderHistoricoUI();
+};
+
+function atualizarBarraSelecaoHistorico() {
+  const total = obterHistoricoLocal().length;
+  const selecionadas = selectedHistoryIds.size;
+
+  const checkAll = document.getElementById('checkSelectAllHistorico');
+  const contador = document.getElementById('contadorSelecaoHistorico');
+  const btnExcluir = document.getElementById('btnExcluirSelecionadosHistorico');
+  const labelBtn = document.getElementById('btnExcluirSelecionadosLabel');
+
+  if (checkAll) {
+    checkAll.checked = total > 0 && selecionadas === total;
+  }
+  if (contador) {
+    contador.innerText = `${selecionadas} de ${total} selecionada${selecionadas === 1 ? '' : 's'}`;
+  }
+  if (btnExcluir) {
+    if (selecionadas > 0) {
+      btnExcluir.classList.remove('hidden');
+      if (labelBtn) labelBtn.innerText = `Excluir (${selecionadas})`;
+    } else {
+      btnExcluir.classList.add('hidden');
+    }
+  }
+}
+
 /**
- * GERA O MODAL COMPLETO DINAMICAMENTE NO DOM (SEM RISCO DE DUPLICIDADE OU CORTE)
+ * MODAL FLUTUANTE DE DUPLA CONFIRMAÇÃO (SEM POP-UP NATIVO)
  */
+function abrirModalConfirmacaoDuplaHistorico(config) {
+  fecharModalConfirmacaoDupla();
+
+  const modalEl = document.createElement('div');
+  modalEl.id = 'modalConfirmacaoDuplaHistorico';
+  modalEl.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200';
+  modalEl.onclick = function(e) {
+    if (e.target === this) fecharModalConfirmacaoDupla();
+  };
+
+  modalEl.innerHTML = `
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl p-5 border border-slate-200 flex flex-col space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+          <span id="labelEtapaConfirmacao" class="text-[11px] font-black uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">Etapa 1 de 2</span>
+        </div>
+        <button type="button" onclick="fecharModalConfirmacaoDupla()" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
+      </div>
+
+      <div class="space-y-1.5 text-left">
+        <h3 id="tituloConfirmacaoDupla" class="font-black text-slate-800 text-base leading-tight">${config.titulo1}</h3>
+        <p id="msgConfirmacaoDupla" class="text-xs text-slate-600 leading-relaxed">${config.mensagem1}</p>
+      </div>
+
+      <div id="caixaAcoesConfirmacao" class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+        <button type="button" onclick="fecharModalConfirmacaoDupla()" class="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+          Cancelar
+        </button>
+        <button type="button" id="btnAvancarConfirmacao" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all">
+          Continuar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modalEl);
+
+  const btnAvancar = document.getElementById('btnAvancarConfirmacao');
+  btnAvancar.onclick = function() {
+    const etapaBadge = document.getElementById('labelEtapaConfirmacao');
+    const titulo = document.getElementById('tituloConfirmacaoDupla');
+    const msg = document.getElementById('msgConfirmacaoDupla');
+    const containerAcoes = document.getElementById('caixaAcoesConfirmacao');
+
+    etapaBadge.className = 'text-[11px] font-black uppercase text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md';
+    etapaBadge.innerText = 'Etapa 2 de 2 (Final)';
+
+    titulo.className = 'font-black text-rose-700 text-base leading-tight';
+    titulo.innerText = config.titulo2 || 'Confirmação Definitiva';
+
+    msg.className = 'text-xs text-slate-700 leading-relaxed font-semibold';
+    msg.innerText = config.mensagem2 || 'Esta ação não poderá ser desfeita. Deseja realmente prosseguir com a exclusão definitiva?';
+
+    containerAcoes.innerHTML = `
+      <button type="button" onclick="fecharModalConfirmacaoDupla()" class="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all">
+        Cancelar
+      </button>
+      <button type="button" id="btnExecutarExclusaoFinal" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all">
+        Sim, Excluir Definitivamente
+      </button>
+    `;
+
+    document.getElementById('btnExecutarExclusaoFinal').onclick = function() {
+      fecharModalConfirmacaoDupla();
+      config.onConfirmar();
+    };
+  };
+}
+
+function fecharModalConfirmacaoDupla() {
+  document.querySelectorAll('#modalConfirmacaoDuplaHistorico').forEach(el => el.remove());
+}
+
+// 1. EXCLUSÃO INDIVIDUAL COM MODAL FLUTUANTE
+window.excluirCompraHistorico = function(idx) {
+  const historico = obterHistoricoLocal();
+  const compra = historico[idx];
+  if (!compra) return;
+
+  const mercado = resolverNomeMercado(compra);
+  const data = compra.date ? new Date(compra.date).toLocaleDateString('pt-BR') : 'recente';
+
+  abrirModalConfirmacaoDuplaHistorico({
+    titulo1: 'Excluir Registro de Compra',
+    mensagem1: `Deseja remover o histórico da compra realizada no supermercado "${mercado}" em ${data}?`,
+    titulo2: 'Excluir Permanentemente?',
+    mensagem2: `Confirmação final: o cupom de "${mercado}" será apagado da memória deste aparelho de forma irreversível.`,
+    onConfirmar: () => {
+      const id = obterIdCompra(compra, idx);
+      selectedHistoryIds.delete(id);
+
+      historico.splice(idx, 1);
+      salvarHistoricoLocal(historico);
+      window.renderHistoricoUI();
+      if (typeof showAppToast === 'function') showAppToast('Cupom excluído com sucesso.', 'info');
+    }
+  });
+};
+
+// 2. EXCLUSÃO EM LOTE (SELECIONADAS) COM MODAL FLUTUANTE
+window.excluirHistoricosSelecionados = function() {
+  const totalParaApagar = selectedHistoryIds.size;
+  if (totalParaApagar === 0) return;
+
+  abrirModalConfirmacaoDuplaHistorico({
+    titulo1: 'Excluir Compras Selecionadas',
+    mensagem1: `Deseja remover as ${totalParaApagar} compras selecionadas no histórico?`,
+    titulo2: 'Confirmar Exclusão em Lote',
+    mensagem2: `Atenção: todos os ${totalParaApagar} cupons selecionados serão eliminados permanentemente do histórico.`,
+    onConfirmar: () => {
+      let historico = obterHistoricoLocal();
+      historico = historico.filter((compra, idx) => {
+        const id = obterIdCompra(compra, idx);
+        return !selectedHistoryIds.has(id);
+      });
+
+      selectedHistoryIds.clear();
+      salvarHistoricoLocal(historico);
+      window.renderHistoricoUI();
+      if (typeof showAppToast === 'function') showAppToast(`${totalParaApagar} compras foram excluídas.`, 'info');
+    }
+  });
+};
+
+// 3. LIMPEZA TOTAL COM MODAL FLUTUANTE
+window.limparTodoHistorico = function() {
+  const historico = obterHistoricoLocal();
+  if (historico.length === 0) {
+    if (typeof showAppToast === 'function') showAppToast('O histórico já está vazio.', 'info');
+    return;
+  }
+
+  abrirModalConfirmacaoDuplaHistorico({
+    titulo1: 'Limpar Todo o Histórico',
+    mensagem1: 'Deseja apagar todos os registros de compras arquivados neste aparelho?',
+    titulo2: 'AVISO CRÍTICO: Limpeza Total',
+    mensagem2: 'Todas as compras, valores e históricos arquivados serão excluídos em definitivo. Tem certeza?',
+    onConfirmar: () => {
+      selectedHistoryIds.clear();
+      salvarHistoricoLocal([]);
+      window.renderHistoricoUI();
+      if (typeof showAppToast === 'function') showAppToast('Histórico esvaziado com sucesso.', 'info');
+    }
+  });
+};
+
+// MODAL DE CUPOM (ESTRUTURA IMUTÁVEL)
 window.abrirDetalhesCompraHistorico = function(idx) {
   const historico = obterHistoricoLocal();
   const compra = historico[idx];
   if (!compra) return;
 
-  // Remove qualquer modal antigo com o mesmo ID para evitar conflitos no DOM
   document.querySelectorAll('#modalDetalhesHistorico').forEach(el => el.remove());
 
   const rawData = compra.date || compra.dataISO || compra.data;
@@ -145,9 +383,9 @@ window.abrirDetalhesCompraHistorico = function(idx) {
 
   const mercadoNome = resolverNomeMercado(compra);
   const itens = compra.items || compra.itens || [];
-  const totalFormatado = typeof formatBRL === 'function' ? formatBRL(compra.total || 0) : Number(compra.total || 0).toFixed(2);
+  const fmt = (typeof formatBRL === 'function') ? formatBRL : (v) => Number(v || 0).toFixed(2);
+  const totalFormatado = fmt(compra.total || 0);
 
-  // Monta as linhas de cada item arquivado
   let itensHtml = '';
   if (itens.length === 0) {
     itensHtml = `
@@ -167,35 +405,31 @@ window.abrirDetalhesCompraHistorico = function(idx) {
         <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-xs my-1.5 shadow-2xs">
           <div class="min-w-0 pr-2">
             <div class="flex items-center space-x-1.5 flex-wrap">
-              <strong class="font-extrabold text-slate-800 truncate">${nome}</strong>
-              <span class="text-[9px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.2 rounded border border-emerald-300">
-                🏷️ ${marca}
+              <strong class="font-extrabold text-slate-800 truncate">${esc(nome)}</strong>              <span class="text-[9px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.2 rounded border border-emerald-300">
+                🏷️ ${esc(marca)}
               </span>
             </div>
             <p class="text-[11px] text-slate-500 mt-0.5">
-              ${qtd} ${unidade} × R$ ${typeof formatBRL === 'function' ? formatBRL(precoUnit) : precoUnit.toFixed(2)}
+              ${qtd} ${esc(unidade)} × R$ ${fmt(precoUnit)}
             </p>
           </div>
           <span class="font-black text-slate-800 shrink-0 text-sm">
-            R$ ${typeof formatBRL === 'function' ? formatBRL(subtotal) : subtotal.toFixed(2)}
+            R$ ${fmt(subtotal)}
           </span>
         </div>
       `;
     }).join('');
   }
 
-  // Cria e injeta o modal com garantia de estrutura e visibilidade
   const modalContainer = document.createElement('div');
   modalContainer.id = 'modalDetalhesHistorico';
   modalContainer.className = 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs';
   modalContainer.onclick = function(e) {
-    if (e.target === this) fecharModalDetalhesHistorico();
+    if (e.target === this) window.fecharModalDetalhesHistorico();
   };
 
   modalContainer.innerHTML = `
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-4 sm:p-5 border border-slate-200 flex flex-col relative" style="max-height: 85vh;">
-      
-      <!-- Topo com Local e Data -->
       <div class="flex items-start justify-between border-b border-slate-100 pb-3 shrink-0">
         <div class="min-w-0 pr-3">
           <div class="flex items-center space-x-1.5 flex-wrap">
@@ -211,12 +445,10 @@ window.abrirDetalhesCompraHistorico = function(idx) {
         </button>
       </div>
 
-      <!-- Lista de Produtos Não Editáveis com Rolagem -->
       <div class="py-3 flex-1 overflow-y-auto min-h-[140px] pr-1">
         ${itensHtml}
       </div>
 
-      <!-- Rodapé com Total e Botão Repetir -->
       <div class="border-t border-slate-100 pt-3 flex items-center justify-between bg-white shrink-0">
         <div>
           <span class="text-[10px] font-bold text-slate-400 block uppercase">Total da Compra</span>
@@ -224,7 +456,7 @@ window.abrirDetalhesCompraHistorico = function(idx) {
         </div>
         <div class="flex items-center space-x-2">
           <button type="button" onclick="fecharModalDetalhesHistorico()" class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-            ← Voltar
+            Voltar
           </button>
           <button type="button" onclick="restaurarCompraParaCarrinho(${idx}); fecharModalDetalhesHistorico();" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -245,7 +477,10 @@ window.fecharModalDetalhesHistorico = function() {
 };
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') fecharModalDetalhesHistorico();
+  if (e.key === 'Escape') {
+    window.fecharModalDetalhesHistorico();
+    fecharModalConfirmacaoDupla();
+  }
 });
 
 window.restaurarCompraParaCarrinho = function(idx) {
@@ -258,18 +493,18 @@ window.restaurarCompraParaCarrinho = function(idx) {
     return;
   }
 
-  // Preserva integralmente o supermercado ativo atual no aplicativo
   const mercadoAtivoAtual = activeMarketId;
+  const listaProdutos = (typeof products !== 'undefined' && Array.isArray(products))
+    ? products
+    : (Array.isArray(window.products) ? window.products : []);
 
-  // Reconstrói o carrinho com itens e marcas, buscando os preços do mercado atualmente ativo
   cart = itens.map(it => {
     const nomeItem = (it.name || it.nome || '').trim();
     const marcaItem = (it.selectedBrandId || it.brand || it.marca || 'Padrão').trim();
     const qtdItem = Number(it.quantity || it.quantidade || 1);
     const unidadeItem = it.unit || it.unidade || 'un';
 
-    // Localiza o produto no catálogo mestre
-    const prodBanco = (products || []).find(p => 
+    const prodBanco = listaProdutos.find(p => 
       (it.productId && p.id === it.productId) || 
       (p.name && p.name.toLowerCase() === nomeItem.toLowerCase())
     );
@@ -280,19 +515,16 @@ window.restaurarCompraParaCarrinho = function(idx) {
       const marcaLower = marcaItem.toLowerCase();
 
       if (marcaLower === 'padrão' || marcaLower === 'padrao') {
-        // Cotação da marca padrão no supermercado que está selecionado agora
         if (prodBanco.marketPrices && prodBanco.marketPrices[mercadoAtivoAtual] !== undefined) {
           precoDoBanco = Number(prodBanco.marketPrices[mercadoAtivoAtual]) || 0;
         }
       } else if (Array.isArray(prodBanco.brands)) {
-        // Cotação da marca específica no supermercado que está selecionado agora
         const bObj = prodBanco.brands.find(b => (b.name || b.id || '').toLowerCase() === marcaLower);
         if (bObj && bObj.marketPrices && bObj.marketPrices[mercadoAtivoAtual] !== undefined) {
           precoDoBanco = Number(bObj.marketPrices[mercadoAtivoAtual]) || 0;
         }
       }
 
-      // Preço base de referência caso não haja cotação específica no mercado ativo
       if (precoDoBanco <= 0 && prodBanco.basePrice > 0) {
         precoDoBanco = Number(prodBanco.basePrice);
       }
@@ -303,7 +535,7 @@ window.restaurarCompraParaCarrinho = function(idx) {
       productId: prodBanco ? prodBanco.id : (it.productId || null),
       name: prodBanco ? prodBanco.name : nomeItem,
       selectedBrandId: marcaItem,
-      unitPrice: precoDoBanco, // Preço vigente do mercado ativo
+      unitPrice: precoDoBanco,
       quantity: qtdItem,
       unit: prodBanco ? (prodBanco.unit || unidadeItem) : unidadeItem,
       checked: false,
@@ -311,21 +543,13 @@ window.restaurarCompraParaCarrinho = function(idx) {
     };
   });
 
-  saveCartData();
-  saveAllLocalData();
+  if (typeof saveCartData === 'function') saveCartData();
+  if (typeof saveAllLocalData === 'function') saveAllLocalData();
   if (typeof switchActiveTab === 'function') switchActiveTab('compras');
   if (typeof renderCartUI === 'function') renderCartUI();
   if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
 
   if (typeof showAppToast === 'function') {
     showAppToast('Itens e marcas inseridos no carrinho mantendo o mercado ativo!', 'success');
-  }
-};
-
-window.limparTodoHistorico = function() {
-  if (confirm('Deseja apagar permanentemente todo o histórico de compras deste aparelho?')) {
-    salvarHistoricoLocal([]);
-    renderHistoricoUI();
-    if (typeof showAppToast === 'function') showAppToast('Histórico esvaziado.', 'info');
   }
 };

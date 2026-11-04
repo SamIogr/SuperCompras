@@ -15,30 +15,28 @@ function salvarChaveSeguranca() {
 }
 
 async function sincronizarComPlanilha() {
-  let token = getSecurityToken();
+  let token = typeof getSecurityToken === 'function' ? getSecurityToken() : '';
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
     if (!chave || !chave.trim()) {
-      showAppToast('Sincronização cancelada: chave necessária.', 'info');
+      if (typeof showAppToast === 'function') showAppToast('Sincronização cancelada: chave necessária.', 'info');
       return;
     }
     token = chave.trim();
     localStorage.setItem('sc_security_token', token);
   }
 
-  // Remove bloqueios acidentais de testes anteriores
   localStorage.removeItem('sc_ignored_markets');
 
   const btn = document.getElementById('btnSyncPlanilha');
   if (btn) btn.classList.add('animate-spin');
-  showAppToast('Sincronizando com a planilha...', 'info');
+  if (typeof showAppToast === 'function') showAppToast('Sincronizando com a planilha...', 'info');
 
   try {
     const res = await fetch(`${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}`);
     const json = await res.json();
 
     if (json.status === 'success') {
-      // Suporte flexível para 'supermercados' ou 'mercados'
       const redesRemotas = json.supermercados || json.mercados || [];
 
       if (Array.isArray(redesRemotas) && redesRemotas.length > 0) {
@@ -79,19 +77,23 @@ async function sincronizarComPlanilha() {
       }
 
       saveAllLocalData();
-      refreshActiveMarketUI();
+      if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
       if (typeof renderCartUI === 'function') renderCartUI();
       if (typeof renderCatalogUI === 'function') renderCatalogUI();
       if (typeof renderMarketsUI === 'function') renderMarketsUI();
       
       const totalRedesReais = supermarkets.filter(m => m.id !== 'm-padrao').length;
-      showAppToast(`Sincronizado: ${products.length} itens e ${totalRedesReais} redes!`, 'success');
+      if (typeof showAppToast === 'function') {
+        showAppToast(`Sincronizado: ${products.length} itens e ${totalRedesReais} redes!`, 'success');
+      }
     } else {
       if (json.message && json.message.includes('não autorizado')) localStorage.removeItem('sc_security_token');
       throw new Error(json.message || 'Falha na resposta da API');
     }
   } catch (err) {
-    showAppToast('Erro ao sincronizar: ' + err.message, 'error');
+    if (typeof showAppToast === 'function') {
+      showAppToast('Erro ao sincronizar: ' + err.message, 'error');
+    }
   } finally {
     if (btn) btn.classList.remove('animate-spin');
   }
@@ -206,13 +208,13 @@ function renderSyncLists() {
       return `
         <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
           <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSingleProductSync('${p.name.replace(/'/g, "\\'")}', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} data-name="${esc(p.name)}" onchange="toggleSingleProductSync(this.dataset.name, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
             <div class="truncate">
-              <span class="font-bold text-slate-800">${p.name}</span>
-              <span class="text-[10px] text-slate-500 ml-1">(${p.unit || 'un'} - ${p.category || 'Geral'})</span>
+              <span class="font-bold text-slate-800">${esc(p.name)}</span>
+              <span class="text-[10px] text-slate-500 ml-1">(${esc(p.unit || 'un')} - ${esc(p.category || 'Geral')})</span>
             </div>
           </label>
-          <button type="button" onclick="syncSingleItemNow('produto', '${p.name.replace(/'/g, "\\'")}')" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+          <button type="button" data-name="${esc(p.name)}" onclick="syncSingleItemNow('produto', this.dataset.name)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
             Sincar Só Este
           </button>
         </div>
@@ -229,13 +231,13 @@ function renderSyncLists() {
       return `
         <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
           <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSingleMarketSync('${m.id}', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} data-id="${esc(m.id)}" onchange="toggleSingleMarketSync(this.dataset.id, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
             <div class="truncate">
-              <span class="font-bold text-slate-800">${m.name}</span>
-              <span class="text-[10px] text-slate-500 ml-1">(${m.branch || 'SJP'})</span>
+              <span class="font-bold text-slate-800">${esc(m.name)}</span>
+              <span class="text-[10px] text-slate-500 ml-1">(${esc(m.branch || 'SJP')})</span>
             </div>
           </label>
-          <button type="button" onclick="syncSingleItemNow('mercado', '${m.id}')" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+          <button type="button" data-id="${esc(m.id)}" onclick="syncSingleItemNow('mercado', this.dataset.id)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
             Sincar Só Este
           </button>
         </div>
@@ -450,3 +452,130 @@ async function promoverMercadoEmEdicaoParaPlanilha() {
     if (btn) { btn.disabled = false; btn.innerText = 'Sincronizar este mercado com a planilha'; }
   }
 }
+
+
+/**
+ * SINCRONIZAÇÃO INTELIGENTE DO CATÁLOGO DE PRODUTOS
+ * - Produtos locais: cadastrados na planilha Google e convertidos em Nuvem.
+ * - Produtos de nuvem: valores e cotações locais enviados para a planilha.
+ */
+async function sincronizarCatalogoDireto() {
+  let token = typeof getSecurityToken === 'function' ? getSecurityToken() : '';
+  if (!token) {
+    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
+    if (!chave || !chave.trim()) {
+      if (typeof showAppToast === 'function') showAppToast('Sincronização cancelada: chave necessária.', 'info');
+      return;
+    }
+    token = chave.trim();
+    localStorage.setItem('sc_security_token', token);
+  }
+
+  const icon = document.getElementById('iconSyncCatalogo');
+  if (icon) icon.classList.add('animate-spin');
+
+  // Identifica se o usuário marcou checkboxes ou se sincronizará o catálogo todo
+  const idsSelecionados = (window.selectedCatalogProductIds && window.selectedCatalogProductIds.size > 0)
+    ? Array.from(window.selectedCatalogProductIds)
+    : [];
+
+  const listaAlvo = idsSelecionados.length > 0 
+    ? (products || []).filter(p => idsSelecionados.includes(String(p.id)))
+    : (products || []);
+
+  if (listaAlvo.length === 0) {
+    if (icon) icon.classList.remove('animate-spin');
+    if (typeof showAppToast === 'function') showAppToast('Nenhum produto encontrado para sincronizar.', 'info');
+    return;
+  }
+
+  if (typeof showAppToast === 'function') {
+    showAppToast(`Sincronizando ${listaAlvo.length} produto(s) com a planilha...`, 'info');
+  }
+
+  let locaisPromovidos = 0;
+  let nuvemAtualizados = 0;
+
+  try {
+    for (const p of listaAlvo) {
+      const isLocal = String(p.id).startsWith('p-custom-') || String(p.id).startsWith('p-local-');
+
+      if (isLocal) {
+        // 1. PRODUTO LOCAL -> ENVIA PARA A NUVEM (CRIAR NA PLANILHA)
+        const urlCriar = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_produto&name=${encodeURIComponent(p.name)}&category=${encodeURIComponent(p.category || 'Geral')}&unit=${encodeURIComponent(p.unit || 'un')}&price=${encodeURIComponent(p.basePrice || 0)}`;
+        
+        const res = await fetch(urlCriar);
+        const json = await res.json();
+
+        if (json.status === 'success') {
+          // Converte o ID local para o ID oficial gerado pela planilha
+          p.id = json.id || ('p-cloud-' + Date.now());
+          if (json.colIndex) p.colIndex = json.colIndex;
+
+          // Se tiver cotações por mercado registradas no card, envia cada uma delas
+          if (p.marketPrices && typeof p.marketPrices === 'object') {
+            for (const [mId, preco] of Object.entries(p.marketPrices)) {
+              if (Number(preco) > 0 && mId !== 'm-padrao' && typeof enviarProdutoParaPlanilha === 'function') {
+                await enviarProdutoParaPlanilha(p, mId, preco, 'Padrão');
+              }
+            }
+          }
+          locaisPromovidos++;
+        }
+      } else {
+        // 2. PRODUTO NUVEM -> ATUALIZA VALORES NA PLANILHA
+        let atualizouPreco = false;
+
+        // Atualiza cotações por supermercado onde houver preço cadastrado
+        if (p.marketPrices && typeof p.marketPrices === 'object') {
+          for (const [mId, preco] of Object.entries(p.marketPrices)) {
+            if (Number(preco) > 0 && mId !== 'm-padrao') {
+              const mercadoObj = (supermarkets || []).find(m => m.id === mId);
+              if (mercadoObj && mercadoObj.colIndex && typeof enviarProdutoParaPlanilha === 'function') {
+                await enviarProdutoParaPlanilha(p, mId, preco, 'Padrão');
+                atualizouPreco = true;
+              }
+            }
+          }
+        }
+
+        // Se tiver marcas extras cadastradas com cotações, atualiza-as também
+        if (Array.isArray(p.brands)) {
+          for (const marcaObj of p.brands) {
+            const nomeMarca = marcaObj.name || marcaObj.id;
+            if (marcaObj.marketPrices && typeof marcaObj.marketPrices === 'object') {
+              for (const [mId, preco] of Object.entries(marcaObj.marketPrices)) {
+                if (Number(preco) > 0 && typeof enviarProdutoParaPlanilha === 'function') {
+                  await enviarProdutoParaPlanilha(p, mId, preco, nomeMarca);
+                  atualizouPreco = true;
+                }
+              }
+            }
+          }
+        }
+
+        nuvemAtualizados++;
+      }
+    }
+
+    // Salva o banco localmente após a promoção dos IDs
+    saveAllLocalData();
+
+    // Limpa a seleção e atualiza a interface
+    if (window.selectedCatalogProductIds) window.selectedCatalogProductIds.clear();
+    if (typeof renderCatalogUI === 'function') renderCatalogUI();
+
+    if (typeof showAppToast === 'function') {
+      showAppToast(`Sincronizado! ${locaisPromovidos} adicionado(s) à nuvem e ${nuvemAtualizados} atualizado(s).`, 'success');
+    }
+  } catch (err) {
+    console.error('[Sincronia Catálogo] Erro:', err);
+    if (typeof showAppToast === 'function') {
+      showAppToast('Erro ao sincronizar com a planilha: ' + err.message, 'error');
+    }
+  } finally {
+    if (icon) icon.classList.remove('animate-spin');
+  }
+}
+
+window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
