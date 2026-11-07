@@ -175,14 +175,11 @@ function exportCartCSV() {
 }
 window.exportCartCSV = exportCartCSV;
 
-// EXPORTAÇÃO WHATSAPP COM INDICAÇÃO DE ATACADO/DESCONTO
-function copyCartToWhatsApp() {
-  if (!Array.isArray(cart) || cart.length === 0) {
-    showAppToast('O carrinho está vazio para exportar.', 'warning');
-    return;
-  }
+// GERADOR ÚNICO: FORMATO DETALHADO COMPLETO COM LINK
+async function gerarTextoFormatadoCarrinho() {
+  if (!Array.isArray(cart) || cart.length === 0) return null;
 
-  const marketName = getSelectedMarketName();
+  const marketName = typeof getSelectedMarketName === 'function' ? getSelectedMarketName() : 'Supermercado';
   let text = `🛒 *LISTA DE COMPRAS (${marketName.toUpperCase()})*\n`;
   text += `📅 Data: ${new Date().toLocaleDateString('pt-BR')}\n`;
   text += `------------------------------------\n`;
@@ -199,9 +196,10 @@ function copyCartToWhatsApp() {
     const marcaTxt = (it.selectedBrandId && it.selectedBrandId !== 'Padrão') ? ` (${it.selectedBrandId})` : '';
     const condicaoPromo = calc.badgeText ? ` 🏷️ _[${calc.badgeText}]_` : '';
     const economiaTxt = calc.savings > 0 ? ` (Econ. R$ ${formatBRL(calc.savings)})` : '';
+    const qtdFormatada = typeof formatQty === 'function' ? formatQty(it.quantity) : it.quantity;
 
     text += `${check} *${it.name}${marcaTxt}*\n`;
-    text += `   ${formatQty(it.quantity)} ${it.unit} × R$ ${formatBRL(it.unitPrice)}${condicaoPromo} = *R$ ${formatBRL(calc.finalSubtotal)}*${economiaTxt}\n`;
+    text += `   ${qtdFormatada} ${it.unit || 'un'} × R$ ${formatBRL(it.unitPrice)}${condicaoPromo} = *R$ ${formatBRL(calc.finalSubtotal)}*${economiaTxt}\n`;
   });
 
   text += `------------------------------------\n`;
@@ -210,8 +208,43 @@ function copyCartToWhatsApp() {
     text += `🎉 *ECONOMIA TOTAL: R$ ${formatBRL(totalEconomia)}*\n`;
   }
 
+  // Anexa o link de importação interativo com o payload comprimido
+  if (typeof serializarCarrinhoParaQR === 'function') {
+    const payloadCompacto = await serializarCarrinhoParaQR();
+    if (payloadCompacto) {
+      const baseUrl = window.location.origin + window.location.pathname;
+      const linkImportacao = `${baseUrl}#import=${encodeURIComponent(payloadCompacto)}`;
+      text += `\n📲 *Para abrir e controlar no SuperCompras, toque no link:*\n${linkImportacao}\n`;
+    }
+  }
+
+  return text;
+}
+window.gerarTextoFormatadoCarrinho = gerarTextoFormatadoCarrinho;
+
+// 1. Enviar diretamente para o WhatsApp
+async function compartilharCarrinhoWhatsApp() {
+  const texto = await gerarTextoFormatadoCarrinho();
+  if (!texto) {
+    if (typeof showAppToast === 'function') showAppToast('O carrinho está vazio!', 'warning');
+    return;
+  }
+  const urlWhatsapp = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+  window.open(urlWhatsapp, '_blank');
+  if (typeof closeExportOptionsModal === 'function') closeExportOptionsModal();
+}
+window.compartilharCarrinhoWhatsApp = compartilharCarrinhoWhatsApp;
+
+// 2. Copiar exatamente o mesmo texto detalhado para a área de transferência
+async function copyCartToWhatsApp() {
+  const texto = await gerarTextoFormatadoCarrinho();
+  if (!texto) {
+    if (typeof showAppToast === 'function') showAppToast('O carrinho está vazio para exportar.', 'warning');
+    return;
+  }
+
   const ta = document.createElement('textarea');
-  ta.value = text;
+  ta.value = texto;
   ta.style.position = 'fixed';
   ta.style.opacity = '0';
   document.body.appendChild(ta);
@@ -219,7 +252,7 @@ function copyCartToWhatsApp() {
   document.execCommand('copy');
   document.body.removeChild(ta);
 
-  showAppToast('Lista com descontos copiada para o WhatsApp!', 'success');
-  closeExportOptionsModal();
+  if (typeof showAppToast === 'function') showAppToast('Lista copiada para o WhatsApp!', 'success');
+  if (typeof closeExportOptionsModal === 'function') closeExportOptionsModal();
 }
 window.copyCartToWhatsApp = copyCartToWhatsApp;

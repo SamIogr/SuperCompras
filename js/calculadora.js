@@ -1,11 +1,33 @@
 /**
  * SUPERCOMPRAS PRO - CALCULADORA COMPARATIVA MODULAR
- * Suporte a meta de volume, atacado opcional, botões de ação e gatilhos de decisão
+ * Código autossuficiente e blindado (sem dependências cruzadas)
  */
 
 let compCurrentMode = 'weight';
 
+// Conversores numéricos puros locais (evita qualquer conflito de escopo)
+function limparValorCalc(val) {
+  if (val === null || val === undefined) return 0;
+  let s = String(val).trim();
+  if (s === '' || s.toLowerCase() === 'null') return 0;
+  s = s.replace(/[^\d.,-]/g, '');
+  if (s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if ((s.match(/\./g) || []).length > 1) {
+    s = s.replace(/\./g, '');
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatarMoedaCalc(num) {
+  return (Number(num) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function abrirCalculadoraComparativa() {
+  if (window.AppTemplates && typeof window.AppTemplates.renderPriceComparatorModal === 'function') {
+    window.AppTemplates.renderPriceComparatorModal();
+  }
   const modal = document.getElementById('modalPriceComparator');
   if (modal) {
     modal.classList.remove('hidden');
@@ -14,26 +36,23 @@ function abrirCalculadoraComparativa() {
     }, 100);
   }
 }
+window.abrirCalculadoraComparativa = abrirCalculadoraComparativa;
 
 function fecharCalculadoraComparativa() {
   const modal = document.getElementById('modalPriceComparator');
-  if (modal) {
-    modal.classList.add('hidden');
-  }
+  if (modal) modal.classList.add('hidden');
 }
+window.fecharCalculadoraComparativa = fecharCalculadoraComparativa;
 
 function toggleWholesaleSection(op) {
   const check = document.getElementById(`compHasWholesale${op}`);
   const box = document.getElementById(`compWholesaleBox${op}`);
   if (check && box) {
-    if (check.checked) {
-      box.classList.remove('hidden');
-    } else {
-      box.classList.add('hidden');
-    }
+    box.classList.toggle('hidden', !check.checked);
   }
   calcularComparativoPrecos();
 }
+window.toggleWholesaleSection = toggleWholesaleSection;
 
 function setCompMode(mode) {
   compCurrentMode = mode;
@@ -78,39 +97,26 @@ function setCompMode(mode) {
 
   calcularComparativoPrecos();
 }
-
-function parseValHelper(val) {
-  if (typeof parseNumberInput === 'function') return parseNumberInput(val);
-  if (!val) return 0;
-  const n = parseFloat(String(val).trim().replace(',', '.'));
-  return isNaN(n) ? 0 : n;
-}
-
-function fmtMoedaHelper(num) {
-  if (typeof formatBRL === 'function') return formatBRL(num);
-  return (Number(num) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+window.setCompMode = setCompMode;
 
 function calcularComparativoPrecos() {
-  const targetVal = parseValHelper(document.getElementById('compTargetQty')?.value);
+  const targetVal = limparValorCalc(document.getElementById('compTargetQty')?.value);
 
-  const qtyA = parseValHelper(document.getElementById('compQtyA')?.value);
-  const priceA = parseValHelper(document.getElementById('compPriceA')?.value);
+  const qtyA = limparValorCalc(document.getElementById('compQtyA')?.value);
+  const priceA = limparValorCalc(document.getElementById('compPriceA')?.value);
   const hasAtacadoA = document.getElementById('compHasWholesaleA')?.checked || false;
-  const minAtacadoA = parseValHelper(document.getElementById('compMinWholesaleA')?.value);
-  const priceAtacadoA = parseValHelper(document.getElementById('compPriceWholesaleA')?.value);
+  const minAtacadoA = limparValorCalc(document.getElementById('compMinWholesaleA')?.value);
+  const priceAtacadoA = limparValorCalc(document.getElementById('compPriceWholesaleA')?.value);
 
-  const qtyB = parseValHelper(document.getElementById('compQtyB')?.value);
-  const priceB = parseValHelper(document.getElementById('compPriceB')?.value);
+  const qtyB = limparValorCalc(document.getElementById('compQtyB')?.value);
+  const priceB = limparValorCalc(document.getElementById('compPriceB')?.value);
   const hasAtacadoB = document.getElementById('compHasWholesaleB')?.checked || false;
-  const minAtacadoB = parseValHelper(document.getElementById('compMinWholesaleB')?.value);
-  const priceAtacadoB = parseValHelper(document.getElementById('compPriceWholesaleB')?.value);
+  const minAtacadoB = limparValorCalc(document.getElementById('compMinWholesaleB')?.value);
+  const priceAtacadoB = limparValorCalc(document.getElementById('compPriceWholesaleB')?.value);
 
   const resA = document.getElementById('compResultUnitA');
   const resB = document.getElementById('compResultUnitB');
   const verdict = document.getElementById('compVerdictCard');
-
-  if (!resA || !resB || !verdict) return;
 
   const baseDivisor = (compCurrentMode === 'unit') ? 1 : 1000;
   const unitLabel = (compCurrentMode === 'weight') ? 'kg' : (compCurrentMode === 'volume') ? 'L' : 'un';
@@ -119,8 +125,10 @@ function calcularComparativoPrecos() {
   const baseCostA = (qtyA > 0 && priceA > 0) ? priceA / (qtyA / baseDivisor) : 0;
   const baseCostB = (qtyB > 0 && priceB > 0) ? priceB / (qtyB / baseDivisor) : 0;
 
-  resA.innerText = baseCostA > 0 ? `R$ ${fmtMoedaHelper(baseCostA)} / ${unitLabel}` : `R$ 0,00 / ${unitLabel}`;
-  resB.innerText = baseCostB > 0 ? `R$ ${fmtMoedaHelper(baseCostB)} / ${unitLabel}` : `R$ 0,00 / ${unitLabel}`;
+  if (resA) resA.innerText = baseCostA > 0 ? `R$ ${formatarMoedaCalc(baseCostA)} / ${unitLabel}` : `R$ 0,00 / ${unitLabel}`;
+  if (resB) resB.innerText = baseCostB > 0 ? `R$ ${formatarMoedaCalc(baseCostB)} / ${unitLabel}` : `R$ 0,00 / ${unitLabel}`;
+
+  if (!verdict) return;
 
   if (baseCostA <= 0 || baseCostB <= 0) {
     verdict.className = 'p-3 rounded-xl border border-dashed border-slate-300 bg-white text-center';
@@ -156,19 +164,19 @@ function calcularComparativoPrecos() {
           <span class="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">Mesmo Gasto Total</span>
         </div>
         <p class="text-xs text-amber-900 font-bold mb-3">
-          Ambas as opções exigem o mesmo investimento de <span class="underline decoration-amber-500 decoration-2">R$ ${fmtMoedaHelper(totalGastoA)}</span> para suprir a meta de ${targetVal} ${unitLabel}.
+          Ambas as opções exigem o mesmo investimento de <span class="underline decoration-amber-500 decoration-2">R$ ${formatarMoedaCalc(totalGastoA)}</span> para suprir a meta de ${targetVal} ${unitLabel}.
         </p>
         <div class="grid grid-cols-2 gap-2 text-[11px]">
           <div class="p-2 rounded-xl bg-white/90 border border-amber-200">
             <span class="font-extrabold text-slate-800 block">Opção A</span>
             <span class="text-slate-600 block">${pacotesA} un ${aplicaAtacadoA ? '(Atacado)' : '(Varejo)'}</span>
-            <span class="font-black text-slate-900 text-xs mt-1 block">R$ ${fmtMoedaHelper(totalGastoA)}</span>
+            <span class="font-black text-slate-900 text-xs mt-1 block">R$ ${formatarMoedaCalc(totalGastoA)}</span>
             <span class="text-[10px] text-slate-500">Leva ${totalEntregueA.toFixed(2)} ${unitLabel}</span>
           </div>
           <div class="p-2 rounded-xl bg-white/90 border border-amber-200">
             <span class="font-extrabold text-slate-800 block">Opção B</span>
             <span class="text-slate-600 block">${pacotesB} un ${aplicaAtacadoB ? '(Atacado)' : '(Varejo)'}</span>
-            <span class="font-black text-slate-900 text-xs mt-1 block">R$ ${fmtMoedaHelper(totalGastoB)}</span>
+            <span class="font-black text-slate-900 text-xs mt-1 block">R$ ${formatarMoedaCalc(totalGastoB)}</span>
             <span class="text-[10px] text-slate-500">Leva ${totalEntregueB.toFixed(2)} ${unitLabel}</span>
           </div>
         </div>
@@ -184,7 +192,7 @@ function calcularComparativoPrecos() {
           <span class="text-xs font-black text-emerald-950 uppercase tracking-wide">Melhor Escolha: Opção ${venceA ? 'A' : 'B'}</span>
         </div>
         <span class="bg-emerald-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-xs">
-          Economiza R$ ${fmtMoedaHelper(diff)}
+          Economiza R$ ${formatarMoedaCalc(diff)}
         </span>
       </div>
 
@@ -194,11 +202,11 @@ function calcularComparativoPrecos() {
             <span class="text-xs font-black text-emerald-900">
               Opção ${venceA ? 'A' : 'B'} (${venceA ? pacotesA : pacotesB} un ${(venceA ? aplicaAtacadoA : aplicaAtacadoB) ? '<span class="text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded text-[10px] font-bold">Atacado</span>' : '<span class="text-slate-500 text-[10px] font-medium">Varejo</span>'}):
             </span>
-            <span class="text-sm font-black text-emerald-700">R$ ${fmtMoedaHelper(venceA ? totalGastoA : totalGastoB)}</span>
+            <span class="text-sm font-black text-emerald-700">R$ ${formatarMoedaCalc(venceA ? totalGastoA : totalGastoB)}</span>
           </div>
           <div class="text-[10px] text-slate-600 font-medium mt-0.5 flex justify-between">
             <span>Volume entregue: ${(venceA ? totalEntregueA : totalEntregueB).toFixed(2)} ${unitLabel}</span>
-            <span>Custo real: R$ ${fmtMoedaHelper((venceA ? totalGastoA : totalGastoB) / (venceA ? totalEntregueA : totalEntregueB))} / ${unitLabel}</span>
+            <span>Custo real: R$ ${formatarMoedaCalc((venceA ? totalGastoA : totalGastoB) / (venceA ? totalEntregueA : totalEntregueB))} / ${unitLabel}</span>
           </div>
         </div>
 
@@ -207,23 +215,23 @@ function calcularComparativoPrecos() {
             <span class="font-bold text-slate-600">
               Opção ${venceA ? 'B' : 'A'} (${venceA ? pacotesB : pacotesA} un ${(venceA ? aplicaAtacadoB : aplicaAtacadoA) ? 'Atacado' : 'Varejo'}):
             </span>
-            <span class="font-bold text-slate-700">R$ ${fmtMoedaHelper(venceA ? totalGastoB : totalGastoA)}</span>
+            <span class="font-bold text-slate-700">R$ ${formatarMoedaCalc(venceA ? totalGastoB : totalGastoA)}</span>
           </div>
           <div class="text-[10px] text-slate-500 mt-0.5">
-            Leva ${(venceA ? totalEntregueB : totalEntregueA).toFixed(2)} ${unitLabel} a R$ ${fmtMoedaHelper((venceA ? totalGastoB : totalGastoA) / (venceA ? totalEntregueB : totalEntregueA))} / ${unitLabel}
+            Leva ${(venceA ? totalEntregueB : totalEntregueA).toFixed(2)} ${unitLabel} a R$ ${formatarMoedaCalc((venceA ? totalGastoB : totalGastoA) / (venceA ? totalEntregueB : totalEntregueA))} / ${unitLabel}
           </div>
         </div>
       </div>
 
       <div class="mt-2.5 pt-2 border-t border-emerald-200 flex items-center justify-between text-xs">
         <span class="text-emerald-900 font-bold">Vantagem no caixa:</span>
-        <span class="font-black text-emerald-800 text-xs">Paga R$ ${fmtMoedaHelper(diff)} a menos pela meta</span>
+        <span class="font-black text-emerald-800 text-xs">Paga R$ ${formatarMoedaCalc(diff)} a menos pela meta</span>
       </div>
     `;
     return;
   }
 
-  // CENÁRIO 2: SEM META DEFINIDA (COMPARAÇÃO PROPORCIONAL COM GATILHOS DE VIABILIDADE)
+  // CENÁRIO 2: SEM META DEFINIDA (COMPARAÇÃO PROPORCIONAL COM GATILHOS)
   const costEffA = (hasAtacadoA && priceAtacadoA > 0) ? (priceAtacadoA / (qtyA / baseDivisor)) : baseCostA;
   const costEffB = (hasAtacadoB && priceAtacadoB > 0) ? (priceAtacadoB / (qtyB / baseDivisor)) : baseCostB;
 
@@ -238,7 +246,7 @@ function calcularComparativoPrecos() {
       </div>
       <h4 class="text-xs font-black text-amber-900 mt-1">Custo Exatamente Idêntico</h4>
       <p class="text-[11px] text-amber-800 mt-1 font-medium">
-        Ambas as opções saem a <strong>R$ ${fmtMoedaHelper(costEffA)} / ${unitLabel}</strong>. O tamanho maior não oferece desconto proporcional.
+        Ambas as opções saem a <strong>R$ ${formatarMoedaCalc(costEffA)} / ${unitLabel}</strong>. O tamanho maior não oferece desconto proporcional.
       </p>
     `;
     return;
@@ -275,12 +283,12 @@ function calcularComparativoPrecos() {
       </div>
 
       <p class="text-xs text-emerald-900 font-medium leading-relaxed">
-        A embalagem maior de <strong>${qtyMaior} ${unitInputLabel}</strong> (Opção ${optMaior}) entrega menor custo unitário: <strong>R$ ${fmtMoedaHelper(costMaior)} / ${unitLabel}</strong> contra R$ ${fmtMoedaHelper(costMenor)} / ${unitLabel} da Opção ${optMenor}.
+        A embalagem maior de <strong>${qtyMaior} ${unitInputLabel}</strong> (Opção ${optMaior}) entrega menor custo unitário: <strong>R$ ${formatarMoedaCalc(costMaior)} / ${unitLabel}</strong> contra R$ ${formatarMoedaCalc(costMenor)} / ${unitLabel} da Opção ${optMenor}.
       </p>
 
       <div class="mt-2.5 p-2 rounded-xl bg-white border border-emerald-300 flex items-center justify-between text-xs">
         <span class="text-slate-600 font-semibold">Economia por ${unitLabel}:</span>
-        <span class="font-black text-emerald-700 text-sm">R$ ${fmtMoedaHelper(diffUnit)} / ${unitLabel}</span>
+        <span class="font-black text-emerald-700 text-sm">R$ ${formatarMoedaCalc(diffUnit)} / ${unitLabel}</span>
       </div>
 
       <div class="mt-3 pt-2.5 border-t border-emerald-200 space-y-1.5">
@@ -291,13 +299,13 @@ function calcularComparativoPrecos() {
         
         <ul class="text-[11px] text-slate-700 space-y-1 list-disc pl-4 font-normal">
           <li>
-            <strong>Por preço:</strong> O menor só compensa proporcionalmente se estiver até <strong>R$ ${fmtMoedaHelper(precoTetoMenor)}</strong> (está R$ ${fmtMoedaHelper(priceMenor - precoTetoMenor)} acima do limite).
+            <strong>Por preço:</strong> O menor só compensa proporcionalmente se estiver até <strong>R$ ${formatarMoedaCalc(precoTetoMenor)}</strong> (está R$ ${formatarMoedaCalc(priceMenor - precoTetoMenor)} acima do limite).
           </li>
           <li>
-            <strong>Por consumo imediato:</strong> Se o produto corre risco de estragar antes do fim, levar 1 menor exige menor saída de caixa imediata (R$ ${fmtMoedaHelper(priceMenor)} contra R$ ${fmtMoedaHelper(priceMaior)}).
+            <strong>Por consumo imediato:</strong> Se o produto corre risco de estragar antes do fim, levar 1 menor exige menor saída de caixa imediata (R$ ${formatarMoedaCalc(priceMenor)} contra R$ ${formatarMoedaCalc(priceMaior)}).
           </li>
           <li>
-            <strong>Por volume aproximado:</strong> Comprar ${qtdPacotesMenoresParaIgualarOuSuperar} unidades de ${qtyMenor} ${unitInputLabel} somaria ${volumeEntregueMultiplo} ${unitLabel} por <strong>R$ ${fmtMoedaHelper(custoMultiploMenores)}</strong> (contra R$ ${fmtMoedaHelper(priceMaior)} do pacote de ${qtyMaior} ${unitInputLabel}).
+            <strong>Por volume aproximado:</strong> Comprar ${qtdPacotesMenoresParaIgualarOuSuperar} unidades de ${qtyMenor} ${unitInputLabel} somaria ${volumeEntregueMultiplo} ${unitLabel} por <strong>R$ ${formatarMoedaCalc(custoMultiploMenores)}</strong> (contra R$ ${formatarMoedaCalc(priceMaior)} do pacote de ${qtyMaior} ${unitInputLabel}).
           </li>
         </ul>
       </div>
@@ -318,7 +326,7 @@ function calcularComparativoPrecos() {
 
       <div class="mt-2.5 p-2 rounded-xl bg-white border border-rose-300 flex items-center justify-between text-xs">
         <span class="text-slate-600 font-semibold">Prejuízo por ${unitLabel} no maior:</span>
-        <span class="font-black text-rose-700 text-sm">+ R$ ${fmtMoedaHelper(diffUnit)} / ${unitLabel}</span>
+        <span class="font-black text-rose-700 text-sm">+ R$ ${formatarMoedaCalc(diffUnit)} / ${unitLabel}</span>
       </div>
 
       <div class="mt-3 pt-2.5 border-t border-rose-200 space-y-1.5">
@@ -328,12 +336,13 @@ function calcularComparativoPrecos() {
         </div>
         
         <p class="text-[11px] text-slate-700">
-          O pacote de ${qtyMaior} ${unitInputLabel} precisaria custar no máximo <strong>R$ ${fmtMoedaHelper(precoTetoMaior)}</strong> para justificar a compra em quantidade em relação ao preço atual do menor.
+          O pacote de ${qtyMaior} ${unitInputLabel} precisaria custar no máximo <strong>R$ ${formatarMoedaCalc(precoTetoMaior)}</strong> para justificar a compra em quantidade em relação ao preço atual do menor.
         </p>
       </div>
     `;
   }
 }
+window.calcularComparativoPrecos = calcularComparativoPrecos;
 
 function limparCalculadoraComparativa() {
   const idsInputs = [
@@ -373,34 +382,4 @@ function limparCalculadoraComparativa() {
 
   document.getElementById('compQtyA')?.focus();
 }
-
-function carregarExemploLeiteMeta() {
-  setCompMode('weight');
-  document.getElementById('compTargetQty').value = '2';
-
-  document.getElementById('compQtyA').value = '400';
-  document.getElementById('compPriceA').value = '11,95';
-  const chkA = document.getElementById('compHasWholesaleA');
-  chkA.checked = true;
-  toggleWholesaleSection('A');
-  document.getElementById('compMinWholesaleA').value = '3';
-  document.getElementById('compPriceWholesaleA').value = '10,00';
-
-  document.getElementById('compQtyB').value = '1000';
-  document.getElementById('compPriceB').value = '25,00';
-  const chkB = document.getElementById('compHasWholesaleB');
-  chkB.checked = true;
-  toggleWholesaleSection('B');
-  document.getElementById('compMinWholesaleB').value = '3';
-  document.getElementById('compPriceWholesaleB').value = '23,00';
-
-  calcularComparativoPrecos();
-}
-
-document.addEventListener('click', (e) => {
-  const modal = document.getElementById('modalPriceComparator');
-  if (!modal || modal.classList.contains('hidden')) return;
-  if (e.target === modal) {
-    fecharCalculadoraComparativa();
-  }
-});
+window.limparCalculadoraComparativa = limparCalculadoraComparativa

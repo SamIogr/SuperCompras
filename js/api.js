@@ -134,9 +134,9 @@ async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = '
   }
 }
 
-// SINCRONIZAÇÃO SELETIVA
+// SINCRONIZAÇÃO SELETIVA (BLINDADA CONTRA ELEMENTOS NULOS)
 async function abrirModalSincronizacaoSeletiva() {
-  let token = getSecurityToken();
+  let token = typeof getSecurityToken === 'function' ? getSecurityToken() : '';
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
     if (!chave || !chave.trim()) return;
@@ -146,7 +146,7 @@ async function abrirModalSincronizacaoSeletiva() {
 
   const btn = document.getElementById('btnSyncPlanilha');
   if (btn) btn.classList.add('animate-spin');
-  showAppToast('Baixando dados da planilha...', 'info');
+  if (typeof showAppToast === 'function') showAppToast('Baixando dados da planilha...', 'info');
 
   try {
     const res = await fetch(`${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}`);
@@ -159,13 +159,22 @@ async function abrirModalSincronizacaoSeletiva() {
     selectedSyncProducts = new Set(pendingSyncPayload.produtos.map(p => p.name.toLowerCase()));
     selectedSyncMarkets = new Set(pendingSyncPayload.supermercados.map(m => m.id));
 
-    document.getElementById('syncProdCount').innerText = pendingSyncPayload.produtos.length;
-    document.getElementById('syncMarketCount').innerText = pendingSyncPayload.supermercados.length;
+    // Atribuições seguras com verificação de existência no DOM
+    const elProdCount = document.getElementById('syncProdCount');
+    if (elProdCount) elProdCount.innerText = pendingSyncPayload.produtos.length;
+
+    const elMarketCount = document.getElementById('syncMarketCount');
+    if (elMarketCount) elMarketCount.innerText = pendingSyncPayload.supermercados.length;
 
     switchSyncTab('produtos');
-    document.getElementById('modalSelectiveSync')?.classList.remove('hidden');
+    
+    const modalSync = document.getElementById('modalSelectiveSync');
+    if (modalSync) modalSync.classList.remove('hidden');
   } catch (err) {
-    showAppToast('Erro ao consultar planilha: ' + err.message, 'error');
+    console.error('[Sincronização Seletiva] Erro:', err);
+    if (typeof showAppToast === 'function') {
+      showAppToast('Erro ao consultar planilha: ' + err.message, 'error');
+    }
   } finally {
     if (btn) btn.classList.remove('animate-spin');
   }
@@ -179,13 +188,19 @@ function switchSyncTab(tab) {
   activeSyncTab = tab;
   const isProd = tab === 'produtos';
 
-  document.getElementById('tabSyncProdBtn').className = isProd
-    ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm'
-    : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100';
+  const tabProdBtn = document.getElementById('tabSyncProdBtn');
+  if (tabProdBtn) {
+    tabProdBtn.className = isProd
+      ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm'
+      : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100';
+  }
 
-  document.getElementById('tabSyncMarketBtn').className = !isProd
-    ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm'
-    : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100';
+  const tabMarketBtn = document.getElementById('tabSyncMarketBtn');
+  if (tabMarketBtn) {
+    tabMarketBtn.className = !isProd
+      ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm'
+      : 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100';
+  }
 
   document.getElementById('syncProductsList')?.classList.toggle('hidden', !isProd);
   document.getElementById('syncMarketsList')?.classList.toggle('hidden', isProd);
@@ -196,53 +211,62 @@ function switchSyncTab(tab) {
 function renderSyncLists() {
   const isProd = activeSyncTab === 'produtos';
   const selectAllBox = document.getElementById('checkSyncSelectAll');
+  const labelCounter = document.getElementById('labelSyncSelectedCounter');
 
   if (isProd) {
-    const total = pendingSyncPayload.produtos.length;
-    const marcados = selectedSyncProducts.size;
+    const total = pendingSyncPayload.produtos ? pendingSyncPayload.produtos.length : 0;
+    const marcados = selectedSyncProducts ? selectedSyncProducts.size : 0;
+    
     if (selectAllBox) selectAllBox.checked = total > 0 && marcados === total;
-    document.getElementById('labelSyncSelectedCounter').innerText = `${marcados} de ${total} produtos`;
+    if (labelCounter) labelCounter.innerText = `${marcados} de ${total} produtos`;
 
-    document.getElementById('syncProductsList').innerHTML = pendingSyncPayload.produtos.map(p => {
-      const isChecked = selectedSyncProducts.has(p.name.toLowerCase());
-      return `
-        <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
-          <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} data-name="${esc(p.name)}" onchange="toggleSingleProductSync(this.dataset.name, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
-            <div class="truncate">
-              <span class="font-bold text-slate-800">${esc(p.name)}</span>
-              <span class="text-[10px] text-slate-500 ml-1">(${esc(p.unit || 'un')} - ${esc(p.category || 'Geral')})</span>
-            </div>
-          </label>
-          <button type="button" data-name="${esc(p.name)}" onclick="syncSingleItemNow('produto', this.dataset.name)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
-            Sincar Só Este
-          </button>
-        </div>
-      `;
-    }).join('');
+    const containerProd = document.getElementById('syncProductsList');
+    if (containerProd && Array.isArray(pendingSyncPayload.produtos)) {
+      containerProd.innerHTML = pendingSyncPayload.produtos.map(p => {
+        const isChecked = selectedSyncProducts.has(p.name.toLowerCase());
+        return `
+          <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
+            <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} data-name="${esc(p.name)}" onchange="toggleSingleProductSync(this.dataset.name, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <div class="truncate">
+                <span class="font-bold text-slate-800">${esc(p.name)}</span>
+                <span class="text-[10px] text-slate-500 ml-1">(${esc(p.unit || 'un')} - ${esc(p.category || 'Geral')})</span>
+              </div>
+            </label>
+            <button type="button" data-name="${esc(p.name)}" onclick="syncSingleItemNow('produto', this.dataset.name)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+              Sincar Só Este
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
   } else {
-    const total = pendingSyncPayload.supermercados.length;
-    const marcados = selectedSyncMarkets.size;
+    const total = pendingSyncPayload.supermercados ? pendingSyncPayload.supermercados.length : 0;
+    const marcados = selectedSyncMarkets ? selectedSyncMarkets.size : 0;
+    
     if (selectAllBox) selectAllBox.checked = total > 0 && marcados === total;
-    document.getElementById('labelSyncSelectedCounter').innerText = `${marcados} de ${total} mercados`;
+    if (labelCounter) labelCounter.innerText = `${marcados} de ${total} mercados`;
 
-    document.getElementById('syncMarketsList').innerHTML = pendingSyncPayload.supermercados.map(m => {
-      const isChecked = selectedSyncMarkets.has(m.id);
-      return `
-        <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
-          <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} data-id="${esc(m.id)}" onchange="toggleSingleMarketSync(this.dataset.id, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
-            <div class="truncate">
-              <span class="font-bold text-slate-800">${esc(m.name)}</span>
-              <span class="text-[10px] text-slate-500 ml-1">(${esc(m.branch || 'SJP')})</span>
-            </div>
-          </label>
-          <button type="button" data-id="${esc(m.id)}" onclick="syncSingleItemNow('mercado', this.dataset.id)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
-            Sincar Só Este
-          </button>
-        </div>
-      `;
-    }).join('');
+    const containerMarket = document.getElementById('syncMarketsList');
+    if (containerMarket && Array.isArray(pendingSyncPayload.supermercados)) {
+      containerMarket.innerHTML = pendingSyncPayload.supermercados.map(m => {
+        const isChecked = selectedSyncMarkets.has(m.id);
+        return `
+          <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
+            <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} data-id="${esc(m.id)}" onchange="toggleSingleMarketSync(this.dataset.id, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <div class="truncate">
+                <span class="font-bold text-slate-800">${esc(m.name)}</span>
+                <span class="text-[10px] text-slate-500 ml-1">(${esc(m.branch || 'SJP')})</span>
+              </div>
+            </label>
+            <button type="button" data-id="${esc(m.id)}" onclick="syncSingleItemNow('mercado', this.dataset.id)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+              Sincar Só Este
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
   }
 }
 

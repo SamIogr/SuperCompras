@@ -4,25 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SuperCompras Pro (Sincronizado com Google Sheets)</title>
+    <link rel="stylesheet" href="css/tailwind.css">
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            fontFamily: { sans: ["Inter", "sans-serif"] },
-            colors: {
-              brand: { 50: "#ecfdf5", 100: "#d1fae5", 500: "#10b981", 600: "#059669", 700: "#047857", 800: "#065f46" }
-            }
-          }
-        }
-      };
-    </script>
     <style>
       ::-webkit-scrollbar { width: 5px; height: 5px; }
       ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -370,6 +357,7 @@
             </svg>
             <span class="hidden sm:inline">Exportar</span>
           </button>
+          
           <button type="button" onclick="askClearCart()" title="Limpar Itens" class="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl transition-all font-semibold flex items-center space-x-1 text-xs">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
@@ -430,6 +418,8 @@
     <script src="js/markets.js?v=4.7.1"></script>
     <script src="js/calculadora.js?v=4.7.1"></script>
     <script src="js/ui-loader.js?v=4.7.1"></script>
+    <script src="js/vendor/qrcode.js"></script>
+    <script src="js/vendor/jsQR.js"></script>
     <script src="js/qrcode-sync.js?v=4.8.0"></script>
 
     <!-- INICIALIZAÇÃO DA APLICAÇÃO -->
@@ -447,6 +437,11 @@
           if (typeof renderMarketsUI === 'function') renderMarketsUI();
           if (typeof renderHistoricoUI === 'function') renderHistoricoUI();
           if (typeof updateCartItemPreview === 'function') updateCartItemPreview();
+
+          // >>> ADICIONE AQUI LOGO ABAIXO DAS RENDERIZAÇÕES: <<<
+          if (typeof verificarImportacaoUrlHash === 'function') {
+            setTimeout(verificarImportacaoUrlHash, 300);
+          }
 
           if (navigator.onLine && typeof getSecurityToken === 'function' && getSecurityToken()) {
             if (typeof sincronizarComPlanilha === 'function') {

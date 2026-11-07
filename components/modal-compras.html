@@ -1,12 +1,13 @@
+
 <!-- MODAL DE EDIÇÃO DO ITEM NO CARRINHO -->
 <div id="modalEditCartItem" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3">
   <div class="bg-white rounded-3xl w-full max-w-md p-5 shadow-2xl relative max-h-[92vh] overflow-y-auto">
     <input type="hidden" id="editCartItemId">
 
     <!-- Cabeçalho -->
-    <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
       <div>
-        <h3 id="editCartItemTitle" class="text-base font-black text-slate-800">Editar Item</h3>
+        <h3 class="text-base font-black text-slate-800">Editar Item do Carrinho</h3>
         <span id="editCartItemHeaderPrice" class="text-xs font-bold text-emerald-600"></span>
       </div>
       <button type="button" onclick="closeEditCartItemModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
@@ -14,31 +15,19 @@
 
     <form id="formSaveCartItemEdit" onsubmit="event.preventDefault(); salvarEdicaoItemCarrinho();" class="mt-4 space-y-4">
       
+      <!-- Nome do Produto Editável -->
+      <div>
+        <label class="block text-xs font-black text-slate-700 mb-1">Nome do Produto *</label>
+        <input type="text" id="editCartItemName" required placeholder="Nome do produto..."
+          class="w-full text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs" />
+      </div>
+
       <!-- Seletor de Marca com Gestão Integrada -->
       <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3">
         <div class="flex items-center justify-between mb-1.5">
           <label class="text-xs font-black text-slate-700 flex items-center space-x-1">
             <span>🏷️ Marca do Produto</span>
           </label>
-          <div id="boxEditMarcaActions" class="hidden flex items-center space-x-1">
-            <button type="button" onclick="iniciarEdicaoNomeMarcaModal()"
-              class="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-              title="Renomear marca">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
-                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-              </svg>
-            </button>
-            <button type="button" onclick="confirmarExclusaoMarcaModal()"
-              class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-              title="Excluir marca">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                </path>
-              </svg>
-            </button>
-          </div>
         </div>
       
         <div id="boxEditMarcaSelect">
@@ -56,30 +45,13 @@
           <button type="button" onclick="cancelarNovaMarcaModalEdicao()"
             class="px-2.5 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 shadow-xs">✕</button>
         </div>
-      
-        <div id="boxEditMarcaConfirmDelete"
-          class="hidden mt-2 p-3 bg-rose-50/90 border border-rose-200 rounded-xl text-xs transition-all">
-          <div class="flex items-start space-x-2.5 mb-2">
-            <span class="text-rose-500 font-bold text-sm leading-none mt-0.5">⚠️</span>
-            <div class="text-rose-900 leading-snug">
-              <span>Deseja excluir a marca <strong id="labelMarcaParaExcluir" class="text-rose-700"></strong>?</span>
-              <span class="block text-[11px] text-rose-600 mt-0.5">Os itens vinculados a ela voltarão a ser "Padrão".</span>
-            </div>
-          </div>
-          <div class="flex justify-end items-center space-x-2">
-            <button type="button" onclick="cancelarExclusaoMarcaModal()"
-              class="px-2.5 py-1 text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors">Cancelar</button>
-            <button type="button" onclick="executarExclusaoMarcaModal()"
-              class="px-3 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs transition-colors">Excluir</button>
-          </div>
-        </div>
       </div>
       
       <!-- Preço e Quantidade Diretos -->
       <div class="grid grid-cols-2 gap-3 mt-3">
         <div>
           <label class="block text-xs font-black text-slate-700 mb-1">Preço Unit. (R$) *</label>
-          <input type="text" id="editCartItemPrice" oninput="atualizarSubtotalModalEdicao()"
+          <input type="text" id="editCartItemPrice" inputmode="decimal" oninput="atualizarSubtotalModalEdicao()"
             class="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
         </div>
         <div>
@@ -100,187 +72,66 @@
         <button type="button" onclick="setEditQty(1)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">1 kg</button>
       </div>
 
-      <!-- Condição Comercial (Desconto / Atacado) -->
-      <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-3">
-        <label class="block text-xs font-black text-slate-700 mb-2">Condição Comercial</label>
-        
-        <!-- Botões de Alternância -->
-        <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-200/70 rounded-xl text-xs font-bold">
-          <button type="button" id="btnEditPromoNone" onclick="setEditPromoType('none')" class="py-1.5 rounded-lg text-center transition-all bg-white text-emerald-800 shadow-xs">Nenhum</button>
-          <button type="button" id="btnEditPromoDiscount" onclick="setEditPromoType('discount')" class="py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900">Desconto</button>
-          <button type="button" id="btnEditPromoWholesale" onclick="setEditPromoType('wholesale')" class="py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900">Atacado</button>
+      <!-- Condição Comercial -->
+      <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <span class="block text-xs font-bold text-slate-700 mb-2">Condição Comercial</span>
+      
+        <!-- Seletor de Tipo (Botões / Tabs) com chamadas diretas -->
+        <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-lg text-xs font-semibold" id="editCartItemConditionTabs">
+          <button type="button" id="btnEditPromoNone" onclick="setEditPromoType('none')"
+            class="py-1.5 rounded-md transition-all font-bold">Nenhum</button>
+          <button type="button" id="btnEditPromoDiscount" onclick="setEditPromoType('discount')"
+            class="py-1.5 rounded-md transition-all font-bold">Desconto</button>
+          <button type="button" id="btnEditPromoWholesale" onclick="setEditPromoType('wholesale')"
+            class="py-1.5 rounded-md transition-all font-bold">Atacado</button>
         </div>
-
-        <!-- Painel Expansível de Desconto -->
+      
+        <!-- Bloco: Desconto -->
         <div id="panelEditPromoDiscount" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <span class="text-[10px] font-bold text-slate-500">Tipo de Abatimento:</span>
-              <select id="editPromoDiscountMode" onchange="atualizarSubtotalModalEdicao()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
-                <option value="percentage">% Porcentagem</option>
-                <option value="fixed">R$ Valor Fixo</option>
+              <label for="editPromoDiscountMode" class="text-[10px] font-bold text-slate-500 block">Tipo</label>
+              <select id="editPromoDiscountMode" onchange="atualizarSubtotalModalEdicao()"
+                class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs bg-white font-bold">
+                <option value="percent">Porcentagem (%)</option>
+                <option value="fixed">Valor Fixo (R$)</option>
               </select>
             </div>
             <div>
-              <span class="text-[10px] font-bold text-slate-500">Valor do Desconto:</span>
-              <input type="text" id="editPromoDiscountValue" oninput="atualizarSubtotalModalEdicao()" placeholder="Ex: 10% ou 2,00" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+              <label for="editPromoDiscountValue" class="text-[10px] font-bold text-slate-500 block">Desconto</label>
+              <input type="number" id="editPromoDiscountValue" step="any" min="0" placeholder="0" oninput="atualizarSubtotalModalEdicao()"
+                class="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-bold bg-white" />
             </div>
           </div>
         </div>
-
-        <!-- Painel Expansível de Atacado -->
+      
+        <!-- Bloco: Atacado -->
         <div id="panelEditPromoWholesale" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <span class="text-[10px] font-bold text-slate-500">A partir de (Qtd/Kg):</span>
-              <input type="number" id="editPromoWholesaleMinQty" step="any" min="1" value="3" oninput="atualizarSubtotalModalEdicao()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+              <label for="editPromoWholesaleMinQty" class="text-[10px] font-bold text-slate-500 block">A partir de (Qtd/Kg):</label>
+              <input type="number" id="editPromoWholesaleMinQty" step="any" min="0" placeholder="3" oninput="atualizarSubtotalModalEdicao()"
+                class="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-bold bg-white" />
             </div>
             <div>
-              <span class="text-[10px] font-bold text-slate-500">Preço Especial (R$):</span>
-              <input type="text" id="editPromoWholesalePrice" oninput="atualizarSubtotalModalEdicao()" placeholder="Ex: 29,90" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 mt-0.5">
+              <label for="editPromoWholesalePrice" class="text-[10px] font-bold text-slate-500 block">Preço Atacado (R$):</label>
+              <input type="text" id="editPromoWholesalePrice" inputmode="decimal" placeholder="0,00" oninput="atualizarSubtotalModalEdicao()"
+                class="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-bold bg-white" />
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Subtotal e Botões Finais -->
-      <div class="flex items-center justify-between pt-2">
+      
+      <!-- Rodapé com Subtotal e Botão Salvar -->
+      <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
         <div>
-          <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Novo Subtotal</span>
-          <span id="editCartItemSubtotal" class="text-lg font-black text-emerald-700">R$ 0,00</span>
+          <span class="block text-[11px] text-slate-500">Novo Subtotal</span>
+          <strong id="editCartItemSubtotal" class="text-lg font-bold text-emerald-600">R$ 0,00</strong>
         </div>
-        <div class="flex items-center space-x-2">
-          <button type="button" onclick="closeEditCartItemModal()" class="px-3.5 py-2 text-xs font-bold text-slate-500 hover:text-slate-700">Cancelar</button>
-          <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-md active:scale-95 transition-all">Salvar Item</button>
-        </div>
+        <button type="submit" id="btnSaveCartItemEdit"
+          class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 active:scale-95 transition-all shadow-sm cursor-pointer">
+          Salvar
+        </button>
       </div>
-
     </form>
   </div>
-</div>
-
-<!-- MODAL FLUTUANTE: CALCULADORA COMPARATIVA DE PREÇO -->
-<div id="modalPriceComparator" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-900/60 backdrop-blur-xs">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-4 space-y-3 max-h-[92vh] overflow-y-auto">
-    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-      <div class="flex items-center space-x-2">
-        <div class="w-7 h-7 bg-slate-100 text-slate-700 rounded-lg flex items-center justify-center font-black text-sm">⚖️</div>
-        <div>
-          <h3 class="font-extrabold text-slate-800 text-sm">Comparador de Preço e Atacado</h3>
-          <p class="text-[10px] text-slate-500 font-medium">Decida pelo menor custo unitário ou pela meta de compra</p>
-        </div>
-      </div>
-      <button type="button" onclick="fecharCalculadoraComparativa()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg text-lg font-bold">✕</button>
-    </div>
-
-    <div class="flex items-center justify-between bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
-      <button type="button" id="compModeWeight" onclick="setCompMode('weight')" class="flex-1 py-1 rounded-lg bg-white text-slate-800 shadow-xs text-center transition-all font-bold">Peso (g / kg)</button>
-      <button type="button" id="compModeVolume" onclick="setCompMode('volume')" class="flex-1 py-1 rounded-lg text-center transition-all text-slate-600 font-semibold">Volume (ml / L)</button>
-      <button type="button" id="compModeUnit" onclick="setCompMode('unit')" class="flex-1 py-1 rounded-lg text-center transition-all text-slate-600 font-semibold">Unidades</button>
-    </div>
-
-    <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2.5">
-      <div class="flex items-center justify-between mb-1">
-        <label for="compTargetQty" class="text-[11px] font-bold text-amber-900 flex items-center space-x-1">
-          <span>🎯 Quanto você precisa levar?</span>
-          <span class="text-[10px] font-normal text-amber-700">(Opcional)</span>
-        </label>
-        <span id="compTargetSuffix" class="text-[10px] font-bold text-amber-800">em kg</span>
-      </div>
-      <input type="text" id="compTargetQty" inputmode="decimal" placeholder="Ex: 2 (para 2 kg)" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1.5 px-2.5 bg-white border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none" />
-    </div>
-
-    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
-      <div class="flex items-center justify-between text-xs font-bold text-slate-700">
-        <span>Opção A (ex: pacote menor)</span>
-        <span id="labelUnitBaseA" class="text-[10px] text-slate-500 font-normal">Preço por kg</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tamanho / Peso</label>
-          <div class="relative">
-            <input type="text" id="compQtyA" inputmode="decimal" placeholder="Ex: 400" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1.5 pl-2.5 pr-7 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-            <span id="compSuffixA" class="absolute inset-y-0 right-0 pr-2 flex items-center text-[10px] font-bold text-slate-400 pointer-events-none">g</span>
-          </div>
-        </div>
-        <div>
-          <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Preço Unitário (R$)</label>
-          <input type="text" id="compPriceA" inputmode="decimal" placeholder="Ex: 11,95" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1.5 px-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-        </div>
-      </div>
-      <div class="pt-1 border-t border-slate-200/60">
-        <label class="flex items-center space-x-1.5 cursor-pointer text-[11px] font-bold text-slate-600">
-          <input type="checkbox" id="compHasWholesaleA" onchange="toggleWholesaleSection('A')" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5" />
-          <span>Tem preço de atacado</span>
-        </label>
-        <div id="compWholesaleBoxA" class="hidden grid grid-cols-2 gap-2 mt-2 pt-1.5 border-t border-dashed border-slate-200">
-          <div>
-            <label class="block text-[10px] font-medium text-slate-500 mb-0.5">A partir de (qtd)</label>
-            <input type="text" id="compMinWholesaleA" inputmode="numeric" placeholder="Ex: 3" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1 px-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-medium text-slate-500 mb-0.5">Preço no atacado (R$)</label>
-            <input type="text" id="compPriceWholesaleA" inputmode="decimal" placeholder="Ex: 10,00" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1 px-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-          </div>
-        </div>
-      </div>
-      <div class="flex items-center justify-between text-xs pt-0.5">
-        <span class="text-[11px] text-slate-500">Custo equivalente:</span>
-        <span id="compResultUnitA" class="font-extrabold text-slate-800 text-xs">R$ 0,00 / kg</span>
-      </div>
-    </div>
-
-    <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
-      <div class="flex items-center justify-between text-xs font-bold text-slate-700">
-        <span>Opção B (ex: pacote maior)</span>
-        <span id="labelUnitBaseB" class="text-[10px] text-slate-500 font-normal">Preço por kg</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <div>
-          <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tamanho / Peso</label>
-          <div class="relative">
-            <input type="text" id="compQtyB" inputmode="decimal" placeholder="Ex: 1000" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1.5 pl-2.5 pr-7 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-            <span id="compSuffixB" class="absolute inset-y-0 right-0 pr-2 flex items-center text-[10px] font-bold text-slate-400 pointer-events-none">g</span>
-          </div>
-        </div>
-        <div>
-          <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Preço Unitário (R$)</label>
-          <input type="text" id="compPriceB" inputmode="decimal" placeholder="Ex: 25,00" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1.5 px-2.5 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-        </div>
-      </div>
-      <div class="pt-1 border-t border-slate-200/60">
-        <label class="flex items-center space-x-1.5 cursor-pointer text-[11px] font-bold text-slate-600">
-          <input type="checkbox" id="compHasWholesaleB" onchange="toggleWholesaleSection('B')" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5" />
-          <span>Tem preço de atacado</span>
-        </label>
-        <div id="compWholesaleBoxB" class="hidden grid grid-cols-2 gap-2 mt-2 pt-1.5 border-t border-dashed border-slate-200">
-          <div>
-            <label class="block text-[10px] font-medium text-slate-500 mb-0.5">A partir de (qtd)</label>
-            <input type="text" id="compMinWholesaleB" inputmode="numeric" placeholder="Ex: 3" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1 px-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-medium text-slate-500 mb-0.5">Preço no atacado (R$)</label>
-            <input type="text" id="compPriceWholesaleB" inputmode="decimal" placeholder="Ex: 23,00" oninput="calcularComparativoPrecos()" class="w-full text-xs font-bold py-1 px-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-          </div>
-        </div>
-      </div>
-      <div class="flex items-center justify-between text-xs pt-0.5">
-        <span class="text-[11px] text-slate-500">Custo equivalente:</span>
-        <span id="compResultUnitB" class="font-extrabold text-slate-800 text-xs">R$ 0,00 / kg</span>
-      </div>
-    </div>
-
-    <div id="compVerdictCard" class="p-3 rounded-xl border border-dashed border-slate-300 bg-white text-center">
-      <p class="text-xs text-slate-500 font-medium">Informe os valores para comparar.</p>
-    </div>
-
-    <div class="grid grid-cols-2 gap-2 pt-1">
-      <button type="button" onclick="limparCalculadoraComparativa()" class="py-2 px-3 rounded-xl border border-slate-200 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold transition-all flex items-center justify-center space-x-1">
-        <span>🗑️</span><span>Limpar Dados</span>
-      </button>
-      <button type="button" onclick="calcularComparativoPrecos()" class="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold transition-all flex items-center justify-center space-x-1 shadow-sm">
-        <span>🔄</span><span>Recalcular</span>
-      </button>
-    </div>
-  </div>
-</div>

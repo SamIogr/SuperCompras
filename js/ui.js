@@ -335,3 +335,97 @@ function fecharModalHistorico() {
   if (m) m.classList.add('hidden');
 }
 window.fecharModalHistorico = fecharModalHistorico;
+
+// 1. Função auxiliar para mesclar itens sem duplicar produtos de mesma marca
+function mesclarItensNoCarrinho(novosItens) {
+  if (!Array.isArray(cart)) cart = [];
+
+  novosItens.forEach(novo => {
+    const nomeNovo = (novo.name || '').trim().toLowerCase();
+    const marcaNova = (novo.selectedBrandId || 'Padrão').trim().toLowerCase();
+
+    // Localiza se o item já existe no carrinho com a mesma marca
+    const existente = cart.find(c => {
+      const nomeExistente = (c.name || '').trim().toLowerCase();
+      const marcaExistente = (c.selectedBrandId || 'Padrão').trim().toLowerCase();
+      const mesmoId = c.productId && novo.productId && c.productId === novo.productId;
+      return (mesmoId || nomeExistente === nomeNovo) && marcaExistente === marcaNova;
+    });
+
+    if (existente) {
+      existente.quantity = Number((Number(existente.quantity || 0) + Number(novo.quantity || 1)).toFixed(3));
+    } else {
+      cart.push({
+        ...novo,
+        id: 'c-import-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)
+      });
+    }
+  });
+}
+window.mesclarItensNoCarrinho = mesclarItensNoCarrinho;
+
+// 2. Leitura da Hash da URL com diálogo de Substituir vs. Somar
+async function verificarImportacaoUrlHash() {
+  const hash = window.location.hash;
+  if (!hash || !hash.startsWith('#import=')) return;
+
+  const payloadCodificado = decodeURIComponent(hash.replace('#import=', ''));
+  if (!payloadCodificado) return;
+
+  // Limpa a hash da barra de endereço imediatamente para evitar reimportações ao atualizar (F5)
+  history.replaceState(null, document.title, window.location.pathname + window.location.search);
+
+  if (typeof desserializarQRParaCarrinho !== 'function') return;
+
+  const dados = await desserializarQRParaCarrinho(payloadCodificado);
+  if (!dados || !Array.isArray(dados.items) || dados.items.length === 0) {
+    if (typeof showAppToast === 'function') showAppToast('Link de importação inválido ou vazio.', 'error');
+    return;
+  }
+
+  const qtdNovos = dados.items.length;
+
+  const aplicarImportacao = (substituir) => {
+    if (substituir) {
+      cart = dados.items;
+    } else {
+      mesclarItensNoCarrinho(dados.items);
+    }
+
+    if (dados.marketId && dados.marketId !== 'm-padrao') {
+      activeMarketId = dados.marketId;
+    }
+
+    saveCartData();
+    saveAllLocalData();
+    renderCartUI();
+
+    if (typeof showAppToast === 'function') {
+      showAppToast(substituir ? 'Carrinho substituído com sucesso!' : 'Itens somados ao carrinho com sucesso!', 'success');
+    }
+  };
+
+  // Se o carrinho estiver vazio, importa diretamente
+  if (!cart || cart.length === 0) {
+    aplicarImportacao(true);
+    return;
+  }
+
+  // Se já houver itens no carrinho, exibe a escolha entre Substituir ou Somar
+  if (typeof openCustomDialog === 'function') {
+    openCustomDialog(
+      'Importar Lista de Compras',
+      `Seu carrinho já tem ${cart.length} item(ns). A lista recebida contém ${qtdNovos} item(ns). Como deseja prosseguir?`,
+      'Substituir Carrinho',
+      'Somar aos Existentes',
+      () => aplicarImportacao(true),
+      () => aplicarImportacao(false)
+    );
+  } else {
+    const somar = confirm(
+      `Deseja somar os ${qtdNovos} itens recebidos ao seu carrinho atual?\n\n[OK] = Somar aos itens existentes\n[Cancelar] = Substituir carrinho atual`
+    );
+    aplicarImportacao(!somar);
+  }
+}
+window.verificarImportacaoUrlHash = verificarImportacaoUrlHash;

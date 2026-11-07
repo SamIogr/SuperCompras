@@ -1,7 +1,10 @@
 /**
- * SUPERCOMPRAS PRO - CARRINHO DE COMPRAS (js/cart.js)
- * Gestão de itens, descontos, atacado, atalhos e consolidação de marcas ao finalizar.
+ * SUPERCOMPRAS PRO (js/cart.js)
+ * Gestão de itens, descontos, atacado, filtros e consolidação de marcas.
  */
+
+// Estado local da condição comercial do formulário
+let currentCartPromoMode = 'none';
 
 // 1. CÁLCULO FINANCEIRO DE ITENS (PADRÃO, DESCONTO E ATACADO)
 function computeItemFinancials(qty, unitPrice, promo = {}) {
@@ -46,11 +49,10 @@ function computeItemFinancials(qty, unitPrice, promo = {}) {
     badgeText
   };
 }
+window.computeItemFinancials = computeItemFinancials;
 
-// 2. CONDIÇÃO COMERCIAL NO FORMULÁRIO PRINCIPAL (ADICIONAR PRODUTO)
-let currentCartPromoMode = 'none';
-
-window.setCartPromoMode = function(mode) {
+// 2. CONDIÇÃO COMERCIAL NO FORMULÁRIO PRINCIPAL
+function setCartPromoMode(mode) {
   currentCartPromoMode = mode;
 
   const btnNone = document.getElementById('btnCartPromoNone');
@@ -80,7 +82,29 @@ window.setCartPromoMode = function(mode) {
   }
 
   updateCartItemPreview();
-};
+}
+window.setCartPromoMode = setCartPromoMode;
+
+// 3. FILTRAGEM DO CARRINHO (TODOS, NO CORREDOR, NO CARRINHO)
+function setCartFilterMode(mode) {
+  cartFilterMode = mode;
+
+  const btnAll = document.getElementById('tabFilterAll');
+  const btnPending = document.getElementById('tabFilterPending');
+  const btnChecked = document.getElementById('tabFilterChecked');
+
+  [btnAll, btnPending, btnChecked].forEach(btn => {
+    if (btn) btn.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all';
+  });
+
+  if (mode === 'all' && btnAll) btnAll.className = 'px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all';
+  if (mode === 'pending' && btnPending) btnPending.className = 'px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all';
+  if (mode === 'checked' && btnChecked) btnChecked.className = 'px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all';
+
+  if (typeof renderCartUI === 'function') renderCartUI();
+  else if (window.AppTemplates && typeof window.AppTemplates.renderCart === 'function') window.AppTemplates.renderCart();
+}
+window.setCartFilterMode = setCartFilterMode;
 
 function getCartFormPromoConfig() {
   if (currentCartPromoMode === 'discount') {
@@ -100,13 +124,13 @@ function getCartFormPromoConfig() {
   return { type: 'none' };
 }
 
-window.updateCartItemPreview = function() {
+function updateCartItemPreview() {
   const qtyInput = document.getElementById('cartInputQuantity');
   const priceInput = document.getElementById('cartInputUnitPrice');
-  
+
   const q = parseNumberInput(qtyInput?.value) || 1;
   const p = parseNumberInput(priceInput?.value) || 0;
-  
+
   const calc = computeItemFinancials(q, p, getCartFormPromoConfig());
 
   const subtotalEl = document.getElementById('cartItemPreviewSubtotal');
@@ -123,17 +147,19 @@ window.updateCartItemPreview = function() {
       promoBadge.classList.add('hidden');
     }
   }
-};
+}
+window.updateCartItemPreview = updateCartItemPreview;
 
-window.setCartQuickQty = function(val) {
+function setCartQuickQty(val) {
   const qInput = document.getElementById('cartInputQuantity');
   if (qInput) {
     qInput.value = val;
     updateCartItemPreview();
   }
-};
+}
+window.setCartQuickQty = setCartQuickQty;
 
-// 3. GESTÃO DE MARCAS INLINE NO FORMULÁRIO PRINCIPAL (SEM CRIAR NO BANCO MESTRE)
+// 4. GESTÃO DE MARCAS INLINE
 function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') {
   const container = document.getElementById('containerMarcaInline');
   const select = document.getElementById('cartSelectProductBrand');
@@ -162,7 +188,7 @@ function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') 
   }
 
   select.innerHTML = Array.from(marcas).map(m => `
-    <option value="${esc(m)}" ${m.toLowerCase() === (marcaSelecionada || 'Padrão').toLowerCase() ? 'selected' : ''}>🏷️ ${esc(m)}</option>  `).join('') + `<option value="__NOVA__">+ Nova marca...</option>`;
+    <option value="${esc(m)}" ${m.toLowerCase() === (marcaSelecionada || 'Padrão').toLowerCase() ? 'selected' : ''}>🏷️ ${esc(m)}</option>`).join('') + `<option value="__NOVA__">+ Nova marca...</option>`;
 
   if (inputHidden) inputHidden.value = marcaSelecionada || 'Padrão';
 
@@ -180,12 +206,12 @@ function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') 
   };
 }
 
-window.confirmarNovaMarcaInline = function() {
+function confirmarNovaMarcaInline() {
   const input = document.getElementById('inputNovaMarcaInline');
   const nomeMarca = (input?.value || '').trim();
 
   if (!nomeMarca) {
-    window.cancelarNovaMarcaInline();
+    cancelarNovaMarcaInline();
     return;
   }
 
@@ -196,15 +222,16 @@ window.confirmarNovaMarcaInline = function() {
   document.getElementById('boxSelectMarca')?.classList.remove('hidden');
   document.getElementById('cartInputUnitPrice')?.focus();
   updateCartItemPreview();
-};
+}
+window.confirmarNovaMarcaInline = confirmarNovaMarcaInline;
 
-window.cancelarNovaMarcaInline = function() {
+function cancelarNovaMarcaInline() {
   document.getElementById('boxInputNovaMarcaInline')?.classList.add('hidden');
   document.getElementById('boxSelectMarca')?.classList.remove('hidden');
   const nomeProd = document.getElementById('cartInputProductName')?.value || '';
   atualizarSelectMarcasInline(nomeProd, 'Padrão');
-};
-
+}
+window.cancelarNovaMarcaInline = cancelarNovaMarcaInline;
 
 function sincronizarPrecoFormularioCarrinho() {
   const nomeProd = (document.getElementById('cartInputProductName')?.value || '').trim();
@@ -246,6 +273,7 @@ function selectProductForCart(productId) {
   }
   sincronizarPrecoFormularioCarrinho();
 }
+window.selectProductForCart = selectProductForCart;
 
 function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
   if (!novoMercadoId) return;
@@ -259,7 +287,7 @@ function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
 
     if (p) {
       const novo = obterPrecoProdutoMarcaMercado(p, item.selectedBrandId || 'Padrão', novoMercadoId);
-      if (novo > 0) item.unitPrice = novo;   // só atualiza se houver cotação
+      if (novo > 0) item.unitPrice = novo;
     }
   });
 
@@ -270,12 +298,11 @@ function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
 }
 window.recalcularPrecosCarrinhoPorMercado = recalcularPrecosCarrinhoPorMercado;
 
-
-// 5. MODAL DE EDIÇÃO DE ITEM DO CARRINHO (COMPLETAMENTE FUNCIONAL)
+// 4. MODAL DE EDIÇÃO DE ITEM DO CARRINHO (COMPATIBILIZADO)
 let editingCartItemId = null;
 let currentEditPromoMode = 'none';
 
-window.openEditCartItemModal = function(id) {
+function openEditCartItemModal(id) {
   editingCartItemId = id;
   const item = (cart || []).find(x => x.id === id);
   if (!item) return;
@@ -283,10 +310,11 @@ window.openEditCartItemModal = function(id) {
   const modal = document.getElementById('modalEditCartItem');
   if (!modal) return;
 
-  const titleEl = document.getElementById('editCartItemTitle');
-  if (titleEl) titleEl.innerText = item.name;
+  // Carrega e permite editar o nome do produto
+  const nameInput = document.getElementById('editCartItemName');
+  if (nameInput) nameInput.value = item.name || '';
 
-  // Carrega opções de marcas existentes (sem poluir o catálogo mestre)
+  // Carrega marcas
   const marcas = new Set(['Padrão']);
   const p = (products || []).find(prod => prod.name.toLowerCase() === item.name.toLowerCase());
   if (p && Array.isArray(p.brands)) {
@@ -303,7 +331,6 @@ window.openEditCartItemModal = function(id) {
     selectBrand.onchange = function() {
       if (this.value === '__NOVA__') {
         document.getElementById('boxEditMarcaSelect')?.classList.add('hidden');
-        document.getElementById('boxEditMarcaActions')?.classList.add('hidden');
         const boxInput = document.getElementById('boxEditMarcaInline');
         if (boxInput) boxInput.classList.remove('hidden');
         const input = document.getElementById('inputEditNovaMarca');
@@ -314,7 +341,6 @@ window.openEditCartItemModal = function(id) {
 
   document.getElementById('boxEditMarcaInline')?.classList.add('hidden');
   document.getElementById('boxEditMarcaSelect')?.classList.remove('hidden');
-  document.getElementById('boxEditMarcaConfirmDelete')?.classList.add('hidden');
 
   const inputPrice = document.getElementById('editCartItemPrice');
   const inputQty = document.getElementById('editCartItemQty');
@@ -322,7 +348,7 @@ window.openEditCartItemModal = function(id) {
   if (inputPrice) inputPrice.value = item.unitPrice > 0 ? formatBRL(item.unitPrice) : '';
   if (inputQty) inputQty.value = item.quantity || 1;
 
-  // Carrega condição comercial existente no item
+  // Carrega condição comercial
   const promo = item.promo || { type: 'none' };
   currentEditPromoMode = promo.type || 'none';
 
@@ -331,75 +357,78 @@ window.openEditCartItemModal = function(id) {
   const wholMin = document.getElementById('editPromoWholesaleMinQty');
   const wholPrice = document.getElementById('editPromoWholesalePrice');
 
-  if (discMode) discMode.value = (promo.mode === 'fixed') ? 'fixed' : 'percentage';
+  if (discMode) discMode.value = (promo.mode === 'fixed') ? 'fixed' : 'percent';
   if (discVal) discVal.value = (promo.type === 'discount' && promo.value > 0) ? promo.value : '';
   if (wholMin) wholMin.value = (promo.type === 'wholesale' && promo.minQty > 0) ? promo.minQty : 3;
   if (wholPrice) wholPrice.value = (promo.type === 'wholesale' && promo.wholesalePrice > 0) ? formatBRL(promo.wholesalePrice) : '';
 
-  window.setEditPromoType(currentEditPromoMode);
+  setEditPromoType(currentEditPromoMode);
 
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
 
-  window.atualizarSubtotalModalEdicao();
-};
+  atualizarSubtotalModalEdicao();
+}
+window.openEditCartItemModal = openEditCartItemModal;
 
-window.closeEditCartItemModal = function() {
+function closeEditCartItemModal() {
   const modal = document.getElementById('modalEditCartItem');
   if (modal) {
     modal.classList.add('hidden');
     modal.style.display = 'none';
   }
   editingCartItemId = null;
-};
+}
+window.closeEditCartItemModal = closeEditCartItemModal;
 
-// Alternância de condição comercial no modal de edição
-window.setEditPromoType = function(mode) {
+function setEditPromoType(mode) {
   currentEditPromoMode = mode;
 
-  const btnNone = document.getElementById('btnEditPromoNone');
-  const btnDisc = document.getElementById('btnEditPromoDiscount');
-  const btnWhol = document.getElementById('btnEditPromoWholesale');
+  const btnNone = document.getElementById('btnEditPromoNone') || document.getElementById('btnCondNone');
+  const btnDisc = document.getElementById('btnEditPromoDiscount') || document.getElementById('btnCondDiscount');
+  const btnWhol = document.getElementById('btnEditPromoWholesale') || document.getElementById('btnCondWholesale');
 
-  const panelDisc = document.getElementById('panelEditPromoDiscount');
-  const panelWhol = document.getElementById('panelEditPromoWholesale');
+  const panelDisc = document.getElementById('panelEditPromoDiscount') || document.getElementById('editCartItemDiscountContainer');
+  const panelWhol = document.getElementById('panelEditPromoWholesale') || document.getElementById('editCartItemWholesaleContainer');
 
   [btnNone, btnDisc, btnWhol].forEach(b => {
-    if (b) b.className = 'py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900 font-bold';
+    if (b) b.className = 'py-1.5 rounded-md text-center transition-all text-slate-600 hover:text-slate-900 font-bold';
   });
 
   if (panelDisc) panelDisc.classList.add('hidden');
   if (panelWhol) panelWhol.classList.add('hidden');
 
   if (mode === 'discount') {
-    if (btnDisc) btnDisc.className = 'py-1.5 rounded-lg text-center transition-all bg-white text-emerald-800 shadow-xs font-black';
+    if (btnDisc) btnDisc.className = 'py-1.5 rounded-md text-center transition-all bg-white text-emerald-800 shadow-xs font-black';
     if (panelDisc) panelDisc.classList.remove('hidden');
-    document.getElementById('editPromoDiscountValue')?.focus();
+    (document.getElementById('editPromoDiscountValue') || document.getElementById('editCartItemDiscountValue'))?.focus();
   } else if (mode === 'wholesale') {
-    if (btnWhol) btnWhol.className = 'py-1.5 rounded-lg text-center transition-all bg-white text-emerald-800 shadow-xs font-black';
+    if (btnWhol) btnWhol.className = 'py-1.5 rounded-md text-center transition-all bg-white text-emerald-800 shadow-xs font-black';
     if (panelWhol) panelWhol.classList.remove('hidden');
-    document.getElementById('editPromoWholesalePrice')?.focus();
+    (document.getElementById('editPromoWholesalePrice') || document.getElementById('editCartItemWholesalePrice'))?.focus();
   } else {
-    if (btnNone) btnNone.className = 'py-1.5 rounded-lg text-center transition-all bg-white text-emerald-800 shadow-xs font-black';
+    if (btnNone) btnNone.className = 'py-1.5 rounded-md text-center transition-all bg-white text-emerald-800 shadow-xs font-black';
   }
 
-  window.atualizarSubtotalModalEdicao();
-};
+  atualizarSubtotalModalEdicao();
+}
+window.setEditPromoType = setEditPromoType;
 
-window.setEditQty = function(val) {
+function setEditQty(val) {
   const qInput = document.getElementById('editCartItemQty');
   if (qInput) {
     qInput.value = val;
-    window.atualizarSubtotalModalEdicao();
+    atualizarSubtotalModalEdicao();
   }
-};
+}
+window.setEditQty = setEditQty;
 
-window.confirmarNovaMarcaModalEdicao = function() {
+function confirmarNovaMarcaModalEdicao() {
   const input = document.getElementById('inputEditNovaMarca');
   const novaMarca = (input?.value || '').trim();
 
   if (!novaMarca) {
-    window.cancelarNovaMarcaModalEdicao();
+    cancelarNovaMarcaModalEdicao();
     return;
   }
 
@@ -415,43 +444,48 @@ window.confirmarNovaMarcaModalEdicao = function() {
   document.getElementById('boxEditMarcaInline')?.classList.add('hidden');
   document.getElementById('boxEditMarcaSelect')?.classList.remove('hidden');
   document.getElementById('editCartItemPrice')?.focus();
-};
+}
+window.confirmarNovaMarcaModalEdicao = confirmarNovaMarcaModalEdicao;
 
-window.cancelarNovaMarcaModalEdicao = function() {
+function cancelarNovaMarcaModalEdicao() {
   document.getElementById('boxEditMarcaInline')?.classList.add('hidden');
   document.getElementById('boxEditMarcaSelect')?.classList.remove('hidden');
   const select = document.getElementById('editCartItemBrand');
   if (select && select.value === '__NOVA__') {
     select.value = 'Padrão';
   }
-};
+}
+window.cancelarNovaMarcaModalEdicao = cancelarNovaMarcaModalEdicao;
 
 function getEditFormPromoConfig() {
   if (currentEditPromoMode === 'discount') {
-    const modeVal = document.getElementById('editPromoDiscountMode')?.value || 'percentage';
+    const modeEl = document.getElementById('editPromoDiscountMode') || document.getElementById('editCartItemDiscountType');
+    const valEl = document.getElementById('editPromoDiscountValue') || document.getElementById('editCartItemDiscountValue');
     return {
       type: 'discount',
-      mode: (modeVal === 'fixed') ? 'fixed' : 'percent',
-      value: parseNumberInput(document.getElementById('editPromoDiscountValue')?.value) || 0
+      mode: (modeEl?.value === 'fixed') ? 'fixed' : 'percent',
+      value: parseNumberInput(valEl?.value) || 0
     };
   }
   if (currentEditPromoMode === 'wholesale') {
+    const minEl = document.getElementById('editPromoWholesaleMinQty') || document.getElementById('editCartItemWholesaleMin');
+    const priceEl = document.getElementById('editPromoWholesalePrice') || document.getElementById('editCartItemWholesalePrice');
     return {
       type: 'wholesale',
-      minQty: parseNumberInput(document.getElementById('editPromoWholesaleMinQty')?.value) || 1,
-      wholesalePrice: parseNumberInput(document.getElementById('editPromoWholesalePrice')?.value) || 0
+      minQty: parseNumberInput(minEl?.value) || 1,
+      wholesalePrice: parseNumberInput(priceEl?.value) || 0
     };
   }
   return { type: 'none' };
 }
 
-window.atualizarSubtotalModalEdicao = function() {
+function atualizarSubtotalModalEdicao() {
   const modal = document.getElementById('modalEditCartItem');
   if (!modal) return;
 
   const inputPrice = document.getElementById('editCartItemPrice');
   const inputQty = document.getElementById('editCartItemQty');
-  
+
   const preco = parseNumberInput(inputPrice?.value) || 0;
   const qtd = parseNumberInput(inputQty?.value) || 1;
   const promo = getEditFormPromoConfig();
@@ -462,30 +496,34 @@ window.atualizarSubtotalModalEdicao = function() {
   if (elSubtotal) {
     elSubtotal.innerText = `R$ ${formatBRL(calc.finalSubtotal)}`;
   }
-};
+}
+window.atualizarSubtotalModalEdicao = atualizarSubtotalModalEdicao;
 
-window.salvarEdicaoItemCarrinho = function() {
+function salvarEdicaoItemCarrinho() {
   if (!editingCartItemId) {
-    window.closeEditCartItemModal();
+    closeEditCartItemModal();
     return;
   }
 
   const item = (cart || []).find(x => x.id === editingCartItemId);
   if (!item) {
-    window.closeEditCartItemModal();
+    closeEditCartItemModal();
     return;
   }
 
+  const nameInput = document.getElementById('editCartItemName');
   const selectBrand = document.getElementById('editCartItemBrand');
   const inputPrice = document.getElementById('editCartItemPrice');
   const inputQty = document.getElementById('editCartItemQty');
 
+  const novoNome = (nameInput?.value || '').trim() || item.name;
   const novaMarca = (selectBrand?.value && selectBrand.value !== '__NOVA__') ? selectBrand.value : (item.selectedBrandId || 'Padrão');
   const novoPreco = parseNumberInput(inputPrice?.value) || 0;
   const novaQtd = parseNumberInput(inputQty?.value) || 1;
   const novaPromo = getEditFormPromoConfig();
 
-  // Atribuição EXCLUSIVA ao item do carrinho (não mexe em products nem grava marca no catálogo agora)
+  // Aplica as atualizações completas no item
+  item.name = novoNome;
   item.selectedBrandId = novaMarca;
   item.unitPrice = novoPreco;
   item.quantity = novaQtd;
@@ -493,9 +531,10 @@ window.salvarEdicaoItemCarrinho = function() {
 
   saveCartData();
   renderCartUI();
-  window.closeEditCartItemModal();
+  closeEditCartItemModal();
   showAppToast(`"${item.name}" atualizado!`, 'success');
-};
+}
+window.salvarEdicaoItemCarrinho = salvarEdicaoItemCarrinho;
 
 // 6. TOTALIZAÇÃO E AÇÕES RÁPIDAS
 function updateCartTotals(totalItems, checkedItems) {
@@ -523,6 +562,7 @@ function updateCartTotals(totalItems, checkedItems) {
     }
   }
 }
+window.updateCartTotals = updateCartTotals;
 
 function toggleCartItemCheck(id) {
   const it = (cart || []).find(x => x.id === id);
@@ -533,6 +573,7 @@ function toggleCartItemCheck(id) {
     renderCartUI();
   }
 }
+window.toggleCartItemCheck = toggleCartItemCheck;
 
 function stepCartQty(id, delta) {
   const it = (cart || []).find(x => x.id === id);
@@ -547,6 +588,7 @@ function stepCartQty(id, delta) {
     renderCartUI();
   }
 }
+window.stepCartQty = stepCartQty;
 
 function removeCartItem(id) {
   const idx = (cart || []).findIndex(x => x.id === id);
@@ -557,18 +599,29 @@ function removeCartItem(id) {
     showAppToast('Item removido', 'info');
   }
 }
+window.removeCartItem = removeCartItem;
 
 function askClearCart() {
   if ((cart || []).length === 0) return;
-  openCustomDialog(
-    'Limpar Carrinho?',
-    'Deseja remover todos os itens ou apenas os que já foram pegos?',
-    'Limpar Todos',
-    'Limpar Só os Pegos',
-    () => { cart = []; saveCartData(); renderCartUI(); showAppToast('Carrinho limpo!', 'info'); },
-    () => { cart = cart.filter(it => !it.checked); saveCartData(); renderCartUI(); showAppToast('Itens pegos removidos!', 'info'); }
-  );
+  if (typeof openCustomDialog === 'function') {
+    openCustomDialog(
+      'Limpar Carrinho?',
+      'Deseja remover todos os itens ou apenas os que já foram pegos?',
+      'Limpar Todos',
+      'Limpar Só os Pegos',
+      () => { cart = []; saveCartData(); renderCartUI(); showAppToast('Carrinho limpo!', 'info'); },
+      () => { cart = cart.filter(it => !it.checked); saveCartData(); renderCartUI(); showAppToast('Itens pegos removidos!', 'info'); }
+    );
+  } else {
+    if (confirm('Deseja limpar todos os itens do carrinho?')) {
+      cart = [];
+      saveCartData();
+      renderCartUI();
+      showAppToast('Carrinho limpo!', 'info');
+    }
+  }
 }
+window.askClearCart = askClearCart;
 
 function askFinishPurchase() {
   if ((cart || []).length === 0) return;
@@ -583,8 +636,9 @@ function askFinishPurchase() {
     () => executeFinishPurchase(false)
   );
 }
+window.askFinishPurchase = askFinishPurchase;
 
-// 7. FINALIZAÇÃO DA COMPRA: ONDE AS MARCAS E PREÇOS SÃO EFETIVAMENTE CRIADOS NO BANCO DO APP
+// 7. FINALIZAÇÃO DA COMPRA
 function executeFinishPurchase(clearAfter) {
   let gT = 0;
   let tS = 0;
@@ -597,7 +651,6 @@ function executeFinishPurchase(clearAfter) {
     const unitPrice = Number(item.unitPrice) || 0;
     const marca = (item.selectedBrandId || 'Padrão').trim();
 
-    // REGRA DE CONSOLIDAÇÃO: cria e sincroniza a marca no catálogo MESTRE do aplicativo
     let masterProd = (products || []).find(p => 
       (item.productId && p.id === item.productId) || 
       p.name.toLowerCase() === item.name.toLowerCase()
@@ -620,7 +673,6 @@ function executeFinishPurchase(clearAfter) {
         }
       }
 
-      // Sincroniza em segundo plano com a planilha caso haja token
       if (unitPrice > 0 && typeof enviarProdutoParaPlanilha === 'function') {
         enviarProdutoParaPlanilha(masterProd, activeMarketId, unitPrice, marca);
       }
@@ -666,6 +718,7 @@ function executeFinishPurchase(clearAfter) {
   if (typeof playAppBeep === 'function') playAppBeep('finish');
   showAppToast('Compra finalizada! Preços e marcas consolidados no catálogo.', 'success');
 }
+window.executeFinishPurchase = executeFinishPurchase;
 
 // 8. EVENTOS DE ENTRADA DO FORMULÁRIO PRINCIPAL
 document.addEventListener('change', (e) => {
@@ -762,7 +815,6 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
 
   let masterProd = (products || []).find(p => p.name.toLowerCase() === name.toLowerCase());
 
-  // Se for um produto novo no app, cadastra o básico no catálogo mestre
   if (!masterProd) {
     masterProd = {
       id: 'p-custom-' + Date.now(),
@@ -771,7 +823,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
       unit: unit,
       basePrice: unitPrice > 0 ? unitPrice : 0,
       marketPrices: {},
-      brands: [] // A marca não é salva no catálogo aqui!
+      brands: []
     };
     if (!Array.isArray(products)) products = [];
     products.unshift(masterProd);
@@ -779,7 +831,6 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
     if (typeof renderCatalogUI === 'function') renderCatalogUI();
   }
 
-  // A nova marca fica vinculada APENAS ao item do carrinho
   cart.unshift({
     id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
     productId: masterProd.id,
@@ -811,7 +862,6 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
 });
 
 // Inicialização
-// Inicialização segura com proteção contra ReferenceError
 function higienizarInputsCarrinho() {
   const pInput = document.getElementById('cartInputUnitPrice');
   if (pInput) {
@@ -829,4 +879,33 @@ if (typeof higienizarInputsCarrinho === 'function') {
 if (typeof setCartPromoMode === 'function') {
   setCartPromoMode('none');
 }
-setCartPromoMode('none');
+async function compartilharCarrinhoWhatsApp() {
+  if (!cart || cart.length === 0) {
+    if (typeof showAppToast === 'function') showAppToast('O carrinho está vazio!', 'warning');
+    return;
+  }
+
+  // 1. Aguarda a resolução da promessa com await
+  const payloadCompacto = await serializarCarrinhoParaQR();
+  const baseUrl = window.location.origin + window.location.pathname;
+  const linkImportacao = `${baseUrl}#import=${encodeURIComponent(payloadCompacto)}`;
+
+  // 2. Monta o texto legível para o WhatsApp
+  let texto = `🛒 *Lista de Compras (${cart.length} itens)*\n\n`;
+
+  let totalEstimado = 0;
+  cart.forEach(item => {
+    const calc = computeItemFinancials(item.quantity, item.unitPrice, item.promo);
+    totalEstimado += calc.finalSubtotal;
+    const marca = item.selectedBrandId && item.selectedBrandId !== 'Padrão' ? ` (${item.selectedBrandId})` : '';
+    texto += `• ${item.quantity} ${item.unit || 'un'} × *${item.name}*${marca}\n`;
+  });
+
+  texto += `\n💰 *Total estimado:* R$ ${formatBRL(totalEstimado)}\n\n`;
+  texto += `📲 *Para abrir e controlar no SuperCompras, toque no link:*\n${linkImportacao}`;
+
+  // 3. Abre no WhatsApp
+  const urlWhatsapp = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+  window.open(urlWhatsapp, '_blank');
+}
+window.compartilharCarrinhoWhatsApp = compartilharCarrinhoWhatsApp;

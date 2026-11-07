@@ -89,15 +89,23 @@
       <button type="button" onclick="closeExportOptionsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1 leading-none cursor-pointer">✕</button>
     </div>
     <div class="space-y-2">
-      <button type="button" onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
-        <span>Copiar Formatado para WhatsApp</span>
+      <!-- Opção 1: Abre direto no WhatsApp com o Link interativo -->
+      <button type="button" onclick="compartilharCarrinhoWhatsApp(); closeExportOptionsModal();" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
+        <span>💬</span>
+        <span>Enviar para o WhatsApp (com Link)</span>
       </button>
+
+      <!-- Opção 2: Copia o texto formatado para a área de transferência -->
+      <button type="button" onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer">
+        <span>📋</span>
+        <span>Copiar Texto Formatado</span>
+      </button>
+
+      <!-- Opção 3: Download da Planilha -->
       <button type="button" onclick="exportCartCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
+        <span>📊</span>
         <span>Baixar Planilha CSV</span>
       </button>
-    </div>
-    <div class="pt-2 text-right">
-      <button type="button" onclick="closeExportOptionsModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Fechar</button>
     </div>
   </div>
 </div>
