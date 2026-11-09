@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--
+  ANTES DE PUBLICAR: troque Igor Carvalho e igor.m.a.carvalho@gmail.com (procure por "PREENCHER") e confirme
+  que cada frase corresponde ao que o app faz na versão publicada.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidade | SuperCompras</title>
+<meta name="description" content="Como o SuperCompras trata seus dados: tudo fica no seu aparelho e, se você quiser, na pasta oculta do seu próprio Google Drive.">
+<style>
+  :root {
+    --verde: #047857;
+    --verde-escuro: #065f46;
+    --fundo: #f1f5f9;
+    --papel: #ffffff;
+    --texto: #1e293b;
+    --suave: #475569;
+    --linha: #e2e8f0;
+    --aviso-fundo: #fef3c7;
+    --aviso-texto: #78350f;
+    --link: #047857;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #0f172a;
+      --papel: #1e293b;
+      --texto: #e2e8f0;
+      --suave: #94a3b8;
+      --linha: #334155;
+      --aviso-fundo: #78350f;
+      --aviso-texto: #fef3c7;
+      --link: #6ee7b7;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--texto);
+    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .topo { background: var(--verde); color: #fff; }
+  .topo div { max-width: 44rem; margin: 0 auto; padding: 0.9rem 1.25rem; }
+  .topo a { color: #fff; font-weight: 800; font-size: 1.05rem; text-decoration: none; }
+  .topo a:hover { text-decoration: underline; }
+  main {
+    max-width: 44rem;
+    margin: 1.5rem auto 3rem;
+    padding: 1.75rem 1.25rem 2rem;
+    background: var(--papel);
+    border: 1px solid var(--linha);
+    border-radius: 1rem;
+  }
+  @media (min-width: 46rem) { main { padding: 2.25rem 2.5rem 2.5rem; } }
+  h1 { margin: 0 0 0.25rem; font-size: 1.85rem; line-height: 1.2; letter-spacing: -0.01em; }
+  h2 { margin: 2rem 0 0.5rem; font-size: 1.2rem; line-height: 1.3; }
+  p, ul { margin: 0.6rem 0; }
+  ul { padding-left: 1.25rem; }
+  li { margin: 0.35rem 0; }
+  .data { color: var(--suave); font-size: 0.9rem; margin-top: 0; }
+  .resumo {
+    margin: 1.5rem 0 0;
+    padding: 1rem 1.15rem;
+    border-left: 4px solid var(--verde);
+    background: color-mix(in srgb, var(--verde) 8%, transparent);
+    border-radius: 0 0.6rem 0.6rem 0;
+  }
+  .resumo h2 { margin-top: 0; }
+  .resumo p:last-child { margin-bottom: 0; }
+  a { color: var(--link); text-underline-offset: 2px; }
+  a:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; border-radius: 2px; }
+  mark { background: var(--aviso-fundo); color: var(--aviso-texto); padding: 0 0.3em; border-radius: 0.25rem; }
+  code { font-size: 0.9em; background: color-mix(in srgb, var(--texto) 9%, transparent); padding: 0.05em 0.35em; border-radius: 0.25rem; }
+  footer { max-width: 44rem; margin: -1.5rem auto 2.5rem; padding: 0 1.25rem; color: var(--suave); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+  <header class="topo"><div><a href="index.html">SuperCompras</a></div></header>
+
+  <main>
+    <h1>Política de privacidade</h1>
+    <p class="data">Última atualização: 9 de novembro de 2026</p>
+
+    <section class="resumo">
+      <h2>Em resumo</h2>
+      <p>O SuperCompras guarda suas listas, produtos, mercados e histórico no seu próprio aparelho. Se você conectar sua conta Google, uma cópia fica numa pasta oculta do seu próprio Google Drive. Nós não recebemos, não guardamos e não vemos esses dados.</p>
+    </section>
+
+    <h2>Quem é o responsável</h2>
+    <p>O SuperCompras é mantido por <mark>Igor Carvalho (PREENCHER)</mark>. Dúvidas sobre esta política: <mark>igor.m.a.carvalho@gmail.com (PREENCHER)</mark>.</p>
+
+    <h2>Quais dados o aplicativo usa</h2>
+    <ul>
+      <li>O que você cria no app: lista de compras, catálogo de produtos (nomes, unidades, categorias, marcas e os preços que você digitar), supermercados cadastrados e histórico de compras.</li>
+      <li>O endereço de e-mail da conta Google conectada, apenas para mostrar na tela qual conta está ativa.</li>
+    </ul>
+    <p>O app não pede nome, telefone, CPF, dados de pagamento nem sua localização. Se isso mudar, esta política será atualizada antes.</p>
+
+    <h2>Onde os dados ficam</h2>
+    <ul>
+      <li><strong>No seu aparelho.</strong> As informações ficam no armazenamento do navegador, e o app funciona sem internet.</li>
+      <li><strong>No seu Google Drive, só se você quiser.</strong> Ao tocar em “Conectar / Sincronizar”, o app grava um arquivo de backup (<code>supercompras_backup.json</code>) na pasta de dados do aplicativo, uma área oculta do seu Drive. Isso permite usar a mesma lista em mais de um aparelho.</li>
+    </ul>
+
+    <h2>Login com Google e permissão pedida</h2>
+    <p>O login é feito pelo Google. O SuperCompras pede uma única permissão: ver, criar e excluir os próprios dados de configuração no Google Drive (<code>drive.appdata</code>). Ela não dá acesso às suas fotos, documentos nem a outros arquivos do Drive.</p>
+    <p>A comunicação acontece direto entre o seu navegador e o Google. Não existe um servidor do SuperCompras no meio, e a chave de acesso fica só na memória da página, sendo descartada quando você a fecha.</p>
+
+    <h2>O que não fazemos</h2>
+    <p>Não vendemos nem compartilhamos seus dados, não mostramos anúncios e não usamos ferramentas de análise ou rastreamento de uso. O login passa pelos serviços do Google, que podem usar cookies próprios conforme a política do Google.</p>
+
+    <h2>Seu controle sobre os dados</h2>
+    <ul>
+      <li><strong>Desconectar:</strong> na aba Dados, toque em “Desconectar”. A permissão é revogada e o app deixa de sincronizar. Suas listas neste aparelho continuam.</li>
+      <li><strong>Revogar o acesso pelo Google:</strong> em <a href="https://myaccount.google.com/connections" rel="noopener">myaccount.google.com/connections</a>, remova o SuperCompras.</li>
+      <li><strong>Apagar o backup:</strong> depois de revogar o acesso, use nas configurações do Google Drive a opção de excluir os dados ocultos do aplicativo.</li>
+      <li><strong>Apagar do aparelho:</strong> limpe os dados do site nas configurações do navegador ou desinstale o app.</li>
+    </ul>
+    <p>Como os dados ficam com você, você pode acessar, corrigir e excluir tudo diretamente no app e no seu Drive, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018). Se precisar de ajuda, escreva para <mark>igor.m.a.carvalho@gmail.com (PREENCHER)</mark>.</p>
+
+    <h2>Segurança</h2>
+    <p>O app é acessado por conexão segura (HTTPS) e pede o mínimo de permissão ao Google. Mesmo assim, quem usar seu aparelho desbloqueado pode ver as listas no app. Proteja seu aparelho e sua conta Google.</p>
+
+    <h2>Uso limitado dos dados do Google</h2>
+    <p>O uso e a transferência, para qualquer outro aplicativo, das informações recebidas das APIs do Google pelo SuperCompras seguem a <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Política de Dados do Usuário dos Serviços de API do Google</a>, incluindo os requisitos de Uso Limitado.</p>
+    <p lang="en">SuperCompras’s use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</p>
+
+    <h2>Mudanças nesta política</h2>
+    <p>Se a política mudar, esta página será atualizada com a nova data no topo.</p>
+  </main>
+
+  <footer><a href="index.html">Voltar ao SuperCompras</a></footer>
+</body>
+</html>
