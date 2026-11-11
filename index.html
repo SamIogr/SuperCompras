@@ -3,178 +3,472 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>SuperCompras Pro (Sincronizado com Google Sheets)</title>
+    <title>SuperCompras Pro</title>
     <link rel="stylesheet" href="css/tailwind.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    
+    <style>
+      :root {
+        --app-zoom: 1;
+      }
+    
+      /* Força todas as janelas suspensas e modais a acompanharem o zoom global */
+      [id*="modal"]>div,
+      .modal-dialog,
+      #modalHistoricoComparativo>div,
+      #modal-compras>div,
+      #modal-core>div,
+      #modal-qrcode>div {
+        zoom: var(--app-zoom, 1);
+      }
+      html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  :root {
+    --app-zoom: 1;
+  }
+  [id*="modal"] > div,
+  .modal-dialog {
+    zoom: var(--app-zoom, 1);
+  }
+      
+    </style>
 
     <style>
-      ::-webkit-scrollbar { width: 5px; height: 5px; }
-      ::-webkit-scrollbar-track { background: #f1f5f9; }
-      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-      .touch-target { min-height: 44px; min-width: 44px; }
-      input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-      input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+     /* TEMA ESCURO DEFINITIVO (COBRE OPACIDADES, BARRAS FIXAS E MODAIS) */
+      html.dark body {
+        background-color: #0f172a !important; /* slate-900 */
+        color: #f8fafc !important;            /* slate-50 */
+      }
+
+      /* Cartões, fundos brancos e barras fixas com opacidade */
+      html.dark .bg-white,
+      html.dark .bg-white\/95,
+      html.dark .bg-white\/90,
+      html.dark #cartFloatingCheckoutBar {
+        background-color: #1e293b !important; /* slate-800 */
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+      }
+
+      /* Fundos neutros e de apoio */
+      html.dark .bg-slate-100 { background-color: #0f172a !important; }
+      html.dark .bg-slate-50, html.dark .bg-slate-50\/80 { background-color: #1e293b !important; }
+      html.dark .bg-slate-200, html.dark .bg-slate-200\/70, html.dark .bg-slate-200\/80 { 
+        background-color: #334155 !important; 
+      }
+
+      /* Bordas e linhas de separação */
+      html.dark .border-slate-100, 
+      html.dark .border-slate-200, 
+      html.dark .border-slate-300, 
+      html.dark .border-slate-200\/90 { 
+        border-color: #334155 !important; 
+      }
+
+      /* Tipografia */
+      html.dark .text-slate-900, html.dark .text-slate-800 { color: #f8fafc !important; }
+      html.dark .text-slate-700, html.dark .text-slate-600 { color: #cbd5e1 !important; }
+      html.dark .text-slate-500, html.dark .text-slate-400 { color: #94a3b8 !important; }
+
+      /* Campos de formulário e inputs em modais */
+      html.dark input, 
+      html.dark select,
+      html.dark textarea {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+      }
+      html.dark input::placeholder { color: #64748b !important; }
+
+      /* Botão Comparador e cartões de destaque no modo escuro */
+      html.dark .bg-amber-50,
+      html.dark .bg-amber-50\/60 {
+        background-color: rgba(245, 158, 11, 0.12) !important;
+        color: #fde68a !important;
+        border-color: rgba(245, 158, 11, 0.3) !important;
+      }
+      html.dark .text-amber-900,
+      html.dark .text-amber-800 {
+        color: #fde68a !important;
+      }
+      html.dark .bg-emerald-50,
+      html.dark .bg-emerald-50\/50 {
+        background-color: rgba(16, 185, 129, 0.12) !important;
+        color: #a7f3d0 !important;
+        border-color: rgba(16, 185, 129, 0.3) !important;
+      }
+      html.dark .text-emerald-800 { color: #a7f3d0 !important; }
+      /* ETIQUETAS E BADGES NO MODO ESCURO (HISTÓRICO, MARCAS E ORIGEM) */
+      html.dark .bg-emerald-100,
+      html.dark .bg-emerald-50,
+      html.dark .bg-emerald-50\/50 {
+        background-color: rgba(6, 78, 59, 0.7) !important;
+        border-color: rgba(16, 185, 129, 0.4) !important;
+        color: #6ee7b7 !important;
+      }
+      html.dark .text-emerald-800,
+      html.dark .text-emerald-700 {
+        color: #6ee7b7 !important;
+      }
+
+      /* Etiquetas Amarelas / Atacado / Base Geral */
+      html.dark .bg-amber-100,
+      html.dark .bg-amber-50,
+      html.dark .bg-amber-50\/60 {
+        background-color: rgba(120, 53, 15, 0.6) !important;
+        border-color: rgba(245, 158, 11, 0.4) !important;
+        color: #fde68a !important;
+      }
+      html.dark .text-amber-800,
+      html.dark .text-amber-900 {
+        color: #fde68a !important;
+      }
+
+      /* Etiquetas Lilás (Planilha + Drive) */
+      html.dark .bg-purple-100 {
+        background-color: rgba(88, 28, 135, 0.6) !important;
+        border-color: rgba(168, 85, 247, 0.4) !important;
+        color: #e9d5ff !important;
+      }
+      html.dark .text-purple-800 {
+        color: #e9d5ff !important;
+      }
+
+      /* Etiquetas Azuis (Só Planilha) */
+      html.dark .bg-sky-100 {
+        background-color: rgba(12, 74, 110, 0.6) !important;
+        border-color: rgba(14, 165, 233, 0.4) !important;
+        color: #bae6fd !important;
+      }
+      html.dark .text-sky-800 {
+        color: #bae6fd !important;
+      }
     </style>
   </head>
   <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col font-sans pb-36 select-none md:select-auto">
 
-    <!-- TOPO FIXO: LOGO, MERCADO ATIVO E AÇÕES -->
-    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-40">
-      <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
-        <div class="flex items-center space-x-2.5">
-          <div class="bg-emerald-600/90 p-2 rounded-xl shadow-inner text-white flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
+    <!-- CABEÇALHO COM CONTENÇÃO DE TRANSBORDO -->
+    <header class="bg-emerald-700 text-white px-3 py-2.5 shadow-md sticky top-0 z-40">
+      <div class="max-w-4xl mx-auto flex items-center justify-between gap-2">
+    
+        <!-- LADO ESQUERDO: TEXTOS COM TRUNCAMENTO OBRIGATÓRIO -->
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 truncate">
+            <span class="font-black text-sm tracking-tight truncate">SuperCompras</span>
+            <span class="text-[9px] font-bold bg-emerald-900/60 text-emerald-200 px-1.5 py-0.2 rounded shrink-0">PRO</span>
           </div>
-          <div>
-            <div class="flex items-center space-x-2">
-              <h1 class="text-base font-extrabold tracking-tight leading-none">SuperCompras</h1>
-              <span class="bg-emerald-800 text-emerald-200 text-[10px] px-1.5 py-0.5 rounded-full font-bold">PRO</span>
-            </div>
-            <p id="topMarketSubtitle" class="text-[11px] text-emerald-200 mt-0.5 truncate max-w-[200px] sm:max-w-xs">Carregando mercados...</p>
-          </div>
+          <p id="headerMarketName" class="text-[11px] text-emerald-100/90 truncate font-medium">
+            Supermercado Jacomar (Iná / Afonso Pena)
+          </p>
         </div>
-        
-
-        <div class="flex items-center space-x-1.5">
-          <button type="button" onclick="abrirModalQRCode()"
-            class="hidden md:flex w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white items-center justify-center transition-all cursor-pointer border border-white/10 shadow-xs"
-            title="Compartilhar ou Ler Lista por QR Code">
-            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    
+        <!-- LADO DIREITO: AÇÕES E BOTÃO DA LUPA -->
+        <div class="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+          <!-- BOTÃO 1: SINCRONIZAÇÃO DE PLANILHA -->
+          <button id="btnSyncPlanilha" type="button" onclick="abrirModalSincronizacaoSeletiva()"
+            title="Sincronização Seletiva com a Planilha"
+            class="p-2 bg-emerald-800/80 hover:bg-emerald-900 text-white rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z">
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
               </path>
             </svg>
           </button>
-          <button id="btnSyncPlanilha" type="button" onclick="abrirModalSincronizacaoSeletiva()" title="Sincronização Seletiva com a Planilha" class="p-2 bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-emerald-200 rounded-xl transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-          </button>
-          <button id="btnOpenBackupModal" type="button" onclick="abrirModalBackup()" title="Backup & Restauração JSON" class="p-2 bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-emerald-200 rounded-xl transition-all">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-          </button>
-          <!-- BOTÃO GOOGLE DRIVE SYNC -->
-          <button type="button" onclick="openDriveSyncModal()" title="Backup na Conta Google"
-            class="w-8 h-8 rounded-lg bg-emerald-800/60 hover:bg-emerald-800 active:scale-95 flex items-center justify-center transition-all cursor-pointer shadow-xs">
-            <svg class="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-              <path fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+        
+          <!-- BOTÃO 2: BACKUP JSON -->
+          <button id="btnOpenBackupModal" type="button" onclick="abrirModalBackup()" title="Backup & Restauração JSON"
+            class="p-2 bg-emerald-800/80 hover:bg-emerald-900 text-white rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
             </svg>
           </button>
-          <button id="btnToggleAudio" type="button" onclick="alternarSomApp()" title="Ligar/Desligar Som" class="p-2 bg-emerald-800 hover:bg-emerald-900 active:scale-95 text-emerald-200 rounded-xl transition-all">
-            <svg id="soundOnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-            <svg id="soundOffIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>
+        
+          <!-- BOTÃO 3: GOOGLE DRIVE SYNC -->
+          <button type="button" onclick="openDriveSyncModal()" title="Backup na Conta Google"
+            class="p-2 bg-emerald-800/80 hover:bg-emerald-900 text-white rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" />
+            </svg>
           </button>
+        
+          <!-- BOTÃO 4: MODO ESCURO / CLARO (AGORA PADRONIZADO COM O MESMO ROUNDED E TAMANHO) -->
+          <button id="btnToggleTheme" type="button" onclick="alternarTemaApp()" title="Alternar Modo Escuro"
+            class="p-2 bg-emerald-800/80 hover:bg-emerald-900 text-white rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+              </path>
+            </svg>
+            <svg class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+          </button>
+        
+          <!-- BOTÃO 5: LUPA (PADRONIZADO NO MESMO FORMATO DOS DEMAIS) -->
+          <div class="relative inline-flex items-center shrink-0">
+            <button id="btnLupaGlobal" type="button" onclick="toggleBarraZoomGlobal()" title="Ajustar escala da interface"
+              class="p-2 bg-emerald-800/80 hover:bg-emerald-900 text-white rounded-xl transition-colors cursor-pointer flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"></path>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </header>
 
+<!-- PAINEL DE ZOOM FIXO NO MOBILE E ANCORADO NO DESKTOP -->
+<div id="painelZoomGlobal" 
+     style="top: 62px;" 
+     class="hidden fixed left-3 right-3 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl p-3 text-slate-800 dark:text-slate-100 select-none sm:absolute sm:left-auto sm:right-0 sm:w-72 sm:top-full sm:mt-2">
+  
+  <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800 text-xs font-bold">
+    <span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+      <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      Tamanho da Interface
+    </span>
+    <span id="labelValorZoomGlobal" class="text-amber-600 dark:text-amber-400 font-extrabold text-xs shrink-0">100%</span>
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button type="button" 
+            onclick="alterarZoomGlobal(-5)" 
+            class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-sm shrink-0">-</button>
+    
+    <input type="range" 
+           id="sliderZoomGlobal" 
+           min="75" 
+           max="125" 
+           step="5" 
+           value="100" 
+           oninput="aplicarZoomGlobal(this.value)" 
+           class="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+    
+    <button type="button" 
+            onclick="alterarZoomGlobal(5)" 
+            class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 text-sm shrink-0">+</button>
+  </div>
+
+  <div class="flex justify-between items-center mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px]">
+    <span class="text-slate-400">75%</span>
+    <button type="button" 
+            onclick="aplicarZoomGlobal(100)" 
+            class="font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer">
+      Padrão
+    </button>
+    <span class="text-slate-400">125%</span>
+  </div>
+</div>
+
     <!-- CONTEÚDO PRINCIPAL (3 ABAS) -->
     <main class="max-w-4xl w-full mx-auto px-3 sm:px-4 pt-3 flex-grow">
       
-      <!-- ABA 1: COMPRAS (ATIVA POR PADRÃO) -->
-      <div id="tab-compras" class="space-y-3.5">
-        <section class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200">
-          <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-            </div>
-            <div class="flex-1 min-w-0">
-              <label for="selectActiveMarket" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">Supermercado da Compra</label>
-              <div class="flex items-center justify-between gap-2 mt-0.5">
-                <select id="selectActiveMarket" class="font-extrabold text-sm text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer hover:text-emerald-700 transition-colors flex-1 min-w-0 truncate"></select>
-                <button type="button" onclick="abrirSupermercadoNoMaps(activeMarketId, true)" title="Abrir rota no Google Maps" class="p-1.5 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 border border-emerald-200 active:scale-95 shrink-0">
-                  <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                  <span>Rota</span>
-                </button>
+      <!-- ABA 1: COMPRAS -->
+      <div id="tab-compras" class="pb-28">
+
+        <!-- BLOCO FIXO INTEGRADO (SUPERMERCADO, COMPARADOR, BUSCA E FILTROS ACOMPANHAM O SCROLL) -->
+        <div class="sticky z-30 space-y-2 py-2 -mx-3 sm:-mx-4 px-3 sm:px-4 bg-slate-100/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800"
+             style="position: sticky; top: 52px;">
+          
+          <!-- LINHA 1: SELETOR DE MERCADO + GRUPO DE BOTÕES ALINHADOS -->
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-2 sm:p-2.5 border border-slate-200/90 dark:border-slate-700 shadow-2xs flex items-center justify-between gap-2">
+            
+            <!-- ESQUERDA: ÍCONE + NOME DO SUPERMERCADO -->
+            <div class="flex items-center space-x-2 min-w-0 flex-1">
+              <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <label for="selectActiveMarket" class="block text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none mb-0.5">Supermercado Ativo</label>
+                <select id="selectActiveMarket" class="font-extrabold text-xs text-slate-800 dark:text-slate-100 bg-transparent border-none p-0 focus:ring-0 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors w-full truncate block leading-tight"></select>
               </div>
             </div>
-          </div>
-        </section>
 
-        <!-- BANNER INTELIGENTE: RECOMENDAÇÃO DE ECONOMIA -->
-        <div id="cartBestMarketRecommendation" class="hidden mb-3.5 transition-all"></div>
-
-        <!-- FORMULÁRIO RESPONSIVO -->
-        <div id="cartFormBackdrop" class="hidden md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 transition-opacity" onclick="fecharSheetAdicionarItem()"></div>
-
-        <section id="cartFormContainer" class="fixed md:static inset-x-0 bottom-0 z-50 md:z-auto bg-white rounded-t-3xl md:rounded-2xl shadow-2xl md:shadow-sm border-t md:border border-slate-200 p-4 transform translate-y-full md:translate-y-0 transition-transform duration-300 ease-out max-h-[88vh] md:max-h-none overflow-y-auto md:overflow-visible">
-          <div class="md:hidden flex flex-col items-center pb-2">
-            <div class="w-10 h-1 bg-slate-300 rounded-full mb-3 cursor-pointer" onclick="fecharSheetAdicionarItem()"></div>
-            <div class="w-full flex items-center justify-between">
-              <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <h2 class="font-black text-slate-800 text-base">Adicionar Produto</h2>
-              </div>
-              <button type="button" onclick="fecharSheetAdicionarItem()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg text-lg font-bold">✕</button>
-            </div>
-          </div>
-
-          <div class="hidden md:flex items-center justify-between pb-2.5 border-b border-slate-100 mb-3">
-            <div class="flex items-center space-x-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <h2 class="font-bold text-slate-800 text-base">Adicionar Produto ao Carrinho</h2>
-            </div>
-            <div class="flex items-center space-x-2">
-              <button type="button" onclick="abrirCalculadoraComparativa()" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 active:scale-95 shadow-xs">
-                <span>⚖️</span><span>Comparar Preço / Atacado</span>
+            <!-- DIREITA: BARRA DE AÇÕES (TODOS COM ALTURA h-8 E ALINHAMENTO CENTRAL) -->
+            <div class="flex items-center space-x-1.5 shrink-0">
+              
+              <!-- BOTÃO INDICADOR DISCRETO (MELHOR PREÇO / COTAÇÃO) -->
+              <button type="button" 
+                      id="btnComparativoMercadosRapido" 
+                      onclick="abrirGuiaComparativoMercados()" 
+                      class="hidden w-8 h-8 rounded-xl border transition-all active:scale-95 flex items-center justify-center shrink-0 cursor-pointer shadow-2xs"
+                      title="Comparativo de preços entre supermercados">
               </button>
-              <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">Balança & Unitário</span>
+
+              <!-- COMPARADOR -->
+              <button type="button" 
+                      onclick="abrirCalculadoraComparativa()" 
+                      title="Comparador de Preço por Proporção" 
+                      class="h-8 px-2.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 border border-amber-200/90 dark:border-amber-800/60 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 active:scale-95 shadow-2xs cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-amber-700 dark:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+                </svg>
+                <span>Comparador</span>
+              </button>
+
+              <!-- ROTA MAPS -->
+              <button type="button" 
+                      onclick="abrirSupermercadoNoMaps(activeMarketId, true)" 
+                      title="Traçar rota no Maps" 
+                      class="w-8 h-8 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-700/60 dark:hover:bg-emerald-950/40 text-slate-700 hover:text-emerald-800 dark:text-slate-200 dark:hover:text-emerald-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center border border-slate-200 dark:border-slate-600 active:scale-95 cursor-pointer shadow-2xs">
+                <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+              </button>
+            </div>
+
+          </div>
+          <!-- LINHA 2: BARRA DE BUSCA + BOTAO ADICIONAR (WEB) -->
+          <div class="bg-white dark:bg-slate-800 rounded-2xl p-1.5 sm:p-2 border border-slate-200/90 dark:border-slate-700 shadow-2xs flex items-center gap-2">
+            <div class="relative flex-1">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </div>
+              <input type="text" 
+                     id="cartSearchFilter" 
+                     placeholder="Buscar no carrinho..." 
+                     class="w-full text-xs font-semibold pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-emerald-500 transition-colors placeholder:text-slate-400">
+            </div>
+
+            <!-- Adicionar: exclusivo Web (hidden md:flex) -->
+            <button type="button" 
+                    onclick="abrirSheetAdicionarItem()" 
+                    class="hidden md:flex px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-colors items-center space-x-1.5 shrink-0 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+              <span>Adicionar</span>
+            </button>
+          </div>
+
+          <!-- LINHA 3: FILTROS DE ESTADO DO CARRINHO -->
+          <div class="flex items-center justify-between gap-1.5">
+            <div class="flex items-center bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 w-full sm:w-auto shadow-2xs">
+              <button type="button" onclick="setCartFilterMode('all')" id="tabFilterAll" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-2xs transition-colors cursor-pointer">
+                Todos (<span id="cartBadgeAll">0</span>)
+              </button>
+              <button type="button" onclick="setCartFilterMode('pending')" id="tabFilterPending" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+                No Corredor (<span id="cartBadgePending">0</span>)
+              </button>
+              <button type="button" onclick="setCartFilterMode('checked')" id="tabFilterChecked" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+                No Carrinho (<span id="cartBadgeChecked">0</span>)
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="cartBestMarketRecommendation" class="hidden transition-all mt-2"></div>
+
+        <!-- LISTA DE ITENS DO CARRINHO (ROLA POR BAIXO DO BLOCO FIXO) -->
+        <div id="cartItemsContainer" class="space-y-1.5 pt-2"></div>
+
+        <!-- ESTADO VAZIO -->
+        <div id="cartEmptyCard" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300 space-y-2">
+          <div class="w-12 h-12 mx-auto text-emerald-600 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          </div>
+          <h3 class="font-extrabold text-slate-800 text-sm">Seu carrinho está vazio</h3>
+          <p class="text-xs text-slate-400 max-w-xs mx-auto">Use o botão "Adicionar" acima ou adicione itens direto pela aba Dados.</p>
+        </div>
+
+        <!-- MODAL DE ADIÇÃO (CAMPO ÚNICO DE BUSCA E MARCA VISÍVEL) -->
+        <div id="cartFormBackdrop" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 transition-opacity" onclick="fecharSheetAdicionarItem()"></div>
+
+        <section id="cartFormContainer" class="hidden fixed inset-x-0 bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-50 bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 p-4 sm:p-5 w-full sm:max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+          
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <h2 class="font-black text-slate-800 text-sm sm:text-base">Adicionar Produto</h2>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <button type="button" 
+                      onclick="abrirCalculadoraComparativa()" 
+                      class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-[11px] font-bold transition-all flex items-center space-x-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                <span>Comparar</span>
+              </button>
+              <button type="button" onclick="fecharSheetAdicionarItem()" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
             </div>
           </div>
 
           <form id="formAddCartItem" class="space-y-3">
-            <div class="flex items-center justify-between mb-1">
-              <label class="block text-xs font-semibold text-slate-600" for="cartInputProductName">
-                Buscar Produto no Catálogo <span class="text-rose-500">*</span>
+            <!-- CAMPO ÚNICO DE NOME DO PRODUTO -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1" for="cartInputProductName">
+                Buscar no Catálogo <span class="text-rose-500">*</span>
               </label>
-            
-              <div id="containerMarcaInline" class="hidden flex items-center space-x-1.5">
-                <div id="boxSelectMarca" class="flex items-center space-x-1">
-                  <span class="text-[10px] font-bold text-slate-400">Marca:</span>
-                  <select id="cartSelectProductBrand"
-                    class="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-lg px-2 py-0.5 focus:ring-emerald-500 cursor-pointer">
-                    <option value="Padrão">🏷️ Padrão</option>
-                    <option value="__NOVA__">+ Nova marca...</option>
-                  </select>
-                </div>
 
-                <div id="boxInputNovaMarcaInline" class="hidden flex items-center space-x-1">
-                  <input type="text" id="inputNovaMarcaInline" placeholder="Marca..." class="w-24 px-2 py-0.5 text-xs font-bold bg-white border border-emerald-400 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                  <button type="button" onclick="confirmarNovaMarcaInline()" class="w-6 h-6 bg-emerald-600 active:scale-95 text-white rounded-lg text-xs font-bold shadow-xs">✓</button>
-                  <button type="button" onclick="cancelarNovaMarcaInline()" class="w-6 h-6 bg-slate-200 text-slate-600 rounded-lg text-xs font-bold">✕</button>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-
-                <input type="hidden" id="cartInputProductBrand" value="Padrão">
+                <input type="text" 
+                       id="cartInputProductName" 
+                       placeholder="Digite o nome (ex: Arroz, Feijão, Acém)..." 
+                       class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+                <button type="button" id="cartBtnClearProduct" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
+                <div id="cartAutocompleteDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto"></div>
               </div>
             </div>
 
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <!-- SELETOR E CRIADOR DE MARCAS VISÍVEL -->
+            <div id="containerMarcaInline" class="bg-slate-50 border border-slate-200 rounded-xl p-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center space-x-1.5 text-xs font-bold text-slate-700">
+                  <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                  <span>Marca:</span>
+                </div>
+
+                <div class="flex-1 flex items-center justify-end space-x-1.5">
+                  <div id="boxSelectMarca" class="flex items-center space-x-1 flex-1 max-w-[200px]">
+                    <select id="cartSelectProductBrand" 
+                            onchange="aoMudarSelectMarcaInline(this.value)" 
+                            class="w-full text-xs font-bold text-emerald-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer">
+                      <option value="Padrão">Padrão</option>
+                      <option value="__NOVA__">+ Nova marca...</option>
+                    </select>
+                  </div>
+
+                  <div id="boxInputNovaMarcaInline" class="hidden flex items-center space-x-1">
+                    <input type="text" id="inputNovaMarcaInline" placeholder="Nova marca..." class="w-28 px-2 py-1 text-xs font-bold bg-white border border-emerald-400 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <button type="button" onclick="confirmarNovaMarcaInline()" class="p-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg transition-all shadow-2xs" title="Confirmar">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                    </button>
+                    <button type="button" onclick="cancelarNovaMarcaInline()" class="p-1 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-all" title="Cancelar">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  </div>
+
+                  <input type="hidden" id="cartInputProductBrand" value="Padrão">
+                </div>
               </div>
-              <input type="text" id="cartInputProductName" placeholder="Digite para buscar (ex: Acém, Feijão, Arroz)..." class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-emerald-500 focus:border-emerald-500 transition-all">
-              <button type="button" id="cartBtnClearProduct" class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">✕</button>
-              <div id="cartAutocompleteDropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto"></div>
             </div>
 
+            <!-- UNIDADE, PREÇO COM ESPAÇAMENTO CORRETO E QUANTIDADE -->
             <div class="grid grid-cols-12 gap-2">
-              <div class="col-span-4 sm:col-span-3">
-                <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnit">Unidade</label>
-                <select id="cartInputUnit" class="w-full py-2.5 px-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all">
-                  <option value="kg">kg (Quilo / Balança)</option>
+              <div class="col-span-4">
+                <label class="block text-[11px] font-bold text-slate-600 mb-1" for="cartInputUnit">Unidade</label>
+                <select id="cartInputUnit" onchange="atualizarAtalhosQuantidade()" class="w-full py-2 px-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none cursor-pointer">
+                  <option value="kg">kg (Quilo)</option>
                   <option value="un">un (Unidade)</option>
-                  <option value="cx">cx (Caixa)</option>
                   <option value="pct">pct (Pacote)</option>
+                  <option value="cx">cx (Caixa)</option>
                   <option value="pt">pt (Pote)</option>
                   <option value="lt">lt (Lata)</option>
                   <option value="gf">gf (Garrafa)</option>
@@ -182,145 +476,95 @@
                 </select>
               </div>
 
-              <div class="col-span-4 sm:col-span-4">
-                <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputUnitPrice">Preço Unit. (R$) <span class="text-rose-500">*</span></label>
+              <div class="col-span-4">
+                <label class="block text-[11px] font-bold text-slate-600 mb-1" for="cartInputUnitPrice">Preço Unit. (R$)</label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-xs font-bold text-slate-400 pointer-events-none">R$</span>
-                  <input type="text" id="cartInputUnitPrice" inputmode="decimal" placeholder="0,00 (opcional)" class="w-full pl-8 pr-2 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all" />
+                  <input type="text" id="cartInputUnitPrice" inputmode="decimal" placeholder="0,00" class="w-full pl-9 pr-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none" />
                 </div>
               </div>
 
-              <div class="col-span-4 sm:col-span-5">
-                <label class="block text-xs font-semibold text-slate-600 mb-1" for="cartInputQuantity">Qtd. / Peso <span class="text-rose-500">*</span></label>
-                <input type="text" id="cartInputQuantity" inputmode="decimal" placeholder="Ex: 1,132" value="1" required class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none transition-all text-center sm:text-left" />
+              <div class="col-span-4">
+                <label class="block text-[11px] font-bold text-slate-600 mb-1" for="cartInputQuantity">Qtd / Peso <span class="text-rose-500">*</span></label>
+                <input type="text" id="cartInputQuantity" inputmode="decimal" placeholder="1" value="1" required class="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none text-center" />
               </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs">
-              <span class="text-[11px] text-slate-600 font-medium mr-1">Atalhos:</span>
-              <button type="button" onclick="setCartQuickQty('1')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">1</button>
-              <button type="button" onclick="setCartQuickQty('2')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">2</button>
-              <button type="button" onclick="setCartQuickQty('3')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">3</button>
-              <button type="button" onclick="setCartQuickQty('6')" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-lg text-slate-700 font-bold">6</button>
-              <span class="border-r border-slate-300 h-4 mx-0.5"></span>
-              <button type="button" onclick="setCartQuickQty('0.250')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">250g</button>
-              <button type="button" onclick="setCartQuickQty('0.500')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">500g</button>
-              <button type="button" onclick="setCartQuickQty('1.000')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1 kg</button>
-              <button type="button" onclick="setCartQuickQty('1.500')" class="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 rounded-lg text-emerald-800 font-bold">1,5 kg</button>
+            <!-- ATALHOS CONTEXTUAIS ALINHADOS SOB A QUANTIDADE -->
+            <div class="flex justify-end pt-0.5">
+              <div id="containerAtalhosQtd" class="flex items-center gap-1"></div>
             </div>
 
             <!-- CONDIÇÃO COMERCIAL / DESCONTO E ATACADO -->
-            <div class="mt-3 bg-slate-50/80 border border-slate-200/90 rounded-2xl p-3 transition-all">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-black text-slate-700 flex items-center space-x-1.5">
-                  <span>🏷️</span>
-                  <span>Condição Comercial:</span>
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-black text-slate-700 flex items-center space-x-1">
+                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                  <span>Condição Especial</span>
                 </span>
-                <span id="cartPromoPreviewBadge" class="hidden text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full"></span>
+                <span id="cartPromoPreviewBadge" class="hidden text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.2 rounded-full"></span>
               </div>
-            
-              <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-200/80 rounded-xl text-xs font-bold">
-                <button type="button" id="btnCartPromoNone" onclick="setCartPromoMode('none')"
-                  class="py-1.5 rounded-lg text-center transition-all bg-white text-emerald-800 shadow-xs font-black">
-                  Nenhum
-                </button>
-                <button type="button" id="btnCartPromoDiscount" onclick="setCartPromoMode('discount')"
-                  class="py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900">
-                  % Desconto
-                </button>
-                <button type="button" id="btnCartPromoWholesale" onclick="setCartPromoMode('wholesale')"
-                  class="py-1.5 rounded-lg text-center transition-all text-slate-600 hover:text-slate-900">
-                  🏷️ Atacado
-                </button>
+
+              <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs font-bold">
+                <button type="button" id="btnCartPromoNone" onclick="setCartPromoMode('none')" class="py-1 rounded-lg text-center bg-white text-emerald-800 shadow-2xs font-bold text-[11px] cursor-pointer">Nenhum</button>
+                <button type="button" id="btnCartPromoDiscount" onclick="setCartPromoMode('discount')" class="py-1 rounded-lg text-center text-slate-600 hover:text-slate-900 text-[11px] cursor-pointer">Desconto</button>
+                <button type="button" id="btnCartPromoWholesale" onclick="setCartPromoMode('wholesale')" class="py-1 rounded-lg text-center text-slate-600 hover:text-slate-900 text-[11px] cursor-pointer">Atacado</button>
               </div>
-            
-              <div id="panelCartPromoDiscount" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+              <div id="panelCartPromoDiscount" class="hidden pt-2 border-t border-slate-200 space-y-2">
+                <div class="grid grid-cols-2 gap-2">
                   <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Tipo de Abatimento</label>
-                    <select id="cartDiscountMode" onchange="updateCartItemPreview()"
-                      class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2.5 py-2 focus:ring-2 focus:ring-emerald-500">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Tipo</label>
+                    <select id="cartDiscountMode" onchange="updateCartItemPreview()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
                       <option value="percent">% Porcentagem</option>
-                      <option value="fixed">R$ Valor Fixo / un</option>
+                      <option value="fixed">R$ Fixo / un</option>
                     </select>
                   </div>
                   <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Valor do Desconto</label>
-                    <input type="text" id="cartDiscountVal" oninput="updateCartItemPreview()" placeholder="Ex: 10 ou 2,50"
-                      class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 placeholder-slate-400">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Valor</label>
+                    <input type="text" id="cartDiscountVal" oninput="updateCartItemPreview()" placeholder="Ex: 10" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
                   </div>
                 </div>
               </div>
-            
-              <div id="panelCartPromoWholesale" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+              <div id="panelCartPromoWholesale" class="hidden pt-2 border-t border-slate-200 space-y-2">
+                <div class="grid grid-cols-2 gap-2">
                   <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">A partir de (Qtd / Kg)</label>
-                    <input type="number" id="cartWholesaleMin" step="any" min="1" value="3" oninput="updateCartItemPreview()"
-                      class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2.5 py-2 focus:ring-2 focus:ring-emerald-500">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">A partir de</label>
+                    <input type="number" id="cartWholesaleMin" step="any" min="1" value="3" oninput="updateCartItemPreview()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
                   </div>
                   <div>
-                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Preço Atacado (R$)</label>
-                    <input type="text" id="cartWholesalePrice" oninput="updateCartItemPreview()" placeholder="Ex: 22,90"
-                      class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2.5 py-2 focus:ring-2 focus:ring-emerald-500 placeholder-slate-400">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Preço Atacado</label>
+                    <input type="text" id="cartWholesalePrice" oninput="updateCartItemPreview()" placeholder="R$ 0,00" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Subtotal Calculado & Botão -->
+            <!-- SUBTOTAL E BOTÃO SALVAR -->
             <div class="pt-1 flex items-center justify-between gap-3">
               <div>
-                <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">Subtotal Calculado</span>
-                <div class="flex items-baseline space-x-1.5">
-                  <span id="cartItemPreviewSubtotal" class="text-xl font-black text-emerald-700">R$ 0,00</span>
-                  <span id="cartItemPreviewSavings" class="text-xs text-rose-600 font-bold hidden"></span>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Subtotal</span>
+                <div class="flex items-baseline space-x-1">
+                  <span id="cartItemPreviewSubtotal" class="text-lg font-black text-emerald-700">R$ 0,00</span>
+                  <span id="cartItemPreviewSavings" class="text-[10px] text-rose-600 font-bold hidden"></span>
                 </div>
               </div>
 
-              <button type="submit" class="touch-target flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex-1 max-w-[220px]">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                <span>Adicionar</span>
+              <button type="submit" class="touch-target flex items-center justify-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black py-2.5 px-6 rounded-xl shadow-md transition-all flex-1 max-w-[200px] cursor-pointer">
+                <span>Adicionar ao Carrinho</span>
               </button>
             </div>
           </form>
         </section>
 
-        <!-- Lista do Carrinho -->
-        <section class="space-y-2.5">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div class="flex items-center space-x-1 bg-slate-200/80 p-1 rounded-xl text-xs font-semibold self-start sm:self-auto">
-              <button type="button" onclick="setCartFilterMode('all')" id="tabFilterAll" class="px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all">
-                Todos (<span id="cartBadgeAll">0</span>)
-              </button>
-              <button type="button" onclick="setCartFilterMode('pending')" id="tabFilterPending" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all">
-                No Corredor (<span id="cartBadgePending">0</span>)
-              </button>
-              <button type="button" onclick="setCartFilterMode('checked')" id="tabFilterChecked" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-800 transition-all">
-                No Carrinho (<span id="cartBadgeChecked">0</span>)
-              </button>
-            </div>
-
-            <div class="relative w-full sm:w-56">
-              <input type="text" id="cartSearchFilter" placeholder="Buscar no carrinho..." class="w-full text-xs py-2 pl-8 pr-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-              <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              </div>
-            </div>
-          </div>
-
-          <div id="cartItemsContainer" class="space-y-2"></div>
-
-          <div id="cartEmptyCard" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
-            <div class="w-14 h-14 mx-auto mb-2 text-slate-300 bg-slate-50 rounded-full flex items-center justify-center">
-              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-            </div>
-            <h3 class="font-bold text-slate-700 text-sm">Seu carrinho está vazio</h3>
-            <p class="text-xs text-slate-600 mt-1 max-w-xs mx-auto">Adicione produtos pelo formulário acima para acompanhar os subtotais.</p>
-          </div>
-        </section>
       </div>
 
+      <div id="tab-historico" class="hidden space-y-3.5"></div>
+      <div id="tab-dados" class="hidden space-y-3.5"></div>
+    </main>
+
+    
       <!-- ABA 2: HISTÓRICO (INJETADA MODULARMENTE VIA UI-LOADER) -->
       <div id="tab-historico" class="hidden space-y-3.5"></div>
 
@@ -328,28 +572,21 @@
       <div id="tab-dados" class="hidden space-y-3.5"></div>
 
     </main>
-
-    <!-- FABs -->
-     <!-- 1. Botão QR Code (Acima da Calculadora) -->
+    
+    <!-- FAB ERGONÔMICO EXCLUSIVO PARA O CELULAR (ABRE A GAVETA DE ADIÇÃO) -->
     <button type="button" 
-            id="fabOpenQRCode" 
-            onclick="abrirModalQRCode()" 
-            class="md:hidden fixed bottom-64 right-4 z-40 w-11 h-11 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all focus:outline-none ring-2 ring-emerald-600/30" 
-            title="Compartilhar ou Ler Lista por QR Code">
-      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+            id="fabOpenAddItem" 
+            onclick="abrirSheetAdicionarItem()" 
+            class="md:hidden fixed bottom-36 right-4 z-40 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 active:scale-90 text-white rounded-full shadow-[0_8px_24px_rgba(5,150,105,0.45)] flex items-center justify-center transition-all duration-200 focus:outline-none ring-4 ring-emerald-500/20 cursor-pointer" 
+            title="Adicionar Produto ao Carrinho">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
       </svg>
-    </button>
-    <button type="button" id="fabOpenComparator" onclick="abrirCalculadoraComparativa()" class="md:hidden fixed bottom-52 right-4 z-40 w-11 h-11 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all focus:outline-none ring-2 ring-slate-700/30" title="Comparar Preço por Proporção / Atacado">
-      <svg class="w-5 h-5 text-slate-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
-    </button>
-    <button type="button" id="fabOpenAddItem" onclick="executarAcaoFabContextual()" class="md:hidden fixed bottom-36 right-4 z-40 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-full shadow-2xl flex items-center justify-center transition-all duration-200 focus:outline-none ring-4 ring-emerald-500/20" title="Adicionar">
-      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
     </button>
 
     <!-- BARRA FIXA DE TOTAL E FINALIZAÇÃO -->
     <div id="cartFloatingCheckoutBar" class="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] z-30 transition-all">
-      <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2.5">
+      <div class="max-w-full mx-auto px-4 py-2.5 flex items-center justify-between gap-2.5">
         <div class="flex-1 min-w-0">
           <div class="flex items-center space-x-2 text-[11px] text-slate-600">
             <span id="checkoutTotalItemsLabel" class="font-bold text-slate-700">0 itens</span>
@@ -373,8 +610,13 @@
             <span class="hidden sm:inline">Exportar</span>
           </button>
           
-          <button type="button" onclick="askClearCart()" title="Limpar Itens" class="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl transition-all font-semibold flex items-center space-x-1 text-xs">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          <button type="button" onclick="askClearCart()" title="Limpar Itens"
+            class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-rose-400 rounded-xl transition-all flex items-center justify-center cursor-pointer shrink-0">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+              </path>
+            </svg>
           </button>
           <button type="button" onclick="askFinishPurchase()" class="touch-target px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center space-x-1.5">
             <span>Finalizar</span>
@@ -387,12 +629,18 @@
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 h-16 shadow-lg">
       <div class="max-w-4xl mx-auto h-full grid grid-cols-3">
         <!-- 1. Compras -->
-        <button type="button" onclick="switchActiveTab('compras')" id="navBtnCompras" class="flex flex-col items-center justify-center space-y-1 text-emerald-700 transition-all font-bold relative">
-          <div class="relative">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-            <span id="navCartBadgeCount" class="absolute -top-1 -right-2 bg-emerald-600 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
-          </div>
-          <span class="text-[11px] leading-tight">Compras</span>
+        <button type="button" id="navBtnCompras" onclick="switchActiveTab('compras')"
+          class="flex-1 py-1.5 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold transition-colors">
+          <span class="relative inline-flex items-center justify-center w-7 h-7">
+            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+              </path>
+            </svg>
+            <span id="cartCountBadge"
+              class="absolute -top-1 -right-2 bg-emerald-600 text-white font-black text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 leading-none pointer-events-none shadow-xs"></span>
+          </span>
+          <span class="text-[11px] leading-none mt-1">Compras</span>
         </button>
 
         <!-- 2. Histórico -->
@@ -414,12 +662,27 @@
     <div id="modal-core-container"></div>
     <div id="modals-catalogo-container"></div>
     <div id="modal-qrcode-container"></div>
+    
+    <!-- GUIA FLUTUANTE: COMPARATIVO GERAL DE SUPERMERCADOS DA LISTA -->
+    <div id="modalComparativoMercadosLista" 
+         class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs"
+         onclick="if(event.target === this) fecharGuiaComparativoMercados();">
+      <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700 flex flex-col space-y-3.5 max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2.5">
+          <div>
+            <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm">Cotação Total por Supermercado</h3>
+            <p class="text-[10px] text-slate-400">Valores computados para os itens do seu carrinho</p>
+          </div>
+          <button type="button" onclick="fecharGuiaComparativoMercados()" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg text-lg font-bold cursor-pointer">✕</button>
+        </div>
+
+        <!-- Lista dinâmica injetada via JS -->
+        <div id="listaComparativoMercadosContainer" class="space-y-2"></div>
+      </div>
+    </div>
 
     <!-- CONTAINER DE TOASTS -->
-    <div id="toastStack" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
-
-    <!-- Biblioteca Geradora de QR Code (Leve e Sem Dependências) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <div id="toastStack" style="top: 62px;" class="fixed left-3 right-3 sm:left-auto sm:right-4 z-50 flex flex-col space-y-2 pointer-events-none sm:max-w-md"></div>    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <!-- SCRIPTS DE LÓGICA (CARREGAMENTO ESTÁTICO IMEDIATO) -->
     <script src="js/state.js?v=4.7.1"></script>
@@ -440,6 +703,31 @@
 
     <!-- INICIALIZAÇÃO DA APLICAÇÃO -->
     <script>
+      // FUNÇÃO GLOBAL DE RENDERIZAÇÃO DO HISTÓRICO
+      window.renderHistoricoUI = function () {
+        const container = document.getElementById('historyListContainer') || document.querySelector('[id*="histList"]');
+        if (!container || !window.AppTemplates || typeof window.AppTemplates.renderHistory !== 'function') return;
+
+        const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
+          ? purchaseHistory
+          : JSON.parse(localStorage.getItem('supercompras_history') || '[]');
+
+        const html = window.AppTemplates.renderHistory(lista);
+        if (typeof html === 'string') {
+          container.innerHTML = html;
+        }
+      };
+      window.renderHistoricouI = window.renderHistoricoUI;
+      window.renderHistoryUI = window.renderHistoricoUI;
+
+      // DISPARO AO CLICAR NA ABA HISTÓRICO NO RODAPÉ
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('button, nav div, [data-tab]');
+        if (btn && (btn.textContent.includes('Histórico') || btn.getAttribute('onclick')?.toLowerCase().includes('hist'))) {
+          setTimeout(window.renderHistoricoUI, 50);
+        }
+      });
+
       window.addEventListener('DOMContentLoaded', async () => {
         try {
           if (typeof carregarComponentesUI === 'function') {
@@ -451,17 +739,18 @@
           if (typeof renderCartUI === 'function') renderCartUI();
           if (typeof renderCatalogUI === 'function') renderCatalogUI();
           if (typeof renderMarketsUI === 'function') renderMarketsUI();
+          if (typeof renderHistoricouI === 'function') renderHistoricouI();
           if (typeof renderHistoricoUI === 'function') renderHistoricoUI();
+          if (typeof ativarTelaAcesa === 'function') { ativarTelaAcesa(); }
           if (typeof updateCartItemPreview === 'function') updateCartItemPreview();
 
-          // >>> ADICIONE AQUI LOGO ABAIXO DAS RENDERIZAÇÕES: <<<
           if (typeof verificarImportacaoUrlHash === 'function') {
             setTimeout(verificarImportacaoUrlHash, 300);
           }
 
           if (navigator.onLine && typeof getSecurityToken === 'function' && getSecurityToken()) {
             if (typeof sincronizarComPlanilha === 'function') {
-              sincronizarComPlanilha().catch(() => {});
+              sincronizarComPlanilha().catch(() => { });
             }
           }
         } catch (erro) {
@@ -506,8 +795,7 @@
             class="hidden px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 active:scale-95 text-xs font-bold rounded-xl transition-all cursor-pointer">
             Desconectar
           </button>
-        </div>
-    
+        </div>    
       </div>
     </div>
   </body>

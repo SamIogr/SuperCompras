@@ -3,7 +3,8 @@
  */
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioInst = null;
+// Gestão global do Wake Lock sem colisão de TDZ
+window.screenWakeLock = null;;
 
 function playAppBeep(kind = 'click') {
   if (typeof isSoundOn !== 'undefined' && !isSoundOn) return;
@@ -120,8 +121,11 @@ function switchActiveTab(tabName) {
         btn.classList.add("text-slate-500", "font-semibold");
       }
     }
+    
+    
   });
 
+  // Substitua o trecho das linhas 127 a 142 por:
   const barCheckout = document.getElementById("cartFloatingCheckoutBar");
   const fabAdd = document.getElementById("fabOpenAddItem");
   const fabComp = document.getElementById("fabOpenComparator");
@@ -129,6 +133,26 @@ function switchActiveTab(tabName) {
   if (barCheckout) barCheckout.classList.toggle("hidden", tabName !== "compras");
   if (fabAdd) fabAdd.classList.toggle("hidden", tabName !== "compras");
   if (fabComp) fabComp.classList.toggle("hidden", tabName !== "compras");
+
+  // Oculta qualquer botão fixo de QR Code fora da aba de compras
+  document.querySelectorAll("button.fixed, div.fixed button").forEach((btn) => {
+    if (/qr/i.test(btn.id || btn.getAttribute("onclick") || btn.innerHTML)) {
+      btn.classList.toggle("hidden", tabName !== "compras");
+    }
+  });
+
+  if (typeof atualizarEstadoFabMobile === "function") {
+    atualizarEstadoFabMobile(tabName);
+  }
+  // Registo da aba ativa no escopo global
+  window.currentTab = tabName;
+
+  // Gestão da tela acesa (Wake Lock)
+  if (tabName === "compras") {
+    if (typeof ativarTelaAcesa === "function") ativarTelaAcesa();
+  } else {
+    if (typeof desativarTelaAcesa === "function") desativarTelaAcesa();
+  }
 
   if (tabName === "compras" && typeof renderCartUI === "function") {
     renderCartUI();
@@ -138,60 +162,37 @@ function switchActiveTab(tabName) {
     const subAtiva = window.currentSubTabDados || "produtos";
     setSubTabDados(subAtiva);
   }
-
   if (typeof atualizarEstadoFabMobile === "function") {
     atualizarEstadoFabMobile(tabName);
   }
 }
 window.switchActiveTab = switchActiveTab;
 
-function setSubTabDados(aba) {
-  window.currentSubTabDados = aba || 'produtos';
+function setSubTabDados(subTab = 'produtos') {
+  const targetTab = subTab || 'produtos';
+  window.currentSubTabDados = targetTab;
 
-  const secaoProdutos = document.getElementById('secao-catalogo-produtos');
-  const secaoMercados = document.getElementById('secao-catalogo-mercados');
+  // Busca compatível tanto com 'secao-catalogo-*' quanto com 'subtab-*'
+  const tabProdutos = document.getElementById('secao-catalogo-produtos') || document.getElementById('subtab-produtos');
+  const tabMercados = document.getElementById('secao-catalogo-mercados') || document.getElementById('subtab-mercados');
   const btnProdutos = document.getElementById('btn-subtab-produtos');
   const btnMercados = document.getElementById('btn-subtab-mercados');
 
-  if (window.currentSubTabDados === 'produtos') {
-    if (secaoProdutos) {
-      secaoProdutos.classList.remove('hidden');
-      secaoProdutos.style.display = 'block';
-    }
-    if (secaoMercados) {
-      secaoMercados.classList.add('hidden');
-      secaoMercados.style.display = 'none';
-    }
+  const classeBase = 'flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer';
+  const classeAtiva = `${classeBase} bg-white text-emerald-800 shadow-xs`;
+  const classeInativa = `${classeBase} text-slate-500 hover:text-slate-700 hover:bg-white/40`;
 
-    if (btnProdutos) {
-      btnProdutos.className = 'flex-1 py-2 px-3 rounded-xl bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-2 font-bold text-xs cursor-pointer';
-      btnProdutos.querySelector('svg')?.setAttribute('class', 'w-4 h-4 text-emerald-600');
-    }
-    if (btnMercados) {
-      btnMercados.className = 'flex-1 py-2 px-3 rounded-xl text-slate-600 hover:text-slate-800 text-center transition-all flex items-center justify-center space-x-2 font-semibold text-xs cursor-pointer';
-      btnMercados.querySelector('svg')?.setAttribute('class', 'w-4 h-4 text-slate-400');
-    }
-
+  if (targetTab === 'produtos') {
+    if (tabProdutos) tabProdutos.classList.remove('hidden');
+    if (tabMercados) tabMercados.classList.add('hidden');
+    if (btnProdutos) btnProdutos.className = classeAtiva;
+    if (btnMercados) btnMercados.className = classeInativa;
     if (typeof renderCatalogUI === 'function') renderCatalogUI();
   } else {
-    if (secaoProdutos) {
-      secaoProdutos.classList.add('hidden');
-      secaoProdutos.style.display = 'none';
-    }
-    if (secaoMercados) {
-      secaoMercados.classList.remove('hidden');
-      secaoMercados.style.display = 'block';
-    }
-
-    if (btnProdutos) {
-      btnProdutos.className = 'flex-1 py-2 px-3 rounded-xl text-slate-600 hover:text-slate-800 text-center transition-all flex items-center justify-center space-x-2 font-semibold text-xs cursor-pointer';
-      btnProdutos.querySelector('svg')?.setAttribute('class', 'w-4 h-4 text-slate-400');
-    }
-    if (btnMercados) {
-      btnMercados.className = 'flex-1 py-2 px-3 rounded-xl bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-2 font-bold text-xs cursor-pointer';
-      btnMercados.querySelector('svg')?.setAttribute('class', 'w-4 h-4 text-sky-600');
-    }
-
+    if (tabProdutos) tabProdutos.classList.add('hidden');
+    if (tabMercados) tabMercados.classList.remove('hidden');
+    if (btnMercados) btnMercados.className = classeAtiva;
+    if (btnProdutos) btnProdutos.className = classeInativa;
     if (typeof renderMarketsUI === 'function') renderMarketsUI();
   }
 }
@@ -245,12 +246,10 @@ window.abrirSupermercadoNoMaps = abrirSupermercadoNoMaps;
 function abrirSheetAdicionarItem() {
   const container = document.getElementById('cartFormContainer');
   const backdrop = document.getElementById('cartFormBackdrop');
-  const fab = document.getElementById('fabOpenAddItem');
   if (container && backdrop) {
     backdrop.classList.remove('hidden');
-    container.classList.remove('translate-y-full');
-    if (fab) fab.classList.add('hidden');
-    setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 150);
+    container.classList.remove('hidden');
+    setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 100);
   }
 }
 window.abrirSheetAdicionarItem = abrirSheetAdicionarItem;
@@ -258,13 +257,11 @@ window.abrirSheetAdicionarItem = abrirSheetAdicionarItem;
 function fecharSheetAdicionarItem() {
   const container = document.getElementById('cartFormContainer');
   const backdrop = document.getElementById('cartFormBackdrop');
-  const fab = document.getElementById('fabOpenAddItem');
   const dropdown = document.getElementById('cartAutocompleteDropdown');
   if (dropdown) dropdown.classList.add('hidden');
   if (container && backdrop) {
-    container.classList.add('translate-y-full');
+    container.classList.add('hidden');
     backdrop.classList.add('hidden');
-    if (fab) fab.classList.remove('hidden');
   }
 }
 window.fecharSheetAdicionarItem = fecharSheetAdicionarItem;
@@ -278,19 +275,12 @@ window.executarAcaoFabContextual = executarAcaoFabContextual;
 
 function atualizarEstadoFabMobile(tabName) {
   const fab = document.getElementById('fabOpenAddItem');
-  const compBtn = document.getElementById('fabOpenComparator');
-  fecharSheetAdicionarItem();
+  if (!fab) return;
 
-  if (compBtn) compBtn.classList.toggle('hidden', tabName !== 'compras');
-  if (fab) {
-    if (tabName === 'compras') {
-      fab.classList.remove('hidden');
-      fab.setAttribute('title', 'Adicionar Produto ao Carrinho');
-      fab.classList.remove('bottom-24');
-      fab.classList.add('bottom-36');
-    } else {
-      fab.classList.add('hidden');
-    }
+  if (tabName === 'compras') {
+    fab.classList.remove('hidden');
+  } else {
+    fab.classList.add('hidden');
   }
 }
 window.atualizarEstadoFabMobile = atualizarEstadoFabMobile;
@@ -312,14 +302,45 @@ function fecharModalBackup() {
 }
 window.fecharModalBackup = fecharModalBackup;
 
-function alternarSomApp() {
-  isSoundOn = !isSoundOn;
-  document.getElementById('soundOnIcon')?.classList.toggle('hidden', !isSoundOn);
-  document.getElementById('soundOffIcon')?.classList.toggle('hidden', isSoundOn);
-  showAppToast(isSoundOn ? 'Som ativado' : 'Som desativado', 'info');
-  if (isSoundOn) playAppBeep('click');
+// CONTROLE DE MODO ESCURO/CLARO (TEMA)
+function aplicarTemaInicial() {
+  const isDark = localStorage.getItem('sc_theme') === 'dark' || 
+                 (!('sc_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
+  if (isDark) {
+    document.documentElement.classList.add('dark');
+    document.getElementById('themeDarkIcon')?.classList.remove('hidden');
+    document.getElementById('themeLightIcon')?.classList.add('hidden');
+  } else {
+    document.documentElement.classList.remove('dark');
+    document.getElementById('themeLightIcon')?.classList.remove('hidden');
+    document.getElementById('themeDarkIcon')?.classList.add('hidden');
+  }
 }
-window.alternarSomApp = alternarSomApp;
+
+function alternarTemaApp() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('sc_theme', isDark ? 'dark' : 'light');
+  
+  if (isDark) {
+    document.getElementById('themeDarkIcon')?.classList.remove('hidden');
+    document.getElementById('themeLightIcon')?.classList.add('hidden');
+    showAppToast('Modo Escuro ativado', 'info');
+  } else {
+    document.getElementById('themeLightIcon')?.classList.remove('hidden');
+    document.getElementById('themeDarkIcon')?.classList.add('hidden');
+    showAppToast('Modo Claro ativado', 'info');
+  }
+}
+window.alternarTemaApp = alternarTemaApp;
+
+// Observa mudanças automáticas no sistema operativo
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  if (!localStorage.getItem('sc_theme')) aplicarTemaInicial();
+});
+
+// Aplica imediatamente ao carregar o ficheiro
+aplicarTemaInicial();
 
 function abrirModalHistorico() {
   const m = document.getElementById('modalHistory') || document.getElementById('modalHistorico');
@@ -429,3 +450,147 @@ async function verificarImportacaoUrlHash() {
   }
 }
 window.verificarImportacaoUrlHash = verificarImportacaoUrlHash;
+// ==========================================
+// GESTÃO DE TELA ACESA (SCREEN WAKE LOCK API)
+// ==========================================
+let screenWakeLock = null;
+
+// GESTÃO DE TELA ACESA (SCREEN WAKE LOCK API)
+async function ativarTelaAcesa() {
+  if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  try {
+    if (!window.screenWakeLock) {
+      window.screenWakeLock = await navigator.wakeLock.request('screen');
+      window.screenWakeLock.addEventListener('release', () => {
+        window.screenWakeLock = null;
+      });
+    }
+  } catch (err) {
+    console.warn('Wake Lock bloqueado ou não suportado:', err);
+  }
+}
+window.ativarTelaAcesa = ativarTelaAcesa;
+
+async function desativarTelaAcesa() {
+  if (window.screenWakeLock) {
+    try {
+      await window.screenWakeLock.release();
+    } catch (err) {
+      console.warn('Erro ao libertar Wake Lock:', err);
+    } finally {
+      window.screenWakeLock = null;
+    }
+  }
+}
+window.desativarTelaAcesa = desativarTelaAcesa;
+
+// Reativa o bloqueio se o utilizador alternar entre apps e voltar ao navegador
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentTab === 'compras') {
+    ativarTelaAcesa();
+  } else {
+    desativarTelaAcesa();
+  }
+});
+// ATALHOS DINÂMICOS CONFORME A UNIDADE (PESO VS QUANTIDADE UNITÁRIA)
+function atualizarAtalhosQuantidade() {
+  const selUnit = document.getElementById('cartInputUnit');
+  const box = document.getElementById('containerAtalhosQtd');
+  if (!selUnit || !box) return;
+
+  const unit = (selUnit.value || '').trim().toLowerCase();
+  const isPeso = unit === 'kg' || unit === 'g' || unit === 'quilo';
+
+  if (isPeso) {
+    box.innerHTML = `
+      <button type="button" onclick="setCartQuickQty('0.250')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">250g</button>
+      <button type="button" onclick="setCartQuickQty('0.500')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">500g</button>
+      <button type="button" onclick="setCartQuickQty('1.000')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">1 kg</button>
+      <button type="button" onclick="setCartQuickQty('1.500')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">1,5 kg</button>
+    `;
+  } else {
+    box.innerHTML = `
+      <button type="button" onclick="setCartQuickQty('1')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">1</button>
+      <button type="button" onclick="setCartQuickQty('2')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">2</button>
+      <button type="button" onclick="setCartQuickQty('3')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">3</button>
+      <button type="button" onclick="setCartQuickQty('6')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">6</button>
+      <button type="button" onclick="setCartQuickQty('12')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">12</button>
+    `;
+  }
+}
+window.atualizarAtalhosQuantidade = atualizarAtalhosQuantidade;
+
+function abrirSheetAdicionarItem() {
+  const container = document.getElementById('cartFormContainer');
+  const backdrop = document.getElementById('cartFormBackdrop');
+  if (container && backdrop) {
+    backdrop.classList.remove('hidden');
+    container.classList.remove('hidden');
+    atualizarAtalhosQuantidade();
+    setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 100);
+  }
+}
+window.abrirSheetAdicionarItem = abrirSheetAdicionarItem;
+
+function fecharSheetAdicionarItem() {
+  const container = document.getElementById('cartFormContainer');
+  const backdrop = document.getElementById('cartFormBackdrop');
+  const dropdown = document.getElementById('cartAutocompleteDropdown');
+  if (dropdown) dropdown.classList.add('hidden');
+  if (container && backdrop) {
+    container.classList.add('hidden');
+    backdrop.classList.add('hidden');
+  }
+}
+window.fecharSheetAdicionarItem = fecharSheetAdicionarItem;
+
+// ============================================================================
+// ZOOM GLOBAL DA APLICAÇÃO (UI)
+// ============================================================================
+
+window.toggleBarraZoomGlobal = function() {
+  const painel = document.getElementById('painelZoomGlobal');
+  if (!painel) return;
+  painel.classList.toggle('hidden');
+};
+
+window.aplicarZoomGlobal = function(valor) {
+  const escala = Math.min(125, Math.max(75, Number(valor) || 100));
+  const slider = document.getElementById('sliderZoomGlobal');
+  const label = document.getElementById('labelValorZoomGlobal');
+
+  if (slider) slider.value = escala;
+  if (label) label.textContent = `${escala}%`;
+
+  const fator = escala / 100;
+
+  // Aplica zoom na raiz. Jamais execute loops aplicando zoom direto em modais
+  document.documentElement.style.zoom = fator;
+
+  localStorage.setItem('supercompras_app_zoom', String(escala));
+};
+
+window.alterarZoomGlobal = function(delta) {
+  const slider = document.getElementById('sliderZoomGlobal');
+  const valorAtual = Number(slider?.value || localStorage.getItem('supercompras_app_zoom') || 100);
+  window.aplicarZoomGlobal(valorAtual + delta);
+};
+
+// Restauração automática da escala salva
+(function restaurarZoom() {
+  const escalaSalva = Number(localStorage.getItem('supercompras_app_zoom') || 100);
+  if (escalaSalva !== 100) {
+    window.aplicarZoomGlobal(escalaSalva);
+  }
+})();
+
+// Fechamento ao clicar fora do painel
+document.addEventListener('click', (e) => {
+  const painel = document.getElementById('painelZoomGlobal');
+  const btn = document.getElementById('btnLupaGlobal');
+  if (!painel || painel.classList.contains('hidden')) return;
+
+  if (!painel.contains(e.target) && !btn?.contains(e.target)) {
+    painel.classList.add('hidden');
+  }
+});
