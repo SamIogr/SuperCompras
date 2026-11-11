@@ -9,3 +9,8 @@ GRAPH_REPORT.md
 # Arquivos de sistema e ambiente
 .DS_Store
 Thumbs.db
+node_modules/
+graphify-out/
+package-lock.json
+*.log
+.DS_Store
