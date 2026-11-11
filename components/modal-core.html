@@ -79,34 +79,94 @@
   </div>
 </div>
 
-<!-- MODAL: EXPORTAR (WHATSAPP / CSV) -->
+<!-- MODAL: COMPARTILHAR & IMPORTAR LISTA -->
 <div id="modalExportOptions" 
-     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+     class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs"
      onclick="if(event.target === this) closeExportOptionsModal();">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-3.5">
-    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-      <h3 class="font-bold text-slate-800 text-base">Exportar Lista de Compras</h3>
-      <button type="button" onclick="closeExportOptionsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1 leading-none cursor-pointer">✕</button>
+  <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col space-y-3 max-h-[85vh] overflow-y-auto">
+    
+    <!-- Cabeçalho -->
+    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2.5">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+        <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm sm:text-base">Compartilhar & Importar</h3>
+      </div>
+      <button type="button" 
+              onclick="closeExportOptionsModal()" 
+              class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg text-lg font-bold cursor-pointer">✕</button>
     </div>
-    <div class="space-y-2">
-      <!-- Opção 1: Abre direto no WhatsApp com o Link interativo -->
-      <button type="button" onclick="compartilharCarrinhoWhatsApp(); closeExportOptionsModal();" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
-        <span>💬</span>
-        <span>Enviar para o WhatsApp (com Link)</span>
+
+    <!-- SEÇÃO 1: ENVIAR LISTA ATUAL -->
+    <div class="space-y-1.5">
+      <span class="block text-[10px] font-black uppercase tracking-wider text-slate-400">Enviar Lista Atual</span>
+      
+      <!-- WhatsApp com Link Dinâmico -->
+      <button type="button" 
+              onclick="compartilharCarrinhoWhatsApp(); closeExportOptionsModal();" 
+              class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center space-x-2.5 shadow-xs transition-all cursor-pointer">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        </svg>
+        <span class="flex-1 text-left truncate">WhatsApp (com Link)</span>
       </button>
 
-      <!-- Opção 2: Copia o texto formatado para a área de transferência -->
-      <button type="button" onclick="copyCartToWhatsApp()" class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 transition-all cursor-pointer">
-        <span>📋</span>
-        <span>Copiar Texto Formatado</span>
+      <!-- Exibir QR Code na Tela -->
+      <button type="button" 
+              onclick="closeExportOptionsModal(); abrirModalQRCode('gerar');" 
+              class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
+        <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+        </svg>
+        <span class="flex-1 text-left truncate">Gerar QR Code na Tela</span>
       </button>
 
-      <!-- Opção 3: Download da Planilha -->
-      <button type="button" onclick="exportCartCSV()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer">
-        <span>📊</span>
-        <span>Baixar Planilha CSV</span>
+      <!-- Copiar Texto Formatado -->
+      <button type="button" 
+              onclick="copyCartToWhatsApp(); closeExportOptionsModal();" 
+              class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
+        <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <span class="flex-1 text-left truncate">Copiar Texto Formatado</span>
+      </button>
+
+      <!-- Baixar Planilha CSV -->
+      <button type="button" 
+              onclick="exportCartCSV(); closeExportOptionsModal();" 
+              class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
+        <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        <span class="flex-1 text-left truncate">Baixar Planilha CSV</span>
       </button>
     </div>
+
+    <!-- SEÇÃO 2: RECEBER / IMPORTAR LISTA -->
+    <div class="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-700">
+      <span class="block text-[10px] font-black uppercase tracking-wider text-slate-400">Receber Lista Externa</span>
+
+      <!-- Escanear QR Code com a Câmera -->
+      <button type="button" 
+              onclick="closeExportOptionsModal(); abrirModalQRCode('ler');" 
+              class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 active:scale-95 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
+        <svg class="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+        </svg>
+        <span class="flex-1 text-left truncate">Escanear QR Code com Câmera</span>
+      </button>
+
+      <!-- Colar Link ou Código de Importação -->
+      <button type="button" 
+              onclick="closeExportOptionsModal(); colarTextoImportacao();" 
+              class="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/60 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
+        <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+        </svg>
+        <span class="flex-1 text-left truncate">Colar Link ou Código Recebido</span>
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -124,3 +184,4 @@
     </div>
   </div>
 </div>
+</body>

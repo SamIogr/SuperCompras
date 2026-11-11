@@ -61,53 +61,164 @@ function atualizarPrecoUnificado(prodId, marcaNome, mercadoId, preco) {
   renderCatalogUI();
 }
 window.atualizarPrecoUnificado = atualizarPrecoUnificado;
+// CLASSIFICAÇÃO DE ORIGEM DO PRODUTO
+function obterOrigemItem(p) {
+  const isPlanilha = Boolean(p.inSheet || String(p.id).startsWith("PROD-"));
+  const isDrive = Boolean(p.inDrive);
+
+  if (isPlanilha && isDrive) return "planilha-drive";
+  if (isPlanilha) return "planilha";
+  if (isDrive) return "drive";
+  return "local";
+}
+window.obterOrigemItem = obterOrigemItem;
 
 function obterListaProdutosFiltrada() {
-  const input = document.getElementById('input-busca-produtos');
-  const query = (input?.value || '').toLowerCase().trim();
+  const input = document.getElementById("input-busca-produtos");
+  const query = (input?.value || "").toLowerCase().trim();
 
-  const lista = (Array.isArray(products) ? products : []).filter(p => {
+  const lista = (Array.isArray(products) ? products : []).filter((p) => {
     if (!p || !p.name) return false;
-    const isLocal = String(p.id).startsWith('p-custom-') || String(p.id).startsWith('p-local-');
+    const origem = obterOrigemItem(p);
 
-    if (catalogOrigemFiltro === 'nuvem' && isLocal) return false;
-    if (catalogOrigemFiltro === 'local' && !isLocal) return false;
+    if (catalogOrigemFiltro !== "todos" && catalogOrigemFiltro !== origem) {
+      return false;
+    }
 
-    if (catalogSetorFiltro && catalogSetorFiltro !== 'Todas') {
-      const catProd = (p.category || 'Geral').toLowerCase().trim();
+    if (catalogSetorFiltro && catalogSetorFiltro !== "Todas") {
+      const catProd = (p.category || "Geral").toLowerCase().trim();
       if (catProd !== catalogSetorFiltro.toLowerCase().trim()) return false;
     }
 
     const nome = p.name.toLowerCase();
-    const cat = (p.category || '').toLowerCase();
+    const cat = (p.category || "").toLowerCase();
     return !query || nome.includes(query) || cat.includes(query);
   });
 
   lista.sort((a, b) => {
-    const nomeA = (a.name || '').trim();
-    const nomeB = (b.name || '').trim();
-    if (catalogSortMode === 'za' || catalogSortMode === 'nome-desc') {
-      return nomeB.localeCompare(nomeA, 'pt-BR');
+    const nomeA = (a.name || "").trim();
+    const nomeB = (b.name || "").trim();
+    if (catalogSortMode === "za" || catalogSortMode === "nome-desc") {
+      return nomeB.localeCompare(nomeA, "pt-BR");
     }
-    if (catalogSortMode === 'setor') {
-      const catComp = (a.category || '').localeCompare(b.category || '', 'pt-BR');
-      return catComp !== 0 ? catComp : nomeA.localeCompare(nomeB, 'pt-BR');
+    if (catalogSortMode === "setor") {
+      const catComp = (a.category || "").localeCompare(b.category || "", "pt-BR");
+      return catComp !== 0 ? catComp : nomeA.localeCompare(nomeB, "pt-BR");
     }
-    return nomeA.localeCompare(nomeB, 'pt-BR');
+    return nomeA.localeCompare(nomeB, "pt-BR");
   });
 
   return lista;
 }
 window.obterListaProdutosFiltrada = obterListaProdutosFiltrada;
 
-window.filtrarOrigemProdutos = function(origem, btn) {
-  catalogOrigemFiltro = origem;
-  if (btn && btn.parentElement) {
-    btn.parentElement.querySelectorAll('button').forEach(b => {
-      b.className = 'px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer';
-    });
-    btn.className = 'px-3 py-1 rounded-lg bg-white text-slate-800 shadow-2xs font-bold text-xs transition-all cursor-pointer';
+// RENDERIZAÇÃO DINÂMICA DOS BOTÕES DE ORIGEM (OCULTA FILTROS ZERADOS)
+function renderizarBotoesFiltroOrigem() {
+  const container = document.getElementById("container-filtro-origem-dinamico");
+  if (!container) return;
+
+  const lista = Array.isArray(products) ? products : [];
+  const contagens = {
+    todos: lista.length,
+    "planilha-drive": 0,
+    planilha: 0,
+    drive: 0,
+    local: 0
+  };
+
+  lista.forEach((p) => {
+    const orig = obterOrigemItem(p);
+    if (contagens[orig] !== undefined) contagens[orig]++;
+  });
+
+  if (catalogOrigemFiltro !== "todos" && !contagens[catalogOrigemFiltro]) {
+    catalogOrigemFiltro = "todos";
   }
+
+  const opcoes = [
+    { id: "todos", label: "Todos", count: contagens.todos, visible: true },
+    { id: "planilha-drive", label: "Planilha + Drive", count: contagens["planilha-drive"], visible: contagens["planilha-drive"] > 0 },
+    { id: "planilha", label: "Só Planilha", count: contagens.planilha, visible: contagens.planilha > 0 },
+    { id: "drive", label: "Só Drive", count: contagens.drive, visible: contagens.drive > 0 },
+    { id: "local", label: "Local", count: contagens.local, visible: contagens.local > 0 }
+  ];
+
+  container.innerHTML = opcoes
+    .filter((op) => op.visible)
+    .map((op) => {
+      const ativo = catalogOrigemFiltro === op.id;
+      const classes = ativo
+        ? "px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-2xs font-bold text-xs transition-all cursor-pointer"
+        : "px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer";
+
+      return `
+        <button type="button" onclick="filtrarOrigemProdutos('${op.id}')" class="${classes}">
+          ${op.label} <span class="text-[10px] opacity-75">(${op.count})</span>
+        </button>
+      `;
+    }).join("");
+}
+window.renderizarBotoesFiltroOrigem = renderizarBotoesFiltroOrigem;
+
+window.filtrarOrigemProdutos = function(origem) {
+  catalogOrigemFiltro = origem;
+  renderizarBotoesFiltroOrigem();
+  renderCatalogUI();
+};
+
+
+// RENDERIZAÇÃO DINÂMICA DOS BOTÕES DE FILTRO DE ORIGEM (OCULTA ZERADOS)
+function renderizarBotoesFiltroOrigem() {
+  const container = document.getElementById('container-filtro-origem-dinamico');
+  if (!container) return;
+
+  const lista = Array.isArray(products) ? products : [];
+  const contagens = {
+    todos: lista.length,
+    'planilha-drive': 0,
+    planilha: 0,
+    drive: 0,
+    local: 0
+  };
+
+  lista.forEach(p => {
+    const orig = obterOrigemItem(p);
+    if (contagens[orig] !== undefined) contagens[orig]++;
+  });
+
+  // Se o filtro ativo ficou sem produtos (ex: zerou após sincronização), reseta para 'todos'
+  if (catalogOrigemFiltro !== 'todos' && !contagens[catalogOrigemFiltro]) {
+    catalogOrigemFiltro = 'todos';
+  }
+
+  const opcoes = [
+    { id: 'todos', label: 'Todos', count: contagens.todos, visible: true },
+    { id: 'planilha-drive', label: 'Planilha + Drive', count: contagens['planilha-drive'], visible: contagens['planilha-drive'] > 0 },
+    { id: 'planilha', label: 'Só Planilha', count: contagens.planilha, visible: contagens.planilha > 0 },
+    { id: 'drive', label: 'Só Drive', count: contagens.drive, visible: contagens.drive > 0 },
+    { id: 'local', label: 'Local', count: contagens.local, visible: contagens.local > 0 }
+  ];
+
+  container.innerHTML = opcoes
+    .filter(op => op.visible)
+    .map(op => {
+      const ativo = catalogOrigemFiltro === op.id;
+      const classes = ativo
+        ? 'px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-2xs font-bold text-xs transition-all cursor-pointer'
+        : 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer';
+
+      return `
+        <button type="button" onclick="filtrarOrigemProdutos('${op.id}')" class="${classes}">
+          ${op.label} <span class="text-[10px] opacity-75">(${op.count})</span>
+        </button>
+      `;
+    }).join('');
+}
+window.renderizarBotoesFiltroOrigem = renderizarBotoesFiltroOrigem;
+
+window.filtrarOrigemProdutos = function(origem) {
+  catalogOrigemFiltro = origem;
+  renderizarBotoesFiltroOrigem();
   renderCatalogUI();
 };
 

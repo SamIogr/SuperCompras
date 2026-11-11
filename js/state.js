@@ -117,23 +117,28 @@ function getSelectedMarketName() {
 
 function loadApplicationData() {
   try {
-    const savedM = JSON.parse(localStorage.getItem('sc_supermarkets_v3'));
+    const savedM = JSON.parse(localStorage.getItem("sc_supermarkets_v3"));
     if (Array.isArray(savedM) && savedM.length > 0) {
       supermarkets = savedM;
-      if (!supermarkets.some(m => m.id === 'm-padrao')) supermarkets.unshift(MERCADO_PADRAO_GENERICO);
+      if (!supermarkets.some((m) => m.id === "m-padrao"))
+        supermarkets.unshift(MERCADO_PADRAO_GENERICO);
     } else {
-      supermarkets = [ MERCADO_PADRAO_GENERICO ];
+      supermarkets = [MERCADO_PADRAO_GENERICO];
     }
   } catch (e) {
-    supermarkets = [ MERCADO_PADRAO_GENERICO ];
+    supermarkets = [MERCADO_PADRAO_GENERICO];
+  }
+  // Dentro de loadApplicationData(), logo após carregar a variável products:
+  if (Array.isArray(products) && products.length > 0) {
+    products = mesclarCatalogosDeProdutos([], products);
   }
 
   try {
-    const savedP = localStorage.getItem('sc_products_v3');
+    const savedP = localStorage.getItem("sc_products_v3");
     if (savedP) {
       products = JSON.parse(savedP) || [];
       const mapaUnico = new Map();
-      products.forEach(item => {
+      products.forEach((item) => {
         if (item && item.name) {
           const chave = item.name.trim().toLowerCase();
           if (!mapaUnico.has(chave)) mapaUnico.set(chave, item);
@@ -143,29 +148,42 @@ function loadApplicationData() {
     } else {
       products = [];
     }
-  } catch (e) { products = []; }
+  } catch (e) {
+    products = [];
+  }
 
   // INSERÇÃO AUTOMÁTICA SE A BASE ESTIVER TOTALMENTE VAZIA
   if (!Array.isArray(products) || products.length === 0) {
     products = window.ITENS_BASICOS_SUGERIDOS.map((it, idx) => ({
-      id: 'p-custom-' + Date.now() + '-' + idx,
+      id: "p-custom-" + Date.now() + "-" + idx,
       name: it.name,
       category: it.category,
       unit: it.unit,
       basePrice: 0,
-      marketPrices: { 'm-padrao': 0 },
-      brands: []
+      marketPrices: { "m-padrao": 0 },
+      brands: [],
     }));
   }
 
-  try { cart = JSON.parse(localStorage.getItem('sc_cart_v3')) || []; } catch (e) { cart = []; }
-  try { purchaseHistory = JSON.parse(localStorage.getItem('sc_history_v3')) || []; } catch (e) { purchaseHistory = []; }
+  try {
+    cart = JSON.parse(localStorage.getItem("sc_cart_v3")) || [];
+  } catch (e) {
+    cart = [];
+  }
+  try {
+    purchaseHistory = JSON.parse(localStorage.getItem("sc_history_v3")) || [];
+  } catch (e) {
+    purchaseHistory = [];
+  }
 
-  const savedActiveMarket = localStorage.getItem('sc_active_market_v3');
-  if (savedActiveMarket && supermarkets.some(m => m.id === savedActiveMarket)) {
+  const savedActiveMarket = localStorage.getItem("sc_active_market_v3");
+  if (
+    savedActiveMarket &&
+    supermarkets.some((m) => m.id === savedActiveMarket)
+  ) {
     activeMarketId = savedActiveMarket;
   } else {
-    activeMarketId = 'm-padrao';
+    activeMarketId = "m-padrao";
   }
 
   saveAllLocalData();

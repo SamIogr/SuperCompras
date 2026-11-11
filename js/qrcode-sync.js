@@ -194,12 +194,16 @@ function qrReceberParte(texto) {
 }
 
 // ===== 3. MODAL PRINCIPAL =====
-function abrirModalQRCode() {
+function abrirModalQRCode(abaInicial = 'gerar') {
   const modal = document.getElementById('modalQRCodeSync');
-  if (!modal) return;
-
-  alternarAbaModalQR('gerar');
+  if (!modal) {
+    if (typeof showAppToast === 'function') {
+      showAppToast('Modal de QR Code ainda não carregado.', 'warning');
+    }
+    return;
+  }
   modal.classList.remove('hidden');
+  alternarAbaModalQR(abaInicial);
 }
 window.abrirModalQRCode = abrirModalQRCode;
 

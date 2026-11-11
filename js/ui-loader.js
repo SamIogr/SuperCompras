@@ -4,6 +4,9 @@
  */
 
 
+/**
+ * SUPERCOMPRAS PRO - Carregador Modular de Componentes UI
+ */
 function carregarComponentesUI() {
   const componentes = [
     { containerId: 'tab-historico', url: 'components/tab-historico.html' },
@@ -12,7 +15,8 @@ function carregarComponentesUI() {
     { containerId: 'modal-qrcode-container', url: 'components/modal-qrcode.html' }
   ];
 
-  const timestamp = Date.now();
+  // Gera token anti-cache exclusivo a cada recarregamento
+  const bust = Date.now() + '_' + Math.floor(performance.now());
 
   return Promise.all(
     componentes.map(async (comp) => {
@@ -20,14 +24,14 @@ function carregarComponentesUI() {
       if (!el) return;
 
       try {
-        const resp = await fetch(`${comp.url}?t=${timestamp}`, {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        const resp = await fetch(`${comp.url}?_v=${bust}`, {
+          cache: 'reload',
+          headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
         });
         if (!resp.ok) throw new Error(`Status: ${resp.status}`);
         el.innerHTML = await resp.text();
       } catch (err) {
-        console.warn(`[UI Loader] Erro no componente ${comp.url}:`, err);
+        console.warn(`[UI Loader] Erro ao carregar ${comp.url}:`, err);
       }
     })
   );

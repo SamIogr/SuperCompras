@@ -150,14 +150,15 @@ window.AppTemplates = {
       </div>`;
   },
 
-  // 1. ESTRUTURA BASE DA ABA DADOS
+  // 1. ESTRUTURA BASE DA ABA DADOS COM BARRA STICKY RETRÁTIL
   ensureTabDadosLayout() {
     const tabContainer = document.getElementById('tab-dados');
     if (!tabContainer) return;
 
-    if (!document.getElementById('secao-catalogo-produtos')) {
+    // Se o elemento não tiver o id da barra sticky, força a atualização do layout
+    if (!document.getElementById('painelStickyCatalogo')) {
       tabContainer.innerHTML = `
-        <div class="tab-dados-wrapper p-2 sm:p-4 space-y-4 pb-24">
+        <div class="tab-dados-wrapper p-2 sm:p-4 space-y-3 pb-24">
           <!-- SELETOR DE SUB-ABAS -->
           <div class="bg-slate-200/80 p-1 rounded-2xl flex items-center gap-1 border border-slate-300 shadow-2xs">
             <button type="button" id="btn-subtab-produtos" onclick="setSubTabDados('produtos')" class="flex-1 py-2 px-3 rounded-xl bg-white text-slate-800 shadow-xs text-center transition-all flex items-center justify-center space-x-2 font-bold text-xs cursor-pointer">
@@ -171,82 +172,77 @@ window.AppTemplates = {
           </div>
 
           <!-- SUB-ABA: CATÁLOGO DE PRODUTOS -->
-          <section id="secao-catalogo-produtos" class="space-y-3">
-            <div class="flex items-center justify-between flex-wrap gap-2">
+          <section id="secao-catalogo-produtos" class="space-y-2">
+            
+            <div id="topoAcoesCatalogo" class="flex items-center justify-between flex-wrap gap-2 transition-all">
               <div>
                 <h3 class="font-extrabold text-sm text-slate-800">Catálogo Mestre de Produtos</h3>
                 <p class="text-[11px] text-slate-500">Cotações por rede e marcas vinculadas</p>
               </div>
               <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-                <button type="button" id="btnSyncCatalogo" onclick="sincronizarCatalogoDireto()" class="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center space-x-1.5 cursor-pointer" title="Sincronizar produtos com a planilha">
+                <button type="button" id="btnSyncCatalogo" onclick="sincronizarCatalogoDireto()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center space-x-1 cursor-pointer">
                   <svg id="iconSyncCatalogo" class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                   <span>Sincronizar</span>
                 </button>
-                <button type="button" onclick="abrirModalCatalogoSugerido()" class="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center space-x-1.5 cursor-pointer">
+                <button type="button" onclick="abrirModalCatalogoSugerido()" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center space-x-1 cursor-pointer">
                   <span>Itens Básicos</span>
                 </button>
-                <button type="button" onclick="openProductEditModal(null)" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-xs cursor-pointer">
+                <button type="button" onclick="openProductEditModal(null)" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1 shadow-xs cursor-pointer">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
-                  <span>Novo Produto</span>
+                  <span>Novo</span>
                 </button>
               </div>
             </div>
 
-            <!-- PAINEL DE FILTROS COM PÍLULAS RESPONSIVAS -->
-            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-              <div class="flex items-center gap-2">
-                <div class="relative flex-1">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <!-- PAINEL ADESIVO COMPACTO (CSS NATIVO, SEM ESPAÇOS VAZIOS) -->
+            <div id="painelStickyCatalogo" class="sticky top-0 z-30 bg-slate-100/95 backdrop-blur-md pt-1 pb-1 space-y-1.5">
+              <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+                
+                <!-- BUSCA E ORDENAÇÃO -->
+                <div class="flex items-center gap-1.5">
+                  <div class="relative flex-1">
+                    <input type="text" id="input-busca-produtos" placeholder="Buscar por nome ou categoria..." oninput="filtrarProdutosCatalogo()" class="w-full text-xs font-medium pl-3 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
                   </div>
-                  <input type="text" id="input-busca-produtos" placeholder="Buscar por nome ou categoria..." oninput="filtrarProdutosCatalogo()" class="w-full text-xs font-medium pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400">
+                  <select id="select-ordenacao-produtos" onchange="ordenarProdutosCatalogo()" class="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 outline-none cursor-pointer">
+                    <option value="az">A a Z</option>
+                    <option value="za">Z a A</option>
+                    <option value="setor">Categoria</option>
+                  </select>
                 </div>
-                <select id="select-ordenacao-produtos" onchange="ordenarProdutosCatalogo()" class="text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 shrink-0 cursor-pointer shadow-2xs">
-                  <option value="az">Nome (A a Z)</option>
-                  <option value="za">Nome (Z a A)</option>
-                  <option value="setor">Por Categoria</option>
-                </select>
+
+                <!-- FILTRO DE ORIGEM DINÂMICO -->
+                <div class="flex items-center justify-between flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+                  <div id="container-filtro-origem-dinamico" class="flex flex-wrap items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-semibold gap-0.5"></div>
+                  <span id="contador-produtos-catalogo" class="text-[10px] font-semibold text-slate-400">0 produtos</span>
+                </div>
+
+                <!-- CATEGORIAS COMPACTAS -->
+                <div class="pt-1 border-t border-slate-100 flex flex-wrap items-center gap-1 text-xs">
+                  <button type="button" onclick="filtrarSetorProdutos('Todas', this)" class="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-bold text-[11px] shadow-2xs cursor-pointer">Todas</button>
+                  <button type="button" onclick="filtrarSetorProdutos('Açougue e Carnes', this)" class="px-2 py-0.5 rounded-lg text-slate-600 hover:text-slate-800 bg-slate-100 text-[11px] cursor-pointer">Carnes</button>
+                  <button type="button" onclick="filtrarSetorProdutos('Laticínios e Frios', this)" class="px-2 py-0.5 rounded-lg text-slate-600 hover:text-slate-800 bg-slate-100 text-[11px] cursor-pointer">Frios</button>
+                  <button type="button" onclick="filtrarSetorProdutos('Mercearia e Básicos', this)" class="px-2 py-0.5 rounded-lg text-slate-600 hover:text-slate-800 bg-slate-100 text-[11px] cursor-pointer">Mercearia</button>
+                  <button type="button" onclick="filtrarSetorProdutos('Hortifrúti e Ovos', this)" class="px-2 py-0.5 rounded-lg text-slate-600 hover:text-slate-800 bg-slate-100 text-[11px] cursor-pointer">Hortifrúti</button>
+                  <button type="button" onclick="filtrarSetorProdutos('Higiene e Limpeza', this)" class="px-2 py-0.5 rounded-lg text-slate-600 hover:text-slate-800 bg-slate-100 text-[11px] cursor-pointer">Limpeza</button>
+                  <button type="button" onclick="filtrarSetorProdutos('Geral', this)" class="px-2 py-0.5 rounded-lg text-slate-600 hover:text-slate-800 bg-slate-100 text-[11px] cursor-pointer">Geral</button>
+                </div>
               </div>
 
-              <div class="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-100">
-                <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/90 text-xs font-semibold">
-                  <button type="button" onclick="filtrarOrigemProdutos('todos', this)" class="px-3 py-1 rounded-lg bg-white text-slate-800 shadow-2xs font-bold text-xs transition-all cursor-pointer">Todos</button>
-                  <button type="button" onclick="filtrarOrigemProdutos('nuvem', this)" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer">Nuvem</button>
-                  <button type="button" onclick="filtrarOrigemProdutos('local', this)" class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer">Local</button>
+              <!-- BARRA DE SELEÇÃO EM LOTE -->
+              <div id="barraAcoesLoteCatalogo" class="flex items-center justify-between px-3 py-1 bg-white rounded-xl border border-slate-200 shadow-2xs text-xs">
+                <div class="flex items-center space-x-2">
+                  <label class="flex items-center space-x-1.5 cursor-pointer text-slate-600 font-semibold text-xs">
+                    <input type="checkbox" id="checkSelectAllCatalog" onchange="toggleSelectAllCatalogProducts(this.checked)" class="w-3.5 h-3.5 rounded text-emerald-600 cursor-pointer" />
+                    <span>Selecionar todos</span>
+                  </label>
+                  <span class="text-slate-300">•</span>
+                  <span id="contadorSelecaoCatalog" class="text-[10px] font-bold text-slate-500">0 selecionados</span>
                 </div>
-                <span id="contador-produtos-catalogo" class="text-[11px] font-semibold text-slate-400">Exibindo 0 produtos</span>
-              </div>
-
-              <!-- Categorias em flex-wrap para evitar corte em dispositivos móveis -->
-              <div class="pt-1 border-t border-slate-100">
-                <div class="flex flex-wrap items-center gap-1.5 text-xs">
-                  <button type="button" onclick="filtrarSetorProdutos('Todas', this)" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-2xs transition-all cursor-pointer">Todas</button>
-                  <button type="button" onclick="filtrarSetorProdutos('Açougue e Carnes', this)" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all font-medium text-xs cursor-pointer">Carnes</button>
-                  <button type="button" onclick="filtrarSetorProdutos('Laticínios e Frios', this)" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all font-medium text-xs cursor-pointer">Frios</button>
-                  <button type="button" onclick="filtrarSetorProdutos('Mercearia e Básicos', this)" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all font-medium text-xs cursor-pointer">Mercearia</button>
-                  <button type="button" onclick="filtrarSetorProdutos('Hortifrúti e Ovos', this)" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all font-medium text-xs cursor-pointer">Hortifrúti</button>
-                  <button type="button" onclick="filtrarSetorProdutos('Higiene e Limpeza', this)" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all font-medium text-xs cursor-pointer">Limpeza</button>
-                  <button type="button" onclick="filtrarSetorProdutos('Geral', this)" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 transition-all font-medium text-xs cursor-pointer">Geral</button>
-                </div>
+                <button type="button" id="btnExcluirLoteCatalogo" onclick="solicitarExclusaoLoteCatalogo()" class="hidden px-2 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-[11px] font-bold cursor-pointer">
+                  <span id="lblExcluirLoteCatalogo">Excluir</span>
+                </button>
               </div>
             </div>
-
-            <!-- BARRA DISCRETA DE AÇÕES EM LOTE -->
-            <div id="barraAcoesLoteCatalogo" class="flex items-center justify-between px-2.5 py-1.5 bg-slate-50/80 rounded-xl border border-slate-200/60 text-xs my-2">
-              <div class="flex items-center space-x-2.5">
-                <label class="flex items-center space-x-2 cursor-pointer select-none text-slate-600 hover:text-slate-900 font-semibold text-xs">
-                  <input type="checkbox" id="checkSelectAllCatalog" onchange="toggleSelectAllCatalogProducts(this.checked)" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer" />
-                  <span>Selecionar todos</span>
-                </label>
-                <span class="text-slate-300">•</span>
-                <span id="contadorSelecaoCatalog" class="text-[11px] font-bold text-slate-500">0 selecionados</span>
-              </div>
-              <button type="button" id="btnExcluirLoteCatalogo" onclick="solicitarExclusaoLoteCatalogo()" class="hidden px-2.5 py-1 bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-lg text-xs font-bold transition-all shadow-2xs flex items-center space-x-1 cursor-pointer">
-                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                <span id="lblExcluirLoteCatalogo">Excluir</span>
-              </button>
-            </div>
-
             <div id="area-cards-produtos" class="space-y-2 pt-1"></div>
           </section>
 
@@ -265,13 +261,31 @@ window.AppTemplates = {
             <div id="area-cards-mercados" class="space-y-2 pt-1"></div>
           </section>
         </div>`;
+      if (typeof configurarScrollRetratilCatalogo === 'function') {
+        configurarScrollRetratilCatalogo();
+      }
     }
   },
 
   // 2. CARD DO SUPERMERCADO
+  // 2. CARD DO SUPERMERCADO
   marketCard(market) {
     const isCurrent = market.id === activeMarketId;
-    const isLocal = String(market.id).startsWith('m-custom-') || !market.colIndex;
+    
+    // Identificação de origem para supermercados
+    const isPlanilha = Boolean(market.inSheet || market.colIndex || (market.id && !String(market.id).startsWith('m-custom-')));
+    const isDrive = Boolean(market.inDrive);
+
+    let tagOrigemHtml = '';
+    if (isPlanilha && isDrive) {
+      tagOrigemHtml = '<span class="bg-purple-100 text-purple-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-purple-200">Planilha + Drive</span>';
+    } else if (isPlanilha) {
+      tagOrigemHtml = '<span class="bg-sky-100 text-sky-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-sky-200">Planilha</span>';
+    } else if (isDrive) {
+      tagOrigemHtml = '<span class="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">Drive</span>';
+    } else {
+      tagOrigemHtml = '<span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-amber-200">Local</span>';
+    }
 
     return `
       <div class="bg-white rounded-2xl p-3.5 border ${isCurrent ? 'border-emerald-500 ring-2 ring-emerald-500/15 bg-emerald-50/10' : 'border-slate-200 hover:border-slate-300'} shadow-2xs transition-all my-2 flex items-center justify-between gap-3">
@@ -279,7 +293,7 @@ window.AppTemplates = {
           <div class="flex items-center space-x-2 flex-wrap">
             <strong class="font-extrabold text-sm text-slate-800 truncate">${esc(market.name)}</strong>
             ${isCurrent ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Ativo</span>` : ''}
-            ${isLocal ? `<span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-md">Local</span>` : `<span class="bg-sky-100 text-sky-800 text-[9px] font-bold px-2 py-0.5 rounded-md">Nuvem</span>`}
+            ${tagOrigemHtml}
           </div>
           <p class="text-xs text-slate-500 mt-1 truncate">${esc(market.branch || 'São José dos Pinhais')}${market.promoDay ? ' • ' + esc(market.promoDay) : ''}</p>
           ${market.address ? `<p class="text-[11px] text-slate-400 mt-0.5 truncate">${esc(market.address)}</p>` : ''}
@@ -296,8 +310,21 @@ window.AppTemplates = {
   },
 
   // 3. CARD DO PRODUTO (COM CHECKBOX E REALCE VERDE)
+  // 3. CARD DO PRODUTO (COM CHECKBOX E REALCE VERDE)
   productCard(prod, nomeMercadoAtivo) {
-    const isLocal = String(prod.id).startsWith('p-custom-') || String(prod.id).startsWith('p-local-');
+    const isPlanilha = Boolean(prod.inSheet || String(prod.id).startsWith('PROD-'));
+    const isDrive = Boolean(prod.inDrive);
+
+    let tagOrigemHtml = '';
+    if (isPlanilha && isDrive) {
+      tagOrigemHtml = '<span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-purple-200">Planilha + Drive</span>';
+    } else if (isPlanilha) {
+      tagOrigemHtml = '<span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-sky-200">Planilha</span>';
+    } else if (isDrive) {
+      tagOrigemHtml = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">Drive</span>';
+    } else {
+      tagOrigemHtml = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-200">Local</span>';
+    }
     const precoBase = Number(prod.basePrice) || (prod.marketPrices ? Number(prod.marketPrices['m-padrao']) : 0) || 0;
     const isChecked = typeof selectedCatalogProductIds !== 'undefined' && selectedCatalogProductIds.has(String(prod.id));
 
@@ -326,9 +353,7 @@ window.AppTemplates = {
           <div class="min-w-0 flex-1">
             <div class="flex items-center space-x-2 flex-wrap">
               <strong class="font-extrabold text-sm text-slate-800 truncate">${esc(prod.name)}</strong>
-              ${isLocal 
-                ? `<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Local</span>` 
-                : `<span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-md">Nuvem</span>`}
+              ${tagOrigemHtml}
               <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-md border border-slate-200/60">${esc(prod.category || 'Geral')}</span>
               <span class="text-[10px] text-slate-400 font-semibold">${esc(prod.unit || 'un')}</span>
               ${qtdMarcas > 0 ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-md border border-emerald-200">+${qtdMarcas} marca${qtdMarcas > 1 ? 's' : ''}</span>` : ''}
@@ -350,6 +375,11 @@ window.AppTemplates = {
 
   renderCatalog() {
     this.ensureTabDadosLayout();
+
+    // Renderiza os botões dinâmicos ocultando os que não possuem produtos
+    if (typeof renderizarBotoesFiltroOrigem === 'function') {
+      renderizarBotoesFiltroOrigem();
+    }
 
     const badgeTotal = document.getElementById('badge-total-produtos');
     const badgeMercados = document.getElementById('badge-total-mercados');
@@ -580,30 +610,70 @@ window.AppTemplates = {
       const economia = Number(compra.savings) || 0;
 
       return `
-        <div class="bg-white p-3.5 rounded-2xl border ${isChecked ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10' : 'border-slate-200'} shadow-2xs transition-all hover:border-slate-300 my-2">
-          <div class="flex items-center justify-between pb-2 border-b border-slate-100 gap-2">
-            <div class="flex items-center space-x-2.5 min-w-0 flex-1">
-              <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectHistoryItem('${esc(compraId)}', this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0" />
-              <div class="min-w-0 truncate cursor-pointer" onclick="abrirDetalhesCompraHistorico(${idx})">
-                <strong class="text-xs font-black text-slate-800 block truncate">${esc(mercadoNome)}</strong>
-                <span class="text-[10px] text-slate-400 block">${esc(dataFormatada)}</span>
-              </div>
-            </div>
-            <div class="text-right shrink-0">
-              <span class="text-sm font-black text-emerald-600 block leading-tight">R$ ${valorTotal}</span>
-              ${economia > 0 ? `<span class="text-[10px] font-bold text-amber-600">Econ. R$ ${formatBRL(economia)}</span>` : ''}
-            </div>
+    <div class="p-3.5 rounded-2xl border transition-all ${isChecked ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/20" : "border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 shadow-2xs space-y-2.5"}">
+      
+      <!-- LINHA SUPERIOR: CHECKBOX, MERCADO, DATA E TOTAL -->
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700/60 gap-2">
+        <div class="flex items-center space-x-2.5 min-w-0 flex-1">
+          <input type="checkbox" 
+                 ${isChecked ? "checked" : ""} 
+                 onchange="toggleSelectHistoryItem('${esc(compraId)}', this.checked)" 
+                 class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer">
+          <div class="min-w-0 truncate cursor-pointer" onclick="abrirDetalhesCompraHistorico(${idx})">
+            <strong class="text-xs font-black text-slate-800 dark:text-slate-100 block truncate">${esc(mercadoNome)}</strong>
+            <span class="text-[10px] text-slate-400 block">${esc(dataFormatada)}</span>
           </div>
+        </div>
+        <div class="text-right shrink-0">
+          <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 block leading-tight">R$ ${valorTotal}</span>
+          ${economia > 0 ? `<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 block">Econ. R$ ${formatBRL(economia)}</span>` : ""}
+        </div>
+      </div>
 
-          <div class="flex items-center justify-between pt-2.5 text-xs">
-            <span class="text-slate-500 text-[11px] font-semibold">${qtdItens} produto${qtdItens === 1 ? '' : 's'}</span>
-            <div class="flex items-center space-x-1.5">
-              <button type="button" onclick="abrirDetalhesCompraHistorico(${idx})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer">Ver Itens</button>
-              <button type="button" onclick="restaurarCompraParaCarrinho(${idx})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer">Repetir</button>
-              <button type="button" onclick="excluirCompraHistorico(${idx})" class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Excluir este cupom">${this.icons.delete}</button>
-            </div>
-          </div>
-        </div>`;
+      <!-- LINHA INFERIOR: QUANTIDADE DE ITENS E BOTÕES DE AÇÃO -->
+      <div class="flex items-center justify-between pt-1 text-xs">
+        <span class="text-slate-500 dark:text-slate-400 text-[11px] font-semibold">${qtdItens} produto${qtdItens === 1 ? '' : 's'}</span>
+        
+        <div class="flex items-center space-x-1.5">
+          <!-- VER ITENS -->
+          <button type="button" 
+                  onclick="abrirDetalhesCompraHistorico(${idx})" 
+                  class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg transition-all cursor-pointer">
+            Ver Itens
+          </button>
+
+          <!-- REPETIR -->
+          <button type="button" 
+                  onclick="restaurarCompraParaCarrinho(${idx})" 
+                  class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-xs font-bold rounded-lg transition-all cursor-pointer">
+            Repetir
+          </button>
+
+          <!-- COMPARADOR -->
+          <button type="button" 
+                  onclick="abrirModalComparadorHistorico(${idx})" 
+                  class="px-2.5 py-1 text-xs font-bold text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg flex items-center space-x-1 active:scale-95 transition-all cursor-pointer" 
+                  title="Comparar preço desta compra com os preços atuais e lista ativa">
+            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+            </svg>
+            <span>Comparar</span>
+          </button>
+
+          <!-- APAGAR -->
+          <button type="button" 
+                  onclick="excluirCompraHistorico(${idx})" 
+                  class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer" 
+                  title="Excluir Registro">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+    `;
     }).join('');
 
     if (typeof atualizarBarraSelecaoHistorico === 'function') atualizarBarraSelecaoHistorico();
@@ -747,5 +817,38 @@ window.AppTemplates = {
 
 window.renderCatalogUI = () => window.AppTemplates.renderCatalog();
 window.renderMarketsUI = () => window.AppTemplates.renderMarkets();
-window.renderCartUI = () => window.AppTemplates.renderCart();
+window.renderCartUI = () => {
+  window.AppTemplates.renderCart();
+  if (typeof analisarMelhorMercado === 'function') {
+    analisarMelhorMercado();
+  }
+};
 window.renderHistoricoUI = () => window.AppTemplates.renderHistory();
+window.renderHistoryUI = function() {
+  const container = document.getElementById('historyListContainer') || document.querySelector('[id*="histList"]') || document.querySelector('#history-list');
+  if (!container || !window.AppTemplates || typeof window.AppTemplates.renderHistory !== 'function') return;
+
+  const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
+    ? purchaseHistory
+    : JSON.parse(localStorage.getItem('supercompras_history') || '[]');
+
+  const html = window.AppTemplates.renderHistory(lista);
+  if (typeof html === 'string') {
+    container.innerHTML = html;
+  }
+};
+window.renderHistoricoUI = function() {
+  const container = document.getElementById('historyListContainer') || document.querySelector('[id*="histList"]');
+  if (!container || !window.AppTemplates || typeof window.AppTemplates.renderHistory !== 'function') return;
+
+  const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
+    ? purchaseHistory
+    : JSON.parse(localStorage.getItem('supercompras_history') || '[]');
+
+  const html = window.AppTemplates.renderHistory(lista);
+  if (typeof html === 'string') {
+    container.innerHTML = html;
+  }
+};
+// Compatibilidade caso algum ponto chame sem o 'o'
+window.renderHistoryUI = window.renderHistoricoUI;

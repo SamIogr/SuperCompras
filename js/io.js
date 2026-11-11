@@ -256,3 +256,68 @@ async function copyCartToWhatsApp() {
   if (typeof closeExportOptionsModal === 'function') closeExportOptionsModal();
 }
 window.copyCartToWhatsApp = copyCartToWhatsApp;
+// IMPORTACAO DE LINK OU PAYLOAD COLADO DIRETAMENTE
+async function colarTextoImportacao() {
+  let texto = prompt('Cole aqui o link ou o codigo recebido pelo WhatsApp:');
+  if (!texto) return;
+
+  texto = texto.trim();
+  
+  // Extrai o payload se for um link completo com #import=
+  let payload = texto;
+  if (texto.includes('#import=')) {
+    payload = texto.split('#import=')[1];
+  }
+
+  payload = decodeURIComponent(payload);
+
+  if (typeof desserializarQRParaCarrinho !== 'function') {
+    showAppToast('Modulo de sincronizacao QR nao carregado.', 'error');
+    return;
+  }
+
+  const dados = await desserializarQRParaCarrinho(payload);
+  if (!dados || !Array.isArray(dados.items) || dados.items.length === 0) {
+    showAppToast('Codigo ou link invalido.', 'error');
+    return;
+  }
+
+  const aplicarImportacaoLocal = (substituir) => {
+    if (substituir) {
+      cart = dados.items;
+    } else if (typeof mesclarItensNoCarrinho === 'function') {
+      mesclarItensNoCarrinho(dados.items);
+    } else {
+      cart = cart.concat(dados.items);
+    }
+
+    if (dados.marketId && dados.marketId !== 'm-padrao') {
+      activeMarketId = dados.marketId;
+    }
+
+    saveCartData();
+    saveAllLocalData();
+    renderCartUI();
+    showAppToast(substituir ? 'Carrinho substituido com sucesso!' : 'Itens somados ao carrinho!', 'success');
+  };
+
+  if (!cart || cart.length === 0) {
+    aplicarImportacaoLocal(true);
+    return;
+  }
+
+  if (typeof openCustomDialog === 'function') {
+    openCustomDialog(
+      'Importar Lista Recebida',
+      `Seu carrinho ja contem ${cart.length} item(ns). A nova lista contem ${dados.items.length} item(ns). Como deseja importar?`,
+      'Substituir Carrinho',
+      'Somar aos Existentes',
+      () => aplicarImportacaoLocal(true),
+      () => aplicarImportacaoLocal(false)
+    );
+  } else {
+    const somar = confirm(`Deseja somar os ${dados.items.length} itens aos ja existentes?\n\n[OK] = Somar\n[Cancelar] = Substituir`);
+    aplicarImportacaoLocal(!somar);
+  }
+}
+window.colarTextoImportacao = colarTextoImportacao;

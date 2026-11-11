@@ -1,31 +1,19 @@
 /**
- * SUPERCOMPRAS PRO (Backup e Sincronização na conta Google do usuário)
- * Arquivo: js/drive-sync.js  (ARQUIVO NOVO)
- *
- * Guarda catálogo, mercados e histórico numa pasta OCULTA do Google Drive do próprio
- * usuário (escopo drive.appdata). Só a conta logada acessa. O app continua 100% offline:
- * a sincronização só acontece quando há internet.
+ * SUPERCOMPRAS PRO (Backup e Sincronização Google Drive)
+ * Arquivo: js/drive-sync.js
  */
 
-// ===== CONFIGURAÇÃO =====
 const DRIVE_CLIENT_ID = '1005329591365-p2ibvui3iq1ssqgmrj4hb02pc3bqgabb.apps.googleusercontent.com';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const DRIVE_ARQUIVO = 'supercompras_backup.json';
-const DRIVE_META_KEY = 'sc_drive_meta_v1';
 const DRIVE_FLAG_KEY = 'sc_drive_conectado';
 const DRIVE_EMAIL_KEY = 'sc_drive_email';
-const DRIVE_TOMBSTONE_DIAS = 90;       // por quanto tempo lembrar o que foi apagado
-const DRIVE_ATRASO_SYNC_MS = 8000;     // espera após uma alteração para sincronizar sozinho
-const DRIVE_ATRASO_CARIMBO_MS = 1000;  // registra o horário das alterações
 
 let _driveToken = null;
 let _driveTokenExp = 0;
 let _driveSincronizando = false;
-let _driveAplicando = false;
-let _driveTimerSync = null;
-let _driveTimerCarimbo = null;
 
-// ===== 1. LOGIN COM GOOGLE (a biblioteca só é baixada quando precisa) =====
+// 1. CARREGAMENTO DA BIBLIOTECA DO GOOGLE
 function driveCarregarGIS() {
   return new Promise((resolve, reject) => {
     if (window.google && google.accounts && google.accounts.oauth2) return resolve();
@@ -33,52 +21,65 @@ function driveCarregarGIS() {
     s.src = 'https://accounts.google.com/gsi/client';
     s.async = true;
     s.onload = () => resolve();
-    s.onerror = () => reject(new Error('Sem internet para carregar o login do Google.'));
+    s.onerror = () => reject(new Error('Sem conexão para carregar autenticação do Google.'));
     document.head.appendChild(s);
   });
 }
 
 async function driveObterToken(interativo) {
   if (_driveToken && Date.now() < _driveTokenExp - 60000) return _driveToken;
-  if (String(DRIVE_CLIENT_ID).startsWith('COLE_AQUI')) {
-    throw new Error('Configure o DRIVE_CLIENT_ID em js/drive-sync.js');
-  }
+  
   await driveCarregarGIS();
+
   return new Promise((resolve, reject) => {
-    const tid = setTimeout(() => reject(new Error('login_timeout')), interativo ? 120000 : 15000);
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: DRIVE_CLIENT_ID,
-      scope: DRIVE_SCOPE,
-      callback: (resp) => {
-        clearTimeout(tid);
-        if (!resp || resp.error) return reject(new Error((resp && resp.error) || 'login_cancelado'));
-        _driveToken = resp.access_token;
-        _driveTokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
-        resolve(_driveToken);
-      },
-      error_callback: (err) => {
-        clearTimeout(tid);
-        reject(new Error((err && err.type) || 'login_cancelado'));
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: DRIVE_CLIENT_ID,
+        scope: DRIVE_SCOPE,
+        callback: (resp) => {
+          if (!resp || resp.error) {
+            return reject(new Error(resp?.error || 'login_cancelado'));
+          }
+          _driveToken = resp.access_token;
+          _driveTokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+          resolve(_driveToken);
+        },
+        error_callback: (err) => {
+          reject(new Error(err?.type || 'popup_fechado'));
+        }
+      });
+
+      if (interativo) {
+        client.requestAccessToken();
+      } else {
+        reject(new Error('sync_interativo_obrigatorio'));
       }
-    });
-    client.requestAccessToken({ prompt: interativo ? '' : 'none' });
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
-// ===== 2. API DO DRIVE (pasta oculta appDataFolder) =====
+// 2. COMUNICAÇÃO HTTP COM A PASTA OCULTA DO DRIVE
 async function driveFetch(url, opcoes, token) {
-  const op = opcoes || {};
-  const r = await fetch(url, { ...op, headers: { ...(op.headers || {}), Authorization: 'Bearer ' + token } });
-  if (r.status === 401) { _driveToken = null; throw new Error('sessao_expirada'); }
+  const r = await fetch(url, {
+    ...(opcoes || {}),
+    headers: { ...((opcoes && opcoes.headers) || {}), Authorization: 'Bearer ' + token }
+  });
+  if (r.status === 401) {
+    _driveToken = null;
+    throw new Error('sessao_expirada');
+  }
   if (!r.ok) throw new Error('Drive HTTP ' + r.status);
   return r;
 }
 
 async function driveAcharArquivo(token) {
-  const q = encodeURIComponent("name='" + DRIVE_ARQUIVO + "'");
+  const q = encodeURIComponent("name='" + DRIVE_ARQUIVO + "' and trashed=false");
   const r = await driveFetch(
     'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=' + q + '&fields=files(id,name)&pageSize=1',
-    {}, token);
+    {}, token
+  );
   const j = await r.json();
   return (j.files && j.files[0]) || null;
 }
@@ -88,191 +89,345 @@ async function driveBaixarArquivo(token, id) {
   return r.json();
 }
 
-async function driveCriarArquivo(token, conteudo) {
-  const limite = 'sc' + Math.random().toString(36).slice(2);
-  const meta = { name: DRIVE_ARQUIVO, parents: ['appDataFolder'], mimeType: 'application/json' };
-  const corpo =
-    '--' + limite + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) +
-    '\r\n--' + limite + '\r\nContent-Type: application/json\r\n\r\n' + conteudo +
-    '\r\n--' + limite + '--';
-  const r = await driveFetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
-    { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + limite }, body: corpo },
-    token);
-  return (await r.json()).id;
+async function driveGravarArquivo(token, arquivoId, conteudo) {
+  if (arquivoId) {
+    await driveFetch(
+      'https://www.googleapis.com/upload/drive/v3/files/' + arquivoId + '?uploadType=media',
+      { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: conteudo },
+      token
+    );
+  } else {
+    const limite = 'sc_' + Math.random().toString(36).slice(2);
+    const meta = { name: DRIVE_ARQUIVO, parents: ['appDataFolder'], mimeType: 'application/json' };
+    const corpo =
+      '--' + limite + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) +
+      '\r\n--' + limite + '\r\nContent-Type: application/json\r\n\r\n' + conteudo +
+      '\r\n--' + limite + '--';
+    await driveFetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + limite }, body: corpo },
+      token
+    );
+  }
 }
 
-async function driveAtualizarArquivo(token, id, conteudo) {
-  await driveFetch(
-    'https://www.googleapis.com/upload/drive/v3/files/' + id + '?uploadType=media',
-    { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: conteudo },
-    token);
+// 3. MESCLAGEM INTELIGENTE DE PRODUTOS E DADOS
+function extrairEspecificacaoQuantidade(nome, unidade) {
+  const n = (nome || '').toLowerCase().trim();
+  const u = (unidade || '').toLowerCase().trim();
+
+  const regexMedida = /(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|rolos|rolo|dz|duzia|duzias|un|pct|cx)\b/;
+  const match = n.match(regexMedida);
+  if (match) {
+    const valor = parseFloat(match[1].replace(',', '.'));
+    const unid = match[2];
+    if (unid === 'g') return { valor: valor / 1000, unidade: 'kg' };
+    if (unid === 'ml') return { valor: valor / 1000, unidade: 'l' };
+    if (unid === 'rolo' || unid === 'rolos') return { valor: valor, unidade: 'rolos' };
+    if (unid === 'dz' || unid === 'duzia' || unid === 'duzias') return { valor: valor * 12, unidade: 'un' };
+    return { valor: valor, unidade: unid };
+  }
+
+  const matchFim = n.match(/\b(\d+)\s*$/);
+  if (matchFim) {
+    return { valor: parseFloat(matchFim[1]), unidade: 'un' };
+  }
+
+  if (u === 'dz' || u === 'dúzia' || u === 'duzia') {
+    return { valor: 12, unidade: 'un' };
+  }
+
+  return { valor: null, unidade: u };
 }
 
-// ===== 3. O QUE É SINCRONIZADO =====
-function driveEntidades() {
-  const idDe = (v) => (v != null && v !== '') ? String(v) : '';
-  const hist = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
-    ? purchaseHistory
-    : (Array.isArray(window.purchaseHistory) ? window.purchaseHistory : []);
-  return [
-    {
-      nome: 'produtos',
-      lista: (typeof products !== 'undefined' && Array.isArray(products)) ? products : [],
-      chave: p => (p ? idDe(p.id) : '')
-    },
-    {
-      nome: 'mercados',
-      lista: (typeof supermarkets !== 'undefined' && Array.isArray(supermarkets)) ? supermarkets : [],
-      chave: m => (m ? idDe(m.id) : '')
-    },
-    {
-      nome: 'historico',
-      lista: hist,
-      chave: c => (c ? idDe(typeof obterIdCompra === 'function' ? obterIdCompra(c) : c.id) : '')
+function saoQuantidadesDivergentes(p1, p2) {
+  const m1 = extrairEspecificacaoQuantidade(p1.name, p1.unit);
+  const m2 = extrairEspecificacaoQuantidade(p2.name, p2.unit);
+
+  if (m1.valor !== null && m2.valor !== null) {
+    if (m1.unidade === m2.unidade && Math.abs(m1.valor - m2.valor) > 0.001) {
+      return true;
     }
+    if (m1.unidade !== m2.unidade) {
+      return true;
+    }
+  }
+
+  if ((m1.valor !== null && m2.valor === null) || (m2.valor !== null && m1.valor === null)) {
+    const fixo = m1.valor !== null ? m1.valor : m2.valor;
+    if (fixo > 0) return true;
+  }
+
+  if (m1.unidade && m2.unidade && m1.unidade !== m2.unidade) {
+    const pesoVolume = ['kg', 'l'];
+    const fracionado = ['un', 'pct', 'cx', 'dz'];
+    if ((pesoVolume.includes(m1.unidade) && fracionado.includes(m2.unidade)) ||
+        (pesoVolume.includes(m2.unidade) && fracionado.includes(m1.unidade))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function gerarChaveCanonicaProduto(nome) {
+  let s = (nome || '').toLowerCase().trim();
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  s = s.replace(/[(),/\-]/g, ' ');
+  s = s.replace(/\b\d+(?:[.,]\d+)?\s*(kg|g|l|ml|rolos|rolo|un|dz|pct|cx)\b/g, '');
+  s = s.replace(/\b\d+\b/g, '');
+
+  const sufixosGenericos = [
+    'em pedaco', 'em pedacos', 'nacional', 'longa vida', 'liquido', 
+    'de primeira', 'torrado e moido', 'branca', 'brancas', 'vermelha'
   ];
+  sufixosGenericos.forEach(termo => {
+    s = s.replace(new RegExp('\\b' + termo + '\\b', 'g'), '');
+  });
+
+  return s.replace(/\s+/g, ' ').trim();
 }
 
-function driveHash(obj) {
-  const s = JSON.stringify(obj);
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
-  return h + ':' + s.length;
-}
+function mesclarCatalogosDeProdutos(listaAtual, listaRecebida) {
+  const uniao = [...(Array.isArray(listaAtual) ? listaAtual : []), ...(Array.isArray(listaRecebida) ? listaRecebida : [])];
 
-// ===== 4. METADADOS LOCAIS (horário de cada alteração e o que foi apagado) =====
-function driveLerMeta() {
-  let m = {};
-  try { m = JSON.parse(localStorage.getItem(DRIVE_META_KEY)) || {}; } catch (e) { m = {}; }
-  m.ents = m.ents || {};
-  m.tomb = m.tomb || {};
-  return m;
-}
+  // Prioriza itens da Planilha (PROD-) como registros pais
+  uniao.sort((a, b) => {
+    const aSheet = String(a.id || '').startsWith('PROD-') || Boolean(a.inSheet);
+    const bSheet = String(b.id || '').startsWith('PROD-') || Boolean(b.inSheet);
+    return (bSheet ? 1 : 0) - (aSheet ? 1 : 0);
+  });
 
-function driveGravarMeta(m) {
-  try { localStorage.setItem(DRIVE_META_KEY, JSON.stringify(m)); }
-  catch (e) { console.warn('[Drive] Não foi possível gravar os metadados:', e); }
-}
+  const consolidados = [];
 
-/** Compara o estado atual com o último sincronizado: marca o que mudou e o que foi apagado. */
-function driveCarimbar(meta, agora, remoto) {
-  const local = {};
-  const primeiraVez = !meta.ultimaSync;
-  driveEntidades().forEach(ent => {
-    const mEnt = meta.ents[ent.nome] = meta.ents[ent.nome] || {};
-    const tomb = meta.tomb[ent.nome] = meta.tomb[ent.nome] || {};
-    const saida = local[ent.nome] = {};
-    const vistos = new Set();
+  uniao.forEach(prod => {
+    if (!prod || !prod.name) return;
 
-    ent.lista.forEach(it => {
-      const k = ent.chave(it);
-      if (!k) return;
-      vistos.add(k);
-      const h = driveHash(it);
-      let reg = mEnt[k];
-      if (!reg) {
-        const noRemoto = !!(remoto && remoto[ent.nome] && remoto[ent.nome][k]);
-        // 1ª sincronização deste aparelho: em caso de conflito, vale o que já está na nuvem
-        reg = mEnt[k] = { t: (primeiraVez && noRemoto) ? 0 : agora, h };
-      } else if (reg.h !== h) {
-        reg.t = agora; reg.h = h;
+    const chaveProd = gerarChaveCanonicaProduto(prod.name);
+
+    // 1. Tenta correspondência direta de chave canônica
+    let existente = consolidados.find(c => {
+      const chaveC = gerarChaveCanonicaProduto(c.name);
+      if (chaveProd !== chaveC) return false;
+      if (saoQuantidadesDivergentes(prod, c)) return false;
+      return true;
+    });
+
+    let marcaDetectada = null;
+
+    // 2. Se não achou por igualdade, verifica se prod é uma variação de marca de um item pai
+    // Ex: "Creme Dental Colgate" contra o pai "Creme Dental"
+    if (!existente) {
+      existente = consolidados.find(c => {
+        const chavePai = gerarChaveCanonicaProduto(c.name);
+        if (chaveProd.startsWith(chavePai + ' ') && !saoQuantidadesDivergentes(prod, c)) {
+          marcaDetectada = prod.name.trim().substring(c.name.trim().length).trim();
+          return true;
+        }
+        return false;
+      });
+    }
+
+    if (!existente) {
+      consolidados.push({
+        id: prod.id || ('p-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)),
+        name: prod.name.trim(),
+        category: prod.category || 'Geral',
+        unit: prod.unit || 'un',
+        basePrice: Number(prod.basePrice) || 0,
+        marketPrices: { ...(prod.marketPrices || {}) },
+        brands: Array.isArray(prod.brands) ? [...prod.brands] : [],
+        inSheet: Boolean(prod.inSheet || String(prod.id).startsWith('PROD-')),
+        inDrive: Boolean(prod.inDrive)
+      });
+    } else {
+      // Herda cotações base se zeradas
+      if (Number(existente.basePrice) === 0 && Number(prod.basePrice) > 0) {
+        existente.basePrice = Number(prod.basePrice);
       }
-      delete tomb[k];
-      saida[k] = { t: reg.t, d: 0, v: it };
-    });
 
-    Object.keys(mEnt).forEach(k => {
-      if (!vistos.has(k)) { tomb[k] = agora; delete mEnt[k]; }   // sumiu daqui = apagado aqui
-    });
-    Object.keys(tomb).forEach(k => { saida[k] = { t: tomb[k], d: 1 }; });
-  });
-  return local;
-}
+      // Mescla cotações de mercado
+      if (prod.marketPrices && typeof prod.marketPrices === 'object') {
+        Object.entries(prod.marketPrices).forEach(([mId, preco]) => {
+          if (Number(preco) > 0) existente.marketPrices[mId] = Number(preco);
+        });
+      }
 
-/** Junta local e nuvem: para cada item vale o registro mais recente. Empate: vale a nuvem. */
-function driveMesclar(local, remoto) {
-  const limite = Date.now() - DRIVE_TOMBSTONE_DIAS * 86400000;
-  const res = {};
-  driveEntidades().forEach(ent => {
-    const a = local[ent.nome] || {};
-    const b = (remoto && remoto[ent.nome]) || {};
-    const out = res[ent.nome] = {};
-    new Set([...Object.keys(a), ...Object.keys(b)]).forEach(k => {
-      const x = a[k], y = b[k];
-      const venc = !x ? y : (!y ? x : (x.t > y.t ? x : y));
-      if (venc.d && venc.t <= limite) return;                    // apagado há muito tempo: esquece
-      out[k] = venc;
-    });
-  });
-  return res;
-}
+      // Se detectou que o produto avulso era na verdade uma marca (ex: Colgate)
+      if (marcaDetectada) {
+        if (!Array.isArray(existente.brands)) existente.brands = [];
+        const jaExisteMarca = existente.brands.some(b => (b.name || b.id || '').toLowerCase() === marcaDetectada.toLowerCase());
+        if (!jaExisteMarca) {
+          existente.brands.push({
+            id: marcaDetectada,
+            name: marcaDetectada,
+            marketPrices: { ...(prod.marketPrices || {}) }
+          });
+        }
+      }
 
-/** Grava o resultado da junção nas listas do app (sem trocar os arrays, só o conteúdo). */
-function driveAplicar(meta, mesclado) {
-  driveEntidades().forEach(ent => {
-    const lista = ent.lista;
-    const reg = mesclado[ent.nome] || {};
-    const mEnt = meta.ents[ent.nome] = {};
-    const tomb = meta.tomb[ent.nome] = {};
-    const vivos = {};
-    Object.keys(reg).forEach(k => {
-      if (reg[k].d) tomb[k] = reg[k].t; else vivos[k] = reg[k];
-    });
+      // Mescla marcas adicionais já existentes no registro
+      if (Array.isArray(prod.brands)) {
+        prod.brands.forEach(bNova => {
+          const nomeNova = (typeof bNova === 'string' ? bNova : (bNova.name || bNova.id || '')).trim();
+          if (!nomeNova || nomeNova.toLowerCase() === 'padrão') return;
+          const jaTem = existente.brands.some(b => (b.name || b.id || '').toLowerCase() === nomeNova.toLowerCase());
+          if (!jaTem) existente.brands.push(bNova);
+        });
+      }
 
-    const ordem = [];
-    const usados = new Set();
-    lista.forEach(it => {
-      const k = ent.chave(it);
-      if (!k) { ordem.push(it); return; }                        // sem id: mantém, não sincroniza
-      if (vivos[k]) { ordem.push(vivos[k].v); usados.add(k); }   // apagado em outro aparelho: sai
-    });
-    Object.keys(vivos).forEach(k => { if (!usados.has(k)) ordem.push(vivos[k].v); });
-    Object.keys(vivos).forEach(k => { mEnt[k] = { t: vivos[k].t, h: driveHash(vivos[k].v) }; });
-
-    lista.splice(0, lista.length, ...ordem);
-    if (ent.nome === 'historico' && Array.isArray(window.purchaseHistory) && window.purchaseHistory !== lista) {
-      window.purchaseHistory.splice(0, window.purchaseHistory.length, ...ordem);
+      if (prod.inSheet || String(prod.id).startsWith('PROD-')) existente.inSheet = true;
+      if (prod.inDrive) existente.inDrive = true;
     }
   });
-}
 
-// ===== 5. PERSISTÊNCIA LOCAL E TELAS =====
-function driveSalvarLocal() {
-  ['saveAllLocalData', 'salvarHistoricoLocal'].forEach(fn => {
-    try { if (typeof window[fn] === 'function') window[fn](); }
-    catch (e) { console.warn('[Drive] Falha ao salvar localmente (' + fn + '):', e); }
+  return consolidados;
+}
+window.mesclarCatalogosDeProdutos = mesclarCatalogosDeProdutos;
+
+function consolidarHistoricoSeguro(histLocal, histRemoto) {
+  const mapa = new Map();
+  const todos = [...(Array.isArray(histLocal) ? histLocal : []), ...(Array.isArray(histRemoto) ? histRemoto : [])];
+
+  todos.forEach(item => {
+    if (!item) return;
+    const chave = String(item.id || item.date || Math.random());
+    if (!mapa.has(chave)) {
+      mapa.set(chave, item);
+    }
   });
+
+  return Array.from(mapa.values()).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
-function driveAtualizarTelas() {
+function consolidarMercadosSeguro(mercadosLocais, mercadosRemotos) {
+  const mapa = new Map();
+  [...(mercadosLocais || []), ...(mercadosRemotos || [])].forEach(m => {
+    if (!m || !m.name) return;
+    const chave = m.id || m.name.trim().toLowerCase();
+    if (!mapa.has(chave)) {
+      mapa.set(chave, { ...m });
+    } else {
+      const existente = mapa.get(chave);
+      if (m.inSheet || m.colIndex) existente.inSheet = true;
+      if (m.inDrive) existente.inDrive = true;
+      if (m.colIndex && !existente.colIndex) existente.colIndex = m.colIndex;
+      if (m.address && !existente.address) existente.address = m.address;
+      if (m.promoDay && !existente.promoDay) existente.promoDay = m.promoDay;
+    }
+  });
+  return Array.from(mapa.values());
+}
+
+// 4. FLUXO PRINCIPAL DE SINCRONIZAÇÃO
+async function driveSincronizar(interativo = false) {
+  if (_driveSincronizando) return;
+  _driveSincronizando = true;
+  driveStatus('Sincronizando com Google Drive...');
+
   try {
-    if (typeof activeMarketId !== 'undefined' && typeof supermarkets !== 'undefined' &&
-        Array.isArray(supermarkets) && supermarkets.length &&
-        !supermarkets.some(m => m.id === activeMarketId)) {
-      activeMarketId = supermarkets[0].id;                       // o mercado ativo foi apagado em outro aparelho
+    const token = await driveObterToken(interativo);
+
+    const arquivoExistente = await driveAcharArquivo(token);
+    let dadosRemotos = null;
+
+    if (arquivoExistente) {
+      dadosRemotos = await driveBaixarArquivo(token, arquivoExistente.id);
     }
-  } catch (e) { /* activeMarketId pode ser constante em alguma versão */ }
-  ['renderCatalog', 'renderMarkets', 'renderHistory', 'renderCartUI', 'refreshActiveMarketUI'].forEach(fn => {
-    try { if (typeof window[fn] === 'function') window[fn](); }
-    catch (e) { console.warn('[Drive] Falha ao atualizar a tela (' + fn + '):', e); }
-  });
+
+    if (dadosRemotos && Array.isArray(dadosRemotos.products)) {
+      products = mesclarCatalogosDeProdutos(products, dadosRemotos.products);
+    } else {
+      products = mesclarCatalogosDeProdutos([], products);
+    }
+
+    const historicoAtual = Array.isArray(purchaseHistory) ? purchaseHistory : [];
+    const historicoRemoto = (dadosRemotos && Array.isArray(dadosRemotos.purchaseHistory)) ? dadosRemotos.purchaseHistory : [];
+    purchaseHistory = consolidarHistoricoSeguro(historicoAtual, historicoRemoto);
+    if (Array.isArray(window.purchaseHistory)) {
+      window.purchaseHistory = purchaseHistory;
+    }
+
+    if (dadosRemotos && Array.isArray(dadosRemotos.supermarkets)) {
+      supermarkets = consolidarMercadosSeguro(supermarkets, dadosRemotos.supermarkets);
+    }
+
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        p.inDrive = true;
+        if (String(p.id).startsWith('PROD-')) p.inSheet = true;
+      });
+    }
+    // Marca origem dos produtos
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        p.inDrive = true;
+        if (String(p.id).startsWith('PROD-')) p.inSheet = true;
+      });
+    }
+
+    // Marca origem dos supermercados
+    if (Array.isArray(supermarkets)) {
+      supermarkets.forEach(m => {
+        m.inDrive = true;
+        if (m.colIndex || (m.id && !String(m.id).startsWith('m-custom-'))) {
+          m.inSheet = true;
+        }
+      });
+    }
+
+    if (typeof saveAllLocalData === 'function') saveAllLocalData();
+    localStorage.setItem('sc_purchase_history', JSON.stringify(purchaseHistory));
+    localStorage.setItem('sc_products', JSON.stringify(products));
+    localStorage.setItem('sc_supermarkets', JSON.stringify(supermarkets));
+
+    const payloadParaNuvem = JSON.stringify({
+      app: 'SuperComprasPro',
+      versao: 2,
+      atualizadoEm: new Date().toISOString(),
+      products: products,
+      supermarkets: supermarkets,
+      purchaseHistory: purchaseHistory
+    });
+
+    await driveGravarArquivo(token, arquivoExistente ? arquivoExistente.id : null, payloadParaNuvem);
+
+    localStorage.setItem(DRIVE_FLAG_KEY, '1');
+    await driveAtualizarConta(token);
+
+    driveStatus('Sincronizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    if (interativo && typeof showAppToast === 'function') {
+      showAppToast('Sincronização com Google Drive concluída!', 'success');
+    }
+
+    if (typeof renderCatalogUI === 'function') renderCatalogUI();
+    if (typeof renderMarketsUI === 'function') renderMarketsUI();
+    if (typeof renderHistoricoUI === 'function') renderHistoricoUI();
+    if (typeof renderCartUI === 'function') renderCartUI();
+
+  } catch (err) {
+    if (err.message !== 'sync_interativo_obrigatorio') {
+      console.warn('[Drive] Erro durante o processo:', err);
+      driveStatus('Falha ao conectar no Google. Verifique a internet e tente pelo botão.', true);
+    }
+  } finally {
+    _driveSincronizando = false;
+  }
 }
 
-// ===== 6. INTERFACE =====
-function driveStatus(texto, erro) {
+// 5. INTERFACE DO MODAL E STATUS
+function driveStatus(texto, erro = false) {
   const el = document.getElementById('driveSyncStatus');
   if (!el) return;
   el.textContent = texto;
-  el.classList.toggle('text-rose-600', !!erro);
-  el.classList.toggle('text-slate-500', !erro);
+  el.className = 'text-[11px] font-semibold ' + (erro ? 'text-rose-600' : 'text-slate-500');
 }
 
 function driveMostrarConta() {
   const conectado = !!localStorage.getItem(DRIVE_FLAG_KEY);
   const email = localStorage.getItem(DRIVE_EMAIL_KEY);
   const elConta = document.getElementById('driveSyncConta');
-  if (elConta) elConta.textContent = conectado ? ('Conta: ' + (email || 'Google conectado')) : 'Não conectado';
+  if (elConta) elConta.textContent = conectado ? ('Conta: ' + (email || 'Conectada')) : 'Não conectado';
   const btnDes = document.getElementById('driveBtnDesconectar');
   if (btnDes) btnDes.classList.toggle('hidden', !conectado);
 }
@@ -280,136 +435,45 @@ function driveMostrarConta() {
 async function driveAtualizarConta(token) {
   try {
     const r = await driveFetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)', {}, token);
-    const u = (await r.json()).user || {};
-    if (u.emailAddress) localStorage.setItem(DRIVE_EMAIL_KEY, u.emailAddress);
-  } catch (e) { /* o e-mail é só para exibir */ }
-  driveMostrarConta();
-}
-
-function driveMensagemErro(e) {
-  const m = String((e && e.message) || e);
-  if (!navigator.onLine || /Failed to fetch|NetworkError|Sem internet/i.test(m)) {
-    return 'Sem internet. As alterações ficam salvas aqui e sincronizam depois.';
-  }
-  if (/sessao_expirada|interaction_required|login_required|popup|access_denied|login_cancelado|login_timeout/i.test(m)) {
-    return 'Toque em "Conectar / Sincronizar" para entrar na sua conta Google.';
-  }
-  return 'Falha ao sincronizar (' + m + ').';
-}
-
-// ===== 7. SINCRONIZAÇÃO =====
-async function driveSincronizar(interativo) {
-  if (_driveSincronizando) return;
-  _driveSincronizando = true;
-  _driveAplicando = true;
-  driveStatus('Sincronizando...');
-  try {
-    const token = await driveObterToken(!!interativo);
-    const meta = driveLerMeta();
-    meta.deviceId = meta.deviceId || ('d-' + Math.random().toString(36).slice(2, 10));
-
-    const arq = await driveAcharArquivo(token);
-    let remoto = null;
-    if (arq) {
-      const j = await driveBaixarArquivo(token, arq.id);
-      remoto = (j && j.dados) ? j.dados : null;
+    const u = await r.json();
+    if (u.user && u.user.emailAddress) {
+      localStorage.setItem(DRIVE_EMAIL_KEY, u.user.emailAddress);
     }
-
-    const local = driveCarimbar(meta, Date.now(), remoto);
-    const mesclado = driveMesclar(local, remoto);
-    driveAplicar(meta, mesclado);
-    driveSalvarLocal();
-    driveAtualizarTelas();
-    driveGravarMeta(meta);
-
-    const conteudo = JSON.stringify({
-      v: 1, app: 'SuperComprasPro', salvoEm: new Date().toISOString(),
-      dispositivo: meta.deviceId, dados: mesclado
-    });
-    if (arq) await driveAtualizarArquivo(token, arq.id, conteudo);
-    else await driveCriarArquivo(token, conteudo);
-
-    meta.ultimaSync = Date.now();
-    driveGravarMeta(meta);
-    localStorage.setItem(DRIVE_FLAG_KEY, '1');
-    await driveAtualizarConta(token);
-    driveStatus('Sincronizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
-    if (interativo && typeof showAppToast === 'function') showAppToast('Backup sincronizado com o Google Drive.', 'success');
-  } catch (e) {
-    console.warn('[Drive] Falha na sincronização:', e);
-    driveStatus(driveMensagemErro(e), !!interativo);
-  } finally {
-    _driveAplicando = false;
-    _driveSincronizando = false;
-  }
+  } catch (e) {}
+  driveMostrarConta();
 }
 
 function driveDesconectar() {
   try {
-    if (_driveToken && window.google && google.accounts && google.accounts.oauth2) {
+    if (_driveToken && window.google?.accounts?.oauth2) {
       google.accounts.oauth2.revoke(_driveToken, () => {});
     }
-  } catch (e) { /* sem problema */ }
+  } catch (e) {}
   _driveToken = null;
   _driveTokenExp = 0;
-  [DRIVE_FLAG_KEY, DRIVE_EMAIL_KEY, DRIVE_META_KEY].forEach(k => localStorage.removeItem(k));
+  localStorage.removeItem(DRIVE_FLAG_KEY);
+  localStorage.removeItem(DRIVE_EMAIL_KEY);
   driveMostrarConta();
-  driveStatus('Desconectado. Os dados deste aparelho foram mantidos.');
+  driveStatus('Desconectado.');
 }
-
-// ===== 8. SINCRONIZAÇÃO AUTOMÁTICA =====
-/** Registra o horário real das alterações (só depois da 1ª sincronização). */
-function driveCarimbarAlteracoes() {
-  const meta = driveLerMeta();
-  if (!meta.ultimaSync) return;
-  driveCarimbar(meta, Date.now(), null);
-  driveGravarMeta(meta);
-}
-
-function driveAgendarSync() {
-  if (_driveAplicando || !localStorage.getItem(DRIVE_FLAG_KEY)) return;
-  clearTimeout(_driveTimerCarimbo);
-  _driveTimerCarimbo = setTimeout(driveCarimbarAlteracoes, DRIVE_ATRASO_CARIMBO_MS);
-  clearTimeout(_driveTimerSync);
-  _driveTimerSync = setTimeout(() => driveSincronizar(false), DRIVE_ATRASO_SYNC_MS);
-}
-
-function driveEncaixarGancho(nome) {
-  const orig = window[nome];
-  if (typeof orig !== 'function' || orig.__driveGancho) return;
-  const novo = function () {
-    const r = orig.apply(this, arguments);
-    driveAgendarSync();
-    return r;
-  };
-  novo.__driveGancho = true;
-  window[nome] = novo;
-}
-
-function driveIniciar() {
-  driveEncaixarGancho('saveAllLocalData');
-  driveEncaixarGancho('salvarHistoricoLocal');
-  driveMostrarConta();
-  if (localStorage.getItem(DRIVE_FLAG_KEY)) setTimeout(() => driveSincronizar(false), 2000);
-}
-window.addEventListener('load', driveIniciar);
-window.addEventListener('online', () => {
-  if (localStorage.getItem(DRIVE_FLAG_KEY)) driveSincronizar(false);
-});
 
 window.driveSincronizar = driveSincronizar;
 window.driveDesconectar = driveDesconectar;
+
 window.openDriveSyncModal = function() {
   const m = document.getElementById('modalDriveSync');
   if (m) {
     m.classList.remove('hidden');
     m.style.removeProperty('display');
   }
+  driveMostrarConta();
 };
 
 window.closeDriveSyncModal = function() {
   const m = document.getElementById('modalDriveSync');
-  if (m) {
-    m.classList.add('hidden');
-  }
+  if (m) m.classList.add('hidden');
 };
+
+window.addEventListener('DOMContentLoaded', () => {
+  driveMostrarConta();
+});
