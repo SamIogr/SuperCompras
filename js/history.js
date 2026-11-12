@@ -7,7 +7,7 @@ let selectedHistoryIds = new Set();
 
 function obterHistoricoLocal() {
   try {
-    const raw = localStorage.getItem('sc_purchase_history');
+    const raw = localStorage.getItem('sc_history_v3') || localStorage.getItem('sc_purchase_history');
     if (!raw || raw === 'undefined' || raw === 'null') {
       return [];
     }
@@ -24,7 +24,6 @@ function salvarHistoricoLocal(lista) {
   if (typeof purchaseHistory !== 'undefined') purchaseHistory = lista;
   try {
     localStorage.setItem('sc_history_v3', JSON.stringify(lista));
-    localStorage.setItem('sc_purchase_history', JSON.stringify(lista));
   } catch (e) {
     console.error('[Historico] Erro ao salvar dados:', e);
   }
