@@ -58,6 +58,9 @@
 
       /* Fundos neutros e de apoio */
       html.dark .bg-slate-100 { background-color: #0f172a !important; }
+      /* versões translúcidas (painel fixo do catálogo, calculadora) */
+      html.dark .bg-slate-100\/95 { background-color: rgba(15, 23, 42, 0.95) !important; }
+      html.dark .bg-slate-100\/80 { background-color: rgba(15, 23, 42, 0.8) !important; }
       html.dark .bg-slate-50, html.dark .bg-slate-50\/80 { background-color: #1e293b !important; }
       html.dark .bg-slate-200, html.dark .bg-slate-200\/70, html.dark .bg-slate-200\/80 { 
         background-color: #334155 !important; 
@@ -120,7 +123,8 @@
       /* Etiquetas Amarelas / Atacado / Base Geral */
       html.dark .bg-amber-100,
       html.dark .bg-amber-50,
-      html.dark .bg-amber-50\/60 {
+      html.dark .bg-amber-50\/60,
+      html.dark .bg-amber-50\/70 {
         background-color: rgba(120, 53, 15, 0.6) !important;
         border-color: rgba(245, 158, 11, 0.4) !important;
         color: #fde68a !important;
@@ -149,6 +153,24 @@
       html.dark .text-sky-800 {
         color: #bae6fd !important;
       }
+
+      /* Caixas azuis claras (aviso "enviar mercado para a planilha") */
+      html.dark .bg-sky-50 {
+        background-color: rgba(12, 74, 110, 0.35) !important;
+        border-color: rgba(14, 165, 233, 0.35) !important;
+      }
+      html.dark .text-sky-700 { color: #7dd3fc !important; }
+
+      /* Vermelhos claros (excluir em lote, alertas do histórico e da calculadora) */
+      html.dark .bg-rose-50,
+      html.dark .bg-rose-100 {
+        background-color: rgba(136, 19, 55, 0.35) !important;
+        border-color: rgba(244, 63, 94, 0.35) !important;
+      }
+
+      /* Regra para quem mexer no visual: toda classe de fundo claro (bg-white, bg-*-50/100/200,
+         inclusive com /opacidade) precisa de uma regra aqui OU de um dark:bg-... no mesmo
+         elemento. O teste tests/modo-escuro.test.js confere isso. */
     </style>
   </head>
   <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col font-sans pb-36 select-none md:select-auto">
