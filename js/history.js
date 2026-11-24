@@ -28,6 +28,7 @@ function salvarHistoricoLocal(lista) {
   window.purchaseHistory = lista;
   if (typeof purchaseHistory !== 'undefined') purchaseHistory = lista;
   Armazenamento.gravarJSON(CHAVES.HISTORICO, lista);
+  Eventos.avisar(AVISOS.DADOS_SALVOS, { quais: 'historico' });
 }
 
 function resolverNomeMercado(compra) {

@@ -7,7 +7,7 @@ const { carregarApp } = require('./carregar-app');
 const puro = v => JSON.parse(JSON.stringify(v));
 
 // carrega só o armazenamento, com o localStorage já preenchido ANTES (como num aparelho real)
-function comDados(dados, arquivos = ['js/armazenamento.js']) {
+function comDados(dados, arquivos = ['js/eventos.js', 'js/armazenamento.js']) {
   const app = carregarApp([]);
   for (const [k, v] of Object.entries(dados)) app.localStorage.setItem(k, v);
   for (const arq of arquivos) app.$(fs.readFileSync(path.join(__dirname, '..', arq), 'utf8'));
@@ -67,7 +67,7 @@ test('migração não sobrescreve um histórico atual que já existe (nem vazio)
 test('loadApplicationData usa o histórico migrado e ignora dados corrompidos', () => {
   const app = comDados(
     { sc_purchase_history: '[{"dataISO":"2025-05-05","itens":[{"nome":"Café"}]}]', sc_cart_v3: '{quebrado' },
-    ['js/armazenamento.js', 'js/state.js']);
+    ['js/eventos.js', 'js/armazenamento.js', 'js/state.js']);
   const erroOriginal = console.warn; console.warn = () => {};
   try { app.loadApplicationData(); } finally { console.warn = erroOriginal; }
   assert.equal(app.$('purchaseHistory.length'), 1);
@@ -76,7 +76,7 @@ test('loadApplicationData usa o histórico migrado e ignora dados corrompidos', 
 });
 
 test('getSecurityToken lê a chave salva (ou vazio)', () => {
-  const app = comDados({}, ['js/armazenamento.js', 'js/state.js']);
+  const app = comDados({}, ['js/eventos.js', 'js/armazenamento.js', 'js/state.js']);
   assert.equal(app.getSecurityToken(), '');
   app.Armazenamento.gravarTexto(app.CHAVES.TOKEN_PLANILHA, 'chave-de-teste');
   assert.equal(app.getSecurityToken(), 'chave-de-teste');

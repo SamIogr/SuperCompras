@@ -239,10 +239,12 @@ function saveAllLocalData() {
   Armazenamento.gravarTexto(CHAVES.MERCADO_ATIVO, activeMarketId);
   Armazenamento.gravarJSON(CHAVES.CARRINHO, cart);
   Armazenamento.gravarJSON(CHAVES.HISTORICO, purchaseHistory);
+  Eventos.avisar(AVISOS.DADOS_SALVOS, { quais: 'tudo' });
 }
 
 function saveCartData() {
   Armazenamento.gravarJSON(CHAVES.CARRINHO, cart);
+  Eventos.avisar(AVISOS.CARRINHO_SALVO);
   if (typeof renderCartUI === 'function') renderCartUI();
 }
 

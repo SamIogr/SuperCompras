@@ -491,22 +491,14 @@ function driveAgendarSync() {
   _driveTimerSync = setTimeout(() => driveSincronizar(false), DRIVE_ATRASO_SYNC_MS);
 }
 
-function driveEncaixarGancho(nome) {
-  const orig = window[nome];
-  if (typeof orig !== 'function' || orig.__driveGancho) return;
-  const novo = function () {
-    const r = orig.apply(this, arguments);
-    driveAgendarSync();
-    return r;
-  };
-  novo.__driveGancho = true;
-  window[nome] = novo;
-}
+let _drivePararDeOuvir = null;
 
 function driveIniciar() {
   Armazenamento.remover(DRIVE_META_KEY_ANTIGA);
-  driveEncaixarGancho('saveAllLocalData');
-  driveEncaixarGancho('salvarHistoricoLocal');
+  // Toda vez que os dados forem salvos, agenda a sincronização. Começa a ouvir só aqui
+  // (evento 'load', depois da carga inicial dos dados) para o app não sincronizar sozinho
+  // ao abrir. Antes isto era feito substituindo saveAllLocalData e salvarHistoricoLocal.
+  if (!_drivePararDeOuvir) _drivePararDeOuvir = Eventos.ouvir(AVISOS.DADOS_SALVOS, driveAgendarSync);
   driveMostrarConta();      // sem sincronizar sozinho ao abrir: o login do Google só abre com um toque
 }
 window.addEventListener('load', driveIniciar);
