@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { carregarApp, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ } = require('./carregar-app');
+const { carregarApp, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ } = require('./carregar-app');
 
 const ler = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 
@@ -42,13 +42,13 @@ test('noProprioElemento: só age quando o toque é no próprio fundo do modal', 
 // ------------------------------------------------------------ todo data-acao tem dono
 test('toda data-acao usada no app tem uma ação registrada', () => {
   const app = carregarApp(['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js',
-    'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', 'js/markets.js', 'js/api.js', ...ARQUIVOS_HISTORICO]);
+    'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', 'js/markets.js', 'js/api.js', ...ARQUIVOS_CARRINHO, ...ARQUIVOS_HISTORICO]);
   const fontes = ['index.html', ...fs.readdirSync(path.join(RAIZ, 'components')).map(f => 'components/' + f), ...listarArquivosJs()];
   const semDono = [];
   for (const f of fontes) {
     for (const m of ler(f).matchAll(/data-acao="([a-z0-9-]+)"/g)) {
       const nome = m[1];
-      if (!app.Acoes.existe('click', nome) && !app.Acoes.existe('change', nome)) semDono.push(`${nome} (${f})`);
+      if (!['click', 'change', 'input', 'submit'].some(tipo => app.Acoes.existe(tipo, nome))) semDono.push(`${nome} (${f})`);
     }
   }
   assert.deepEqual(semDono, []);

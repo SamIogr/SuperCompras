@@ -3,7 +3,7 @@
  * contexto isolado do Node, com um "navegador" mínimo de mentira. Assim dá para testar as
  * funções puras sem abrir o navegador.
  *
- * Uso: const app = carregarApp(['js/state.js', 'js/cart.js']);
+ * Uso: const app = carregarApp(['js/state.js', ...ARQUIVOS_CARRINHO]);
  *      app.parseNumberInput('1,5')        // funções declaradas viram propriedades
  *      app.$('products')                  // let/const de topo: leia com $()
  *      app.$('products = [...]')          // ...ou altere
@@ -71,6 +71,10 @@ function carregarApp(arquivos) {
   return ctx;
 }
 
+// Arquivos da tela do carrinho, na ordem do index.html
+const ARQUIVOS_CARRINHO = ['calculo', 'lista', 'formulario', 'edicao', 'finalizacao', 'comparativo', 'acoes']
+  .map(n => `js/telas/carrinho/${n}.js`);
+
 // Arquivos da tela do histórico, na ordem do index.html
 const ARQUIVOS_HISTORICO = ['dados', 'lista', 'exclusao', 'detalhes', 'comparador', 'acoes']
   .map(n => `js/telas/historico/${n}.js`);
@@ -86,4 +90,4 @@ function listarArquivosJs(pasta = 'js') {
   return saida;
 }
 
-module.exports = { carregarApp, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };
+module.exports = { carregarApp, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

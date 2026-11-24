@@ -246,28 +246,6 @@ function abrirSupermercadoNoMaps(marketId, rotaDireta = true) {
 }
 window.abrirSupermercadoNoMaps = abrirSupermercadoNoMaps;
 
-function abrirSheetAdicionarItem() {
-  const container = document.getElementById('cartFormContainer');
-  const backdrop = document.getElementById('cartFormBackdrop');
-  if (container && backdrop) {
-    backdrop.classList.remove('hidden');
-    container.classList.remove('hidden');
-    setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 100);
-  }
-}
-window.abrirSheetAdicionarItem = abrirSheetAdicionarItem;
-
-function fecharSheetAdicionarItem() {
-  const container = document.getElementById('cartFormContainer');
-  const backdrop = document.getElementById('cartFormBackdrop');
-  const dropdown = document.getElementById('cartAutocompleteDropdown');
-  if (dropdown) dropdown.classList.add('hidden');
-  if (container && backdrop) {
-    container.classList.add('hidden');
-    backdrop.classList.add('hidden');
-  }
-}
-window.fecharSheetAdicionarItem = fecharSheetAdicionarItem;
 
 function atualizarEstadoFabMobile(tabName) {
   const fab = document.getElementById('fabOpenAddItem');
@@ -440,57 +418,6 @@ document.addEventListener('visibilitychange', () => {
     desativarTelaAcesa();
   }
 });
-// ATALHOS DINÂMICOS CONFORME A UNIDADE (PESO VS QUANTIDADE UNITÁRIA)
-function atualizarAtalhosQuantidade() {
-  const selUnit = document.getElementById('cartInputUnit');
-  const box = document.getElementById('containerAtalhosQtd');
-  if (!selUnit || !box) return;
-
-  const unit = (selUnit.value || '').trim().toLowerCase();
-  const isPeso = unit === 'kg' || unit === 'g' || unit === 'quilo';
-
-  if (isPeso) {
-    box.innerHTML = `
-      <button type="button" onclick="setCartQuickQty('0.250')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">250g</button>
-      <button type="button" onclick="setCartQuickQty('0.500')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">500g</button>
-      <button type="button" onclick="setCartQuickQty('1.000')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">1 kg</button>
-      <button type="button" onclick="setCartQuickQty('1.500')" class="px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg font-bold text-[10px] border border-emerald-200 cursor-pointer">1,5 kg</button>
-    `;
-  } else {
-    box.innerHTML = `
-      <button type="button" onclick="setCartQuickQty('1')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">1</button>
-      <button type="button" onclick="setCartQuickQty('2')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">2</button>
-      <button type="button" onclick="setCartQuickQty('3')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">3</button>
-      <button type="button" onclick="setCartQuickQty('6')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">6</button>
-      <button type="button" onclick="setCartQuickQty('12')" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-[11px] border border-slate-200 cursor-pointer">12</button>
-    `;
-  }
-}
-window.atualizarAtalhosQuantidade = atualizarAtalhosQuantidade;
-
-function abrirSheetAdicionarItem() {
-  const container = document.getElementById('cartFormContainer');
-  const backdrop = document.getElementById('cartFormBackdrop');
-  if (container && backdrop) {
-    backdrop.classList.remove('hidden');
-    container.classList.remove('hidden');
-    atualizarAtalhosQuantidade();
-    setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 100);
-  }
-}
-window.abrirSheetAdicionarItem = abrirSheetAdicionarItem;
-
-function fecharSheetAdicionarItem() {
-  const container = document.getElementById('cartFormContainer');
-  const backdrop = document.getElementById('cartFormBackdrop');
-  const dropdown = document.getElementById('cartAutocompleteDropdown');
-  if (dropdown) dropdown.classList.add('hidden');
-  if (container && backdrop) {
-    container.classList.add('hidden');
-    backdrop.classList.add('hidden');
-  }
-}
-window.fecharSheetAdicionarItem = fecharSheetAdicionarItem;
 
 // ============================================================================
 // ZOOM GLOBAL DA APLICAÇÃO (UI)

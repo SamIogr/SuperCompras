@@ -512,38 +512,6 @@ window.AppTemplates = {
   },
   
 
-  renderCartAutocomplete(matches) {
-    const dropdownProd = document.getElementById('cartAutocompleteDropdown');
-    if (!dropdownProd) return;
-
-    if (!matches || matches.length === 0) {
-      dropdownProd.classList.add('hidden');
-      dropdownProd.innerHTML = '';
-      return;
-    }
-
-    dropdownProd.innerHTML = `
-      <div class="p-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-bold">
-        <span>Sugestões no Catálogo:</span>
-        <button type="button" onclick="document.getElementById('cartAutocompleteDropdown').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 px-1.5 py-0.5 rounded">✕</button>
-      </div>
-    ` + matches.map(p => {
-      const pPrice = obterPrecoProdutoMarcaMercado(p, 'Padrão', activeMarketId) || p.basePrice;
-      return `
-        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" data-acao="sugestao-escolher" data-id="${esc(p.id)}">
-          <div class="min-w-0 pr-2">
-            <span class="font-bold text-slate-800 block truncate">${esc(p.name)}</span>
-            <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${esc(p.category || 'Geral')}</span>
-          </div>
-          <div class="text-right text-emerald-700 font-black shrink-0">
-            ${pPrice > 0 ? 'R$ ' + formatBRL(pPrice) : 'A cotar'}
-            <span class="text-[10px] text-slate-500 font-normal"> / ${esc(p.unit || 'un')}</span>
-          </div>
-        </div>`;
-    }).join('');
-    dropdownProd.classList.remove('hidden');
-  },
-
   // 6. MODAL DINÂMICO DE PRODUTO
   renderProductEditModal(prod) {
     document.querySelectorAll('#modalProductEditDynamic').forEach(el => el.remove());
@@ -712,11 +680,6 @@ Acoes.registrarClique({
   'produto-editar':     el => openProductEditModal(el.dataset.id),
   'produto-excluir':    el => askDeleteSingleProduct(el.dataset.id),
   'produto-adicionar':  el => quickAddToCartFromCatalog(el.dataset.id),
-  'carrinho-marcar':    el => toggleCartItemCheck(el.dataset.id),
-  'carrinho-qtd':       el => stepCartQty(el.dataset.id, Number(el.dataset.passo)),
-  'carrinho-editar':    el => openEditCartItemModal(el.dataset.id),
-  'carrinho-remover':   el => removeCartItem(el.dataset.id),
-  'sugestao-escolher':  el => selectProductForCart(el.dataset.id),
 });
 Acoes.registrarMudanca({
   'produto-marcar':     el => toggleSelectCatalogProduct(el.dataset.id, el.checked),

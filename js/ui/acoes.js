@@ -15,7 +15,8 @@
  */
 
 const Acoes = (() => {
-  const mapas = { click: Object.create(null), change: Object.create(null) };
+  // click: toques | change: select/checkbox | input: cada tecla digitada | submit: envio de formulário
+  const mapas = { click: Object.create(null), change: Object.create(null), input: Object.create(null), submit: Object.create(null) };
 
   function registrar(tipo, novas) {
     for (const [nome, fn] of Object.entries(novas)) {
@@ -29,15 +30,19 @@ const Acoes = (() => {
     const el = evento.target && evento.target.closest ? evento.target.closest('[data-acao]') : null;
     if (!el) return;
     const acao = mapas[tipo][el.dataset.acao];
-    if (acao) acao(el, evento);
+    if (!acao) return;
+    // formulário com ação registrada nunca recarrega a página
+    if (tipo === 'submit' && evento.preventDefault) evento.preventDefault();
+    acao(el, evento);
   }
 
-  document.addEventListener('click', e => despachar('click', e));
-  document.addEventListener('change', e => despachar('change', e));
+  for (const tipo of Object.keys(mapas)) document.addEventListener(tipo, e => despachar(tipo, e));
 
   return Object.freeze({
     registrarClique: mapa => registrar('click', mapa),
     registrarMudanca: mapa => registrar('change', mapa),
+    registrarDigitacao: mapa => registrar('input', mapa),
+    registrarEnvio: mapa => registrar('submit', mapa),
     // para testes e depuração
     existe: (tipo, nome) => Boolean(mapas[tipo] && mapas[tipo][nome]),
     despachar,

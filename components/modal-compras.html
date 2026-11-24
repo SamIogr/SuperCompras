@@ -10,10 +10,10 @@
         <h3 class="text-base font-black text-slate-800">Editar Item do Carrinho</h3>
         <span id="editCartItemHeaderPrice" class="text-xs font-bold text-emerald-600"></span>
       </div>
-      <button type="button" onclick="closeEditCartItemModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
+      <button type="button" data-acao="carrinho-edicao-fechar" class="text-slate-400 hover:text-slate-600 text-lg font-bold p-1">✕</button>
     </div>
 
-    <form id="formSaveCartItemEdit" onsubmit="event.preventDefault(); salvarEdicaoItemCarrinho();" class="mt-4 space-y-4">
+    <form id="formSaveCartItemEdit" data-acao="carrinho-edicao-salvar" class="mt-4 space-y-4">
       
       <!-- Nome do Produto Editável -->
       <div>
@@ -40,36 +40,44 @@
         <div id="boxEditMarcaInline" class="hidden flex items-center space-x-1.5 mt-2">
           <input type="text" id="inputEditNovaMarca" placeholder="Nome da marca..."
             class="flex-1 text-xs font-bold bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <button type="button" onclick="confirmarNovaMarcaModalEdicao()"
+          <button type="button" data-acao="carrinho-edicao-marca-confirmar"
             class="px-2.5 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold active:scale-95 shadow-xs">✓</button>
-          <button type="button" onclick="cancelarNovaMarcaModalEdicao()"
+          <button type="button" data-acao="carrinho-edicao-marca-cancelar"
             class="px-2.5 py-1.5 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold active:scale-95 shadow-xs">✕</button>
         </div>
       </div>
       
-      <!-- Preço e Quantidade Diretos -->
-      <div class="grid grid-cols-2 gap-3 mt-3">
+      <!-- Preço, Quantidade e Unidade -->
+      <div class="grid grid-cols-3 gap-2 mt-3">
         <div>
-          <label class="block text-xs font-black text-slate-700 mb-1">Preço Unit. (R$) *</label>
-          <input type="text" id="editCartItemPrice" inputmode="decimal" oninput="atualizarSubtotalModalEdicao()"
+          <label for="editCartItemPrice" class="block text-xs font-black text-slate-700 mb-1">Preço (R$) *</label>
+          <input type="text" id="editCartItemPrice" inputmode="decimal" data-acao="carrinho-edicao-recalcular"
             class="w-full text-xs font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
         </div>
         <div>
-          <label class="block text-xs font-black text-slate-700 mb-1">Qtd. / Peso *</label>
-          <input type="number" id="editCartItemQty" step="any" min="0.001" oninput="atualizarSubtotalModalEdicao()"
+          <label for="editCartItemQty" class="block text-xs font-black text-slate-700 mb-1">Qtd. / Peso *</label>
+          <input type="number" id="editCartItemQty" step="any" min="0.001" data-acao="carrinho-edicao-recalcular"
             class="w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs">
+        </div>
+        <div>
+          <label for="editCartItemUnit" class="block text-xs font-black text-slate-700 mb-1">Unidade</label>
+          <select id="editCartItemUnit" data-acao="carrinho-edicao-unidade"
+            class="w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-xl px-2 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs cursor-pointer"></select>
         </div>
       </div>
 
-      <!-- Atalhos de Quantidade -->
-      <div class="flex items-center space-x-1 overflow-x-auto pb-1 text-xs font-bold">
+      <!-- Atalhos de Quantidade (mudam conforme a unidade: peso ou contagem) -->
+      <div id="editCartItemAtalhos" class="flex items-center space-x-1 overflow-x-auto pb-1 text-xs font-bold">
         <span class="text-[10px] text-slate-400 font-extrabold mr-1">Atalhos:</span>
-        <button type="button" onclick="setEditQty(1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">1</button>
-        <button type="button" onclick="setEditQty(2)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">2</button>
-        <button type="button" onclick="setEditQty(3)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">3</button>
-        <button type="button" onclick="setEditQty(0.25)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">250g</button>
-        <button type="button" onclick="setEditQty(0.5)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">500g</button>
-        <button type="button" onclick="setEditQty(1)" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">1 kg</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="1" data-atalho="contagem" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">1</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="2" data-atalho="contagem" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">2</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="3" data-atalho="contagem" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">3</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="6" data-atalho="contagem" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">6</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="12" data-atalho="contagem" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700">12</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="0.25" data-atalho="peso" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">250g</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="0.5" data-atalho="peso" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">500g</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="1" data-atalho="peso" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">1 kg</button>
+        <button type="button" data-acao="carrinho-edicao-qtd" data-qtd="1.5" data-atalho="peso" class="px-2 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">1,5 kg</button>
       </div>
 
       <!-- Condição Comercial -->
@@ -78,11 +86,11 @@
       
         <!-- Seletor de Tipo (Botões / Tabs) com chamadas diretas -->
         <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-lg text-xs font-semibold" id="editCartItemConditionTabs">
-          <button type="button" id="btnEditPromoNone" onclick="setEditPromoType('none')"
+          <button type="button" id="btnEditPromoNone" data-acao="carrinho-edicao-promo" data-modo="none"
             class="py-1.5 rounded-md transition-all font-bold">Nenhum</button>
-          <button type="button" id="btnEditPromoDiscount" onclick="setEditPromoType('discount')"
+          <button type="button" id="btnEditPromoDiscount" data-acao="carrinho-edicao-promo" data-modo="discount"
             class="py-1.5 rounded-md transition-all font-bold">Desconto</button>
-          <button type="button" id="btnEditPromoWholesale" onclick="setEditPromoType('wholesale')"
+          <button type="button" id="btnEditPromoWholesale" data-acao="carrinho-edicao-promo" data-modo="wholesale"
             class="py-1.5 rounded-md transition-all font-bold">Atacado</button>
         </div>
       
@@ -91,7 +99,7 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label for="editPromoDiscountMode" class="text-[10px] font-bold text-slate-500 block">Tipo</label>
-              <select id="editPromoDiscountMode" onchange="atualizarSubtotalModalEdicao()"
+              <select id="editPromoDiscountMode" data-acao="carrinho-edicao-recalcular"
                 class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs bg-white font-bold">
                 <option value="percent">Porcentagem (%)</option>
                 <option value="fixed">Valor Fixo (R$)</option>
@@ -99,7 +107,7 @@
             </div>
             <div>
               <label for="editPromoDiscountValue" class="text-[10px] font-bold text-slate-500 block">Desconto</label>
-              <input type="number" id="editPromoDiscountValue" step="any" min="0" placeholder="0" oninput="atualizarSubtotalModalEdicao()"
+              <input type="number" id="editPromoDiscountValue" step="any" min="0" placeholder="0" data-acao="carrinho-edicao-recalcular"
                 class="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-bold bg-white" />
             </div>
           </div>
@@ -110,12 +118,12 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label for="editPromoWholesaleMinQty" class="text-[10px] font-bold text-slate-500 block">A partir de (Qtd/Kg):</label>
-              <input type="number" id="editPromoWholesaleMinQty" step="any" min="0" placeholder="3" oninput="atualizarSubtotalModalEdicao()"
+              <input type="number" id="editPromoWholesaleMinQty" step="any" min="0" placeholder="3" data-acao="carrinho-edicao-recalcular"
                 class="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-bold bg-white" />
             </div>
             <div>
               <label for="editPromoWholesalePrice" class="text-[10px] font-bold text-slate-500 block">Preço Atacado (R$):</label>
-              <input type="text" id="editPromoWholesalePrice" inputmode="decimal" placeholder="0,00" oninput="atualizarSubtotalModalEdicao()"
+              <input type="text" id="editPromoWholesalePrice" inputmode="decimal" placeholder="0,00" data-acao="carrinho-edicao-recalcular"
                 class="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm font-bold bg-white" />
             </div>
           </div>

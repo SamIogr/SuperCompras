@@ -326,7 +326,7 @@
               <!-- BOTÃO INDICADOR DISCRETO (MELHOR PREÇO / COTAÇÃO) -->
               <button type="button" 
                       id="btnComparativoMercadosRapido" 
-                      onclick="abrirGuiaComparativoMercados()" 
+                      data-acao="carrinho-guia-abrir" 
                       class="hidden w-8 h-8 rounded-xl border transition-all active:scale-95 flex items-center justify-center shrink-0 cursor-pointer shadow-2xs"
                       title="Comparativo de preços entre supermercados">
               </button>
@@ -344,7 +344,7 @@
 
               <!-- ROTA MAPS -->
               <button type="button" 
-                      onclick="abrirSupermercadoNoMaps(activeMarketId, true)" 
+                      data-acao="carrinho-rota-mercado-ativo" 
                       title="Traçar rota no Maps" 
                       class="w-8 h-8 bg-slate-50 hover:bg-emerald-50 dark:bg-slate-700/60 dark:hover:bg-emerald-950/40 text-slate-700 hover:text-emerald-800 dark:text-slate-200 dark:hover:text-emerald-300 rounded-xl text-xs font-bold transition-all flex items-center justify-center border border-slate-200 dark:border-slate-600 active:scale-95 cursor-pointer shadow-2xs">
                 <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,7 +369,7 @@
 
             <!-- Adicionar: exclusivo Web (hidden md:flex) -->
             <button type="button" 
-                    onclick="abrirSheetAdicionarItem()" 
+                    data-acao="carrinho-form-abrir" 
                     class="hidden md:flex px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-colors items-center space-x-1.5 shrink-0 cursor-pointer">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
               <span>Adicionar</span>
@@ -379,13 +379,13 @@
           <!-- LINHA 3: FILTROS DE ESTADO DO CARRINHO -->
           <div class="flex items-center justify-between gap-1.5">
             <div class="flex items-center bg-slate-200/80 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 w-full sm:w-auto shadow-2xs">
-              <button type="button" onclick="setCartFilterMode('all')" id="tabFilterAll" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-2xs transition-colors cursor-pointer">
+              <button type="button" data-acao="carrinho-filtro" data-filtro="all" id="tabFilterAll" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-2xs transition-colors cursor-pointer">
                 Todos (<span id="cartBadgeAll">0</span>)
               </button>
-              <button type="button" onclick="setCartFilterMode('pending')" id="tabFilterPending" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+              <button type="button" data-acao="carrinho-filtro" data-filtro="pending" id="tabFilterPending" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
                 No Corredor (<span id="cartBadgePending">0</span>)
               </button>
-              <button type="button" onclick="setCartFilterMode('checked')" id="tabFilterChecked" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
+              <button type="button" data-acao="carrinho-filtro" data-filtro="checked" id="tabFilterChecked" class="flex-1 sm:flex-initial px-3 py-1 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">
                 No Carrinho (<span id="cartBadgeChecked">0</span>)
               </button>
             </div>
@@ -408,7 +408,7 @@
         </div>
 
         <!-- MODAL DE ADIÇÃO (CAMPO ÚNICO DE BUSCA E MARCA VISÍVEL) -->
-        <div id="cartFormBackdrop" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 transition-opacity" onclick="fecharSheetAdicionarItem()"></div>
+        <div id="cartFormBackdrop" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 transition-opacity" data-acao="carrinho-form-fechar"></div>
 
         <section id="cartFormContainer" class="hidden fixed inset-x-0 bottom-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-50 bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 p-4 sm:p-5 w-full sm:max-w-md mx-auto max-h-[90vh] overflow-y-auto">
           
@@ -425,7 +425,7 @@
                 <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
                 <span>Comparar</span>
               </button>
-              <button type="button" onclick="fecharSheetAdicionarItem()" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
+              <button type="button" data-acao="carrinho-form-fechar" class="p-1 text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">✕</button>
             </div>
           </div>
 
@@ -460,7 +460,7 @@
                 <div class="flex-1 flex items-center justify-end space-x-1.5">
                   <div id="boxSelectMarca" class="flex items-center space-x-1 flex-1 max-w-[200px]">
                     <select id="cartSelectProductBrand" 
-                            onchange="aoMudarSelectMarcaInline(this.value)" 
+                            data-acao="carrinho-form-marca" 
                             class="w-full text-xs font-bold text-emerald-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-emerald-500 outline-none cursor-pointer">
                       <option value="Padrão">Padrão</option>
                       <option value="__NOVA__">+ Nova marca...</option>
@@ -469,10 +469,10 @@
 
                   <div id="boxInputNovaMarcaInline" class="hidden flex items-center space-x-1">
                     <input type="text" id="inputNovaMarcaInline" placeholder="Nova marca..." class="w-28 px-2 py-1 text-xs font-bold bg-white border border-emerald-400 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                    <button type="button" onclick="confirmarNovaMarcaInline()" class="p-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg transition-all shadow-2xs" title="Confirmar">
+                    <button type="button" data-acao="carrinho-form-marca-confirmar" class="p-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-lg transition-all shadow-2xs" title="Confirmar">
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                     </button>
-                    <button type="button" onclick="cancelarNovaMarcaInline()" class="p-1 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-all" title="Cancelar">
+                    <button type="button" data-acao="carrinho-form-marca-cancelar" class="p-1 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg transition-all" title="Cancelar">
                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                   </div>
@@ -486,7 +486,7 @@
             <div class="grid grid-cols-12 gap-2">
               <div class="col-span-4">
                 <label class="block text-[11px] font-bold text-slate-600 mb-1" for="cartInputUnit">Unidade</label>
-                <select id="cartInputUnit" onchange="atualizarAtalhosQuantidade()" class="w-full py-2 px-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none cursor-pointer">
+                <select id="cartInputUnit" data-acao="carrinho-form-unidade" class="w-full py-2 px-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-emerald-500 focus:bg-white outline-none cursor-pointer">
                   <option value="kg">kg (Quilo)</option>
                   <option value="un">un (Unidade)</option>
                   <option value="pct">pct (Pacote)</option>
@@ -528,23 +528,23 @@
               </div>
 
               <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs font-bold">
-                <button type="button" id="btnCartPromoNone" onclick="setCartPromoMode('none')" class="py-1 rounded-lg text-center bg-white text-emerald-800 shadow-2xs font-bold text-[11px] cursor-pointer">Nenhum</button>
-                <button type="button" id="btnCartPromoDiscount" onclick="setCartPromoMode('discount')" class="py-1 rounded-lg text-center text-slate-600 hover:text-slate-900 text-[11px] cursor-pointer">Desconto</button>
-                <button type="button" id="btnCartPromoWholesale" onclick="setCartPromoMode('wholesale')" class="py-1 rounded-lg text-center text-slate-600 hover:text-slate-900 text-[11px] cursor-pointer">Atacado</button>
+                <button type="button" id="btnCartPromoNone" data-acao="carrinho-form-promo" data-modo="none" class="py-1 rounded-lg text-center bg-white text-emerald-800 shadow-2xs font-bold text-[11px] cursor-pointer">Nenhum</button>
+                <button type="button" id="btnCartPromoDiscount" data-acao="carrinho-form-promo" data-modo="discount" class="py-1 rounded-lg text-center text-slate-600 hover:text-slate-900 text-[11px] cursor-pointer">Desconto</button>
+                <button type="button" id="btnCartPromoWholesale" data-acao="carrinho-form-promo" data-modo="wholesale" class="py-1 rounded-lg text-center text-slate-600 hover:text-slate-900 text-[11px] cursor-pointer">Atacado</button>
               </div>
 
               <div id="panelCartPromoDiscount" class="hidden pt-2 border-t border-slate-200 space-y-2">
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Tipo</label>
-                    <select id="cartDiscountMode" onchange="updateCartItemPreview()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+                    <select id="cartDiscountMode" data-acao="carrinho-form-recalcular" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500 cursor-pointer">
                       <option value="percent">% Porcentagem</option>
                       <option value="fixed">R$ Fixo / un</option>
                     </select>
                   </div>
                   <div>
                     <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Valor</label>
-                    <input type="text" id="cartDiscountVal" oninput="updateCartItemPreview()" placeholder="Ex: 10" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
+                    <input type="text" id="cartDiscountVal" data-acao="carrinho-form-recalcular" placeholder="Ex: 10" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
                   </div>
                 </div>
               </div>
@@ -553,11 +553,11 @@
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">A partir de</label>
-                    <input type="number" id="cartWholesaleMin" step="any" min="1" value="3" oninput="updateCartItemPreview()" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
+                    <input type="number" id="cartWholesaleMin" step="any" min="1" value="3" data-acao="carrinho-form-recalcular" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
                   </div>
                   <div>
                     <label class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Preço Atacado</label>
-                    <input type="text" id="cartWholesalePrice" oninput="updateCartItemPreview()" placeholder="R$ 0,00" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
+                    <input type="text" id="cartWholesalePrice" data-acao="carrinho-form-recalcular" placeholder="R$ 0,00" class="w-full text-xs font-bold bg-white border border-slate-200 rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-emerald-500">
                   </div>
                 </div>
               </div>
@@ -598,7 +598,7 @@
     <!-- FAB ERGONÔMICO EXCLUSIVO PARA O CELULAR (ABRE A GAVETA DE ADIÇÃO) -->
     <button type="button" 
             id="fabOpenAddItem" 
-            onclick="abrirSheetAdicionarItem()" 
+            data-acao="carrinho-form-abrir" 
             class="md:hidden fixed bottom-36 right-4 z-40 w-14 h-14 bg-emerald-600 hover:bg-emerald-700 active:scale-90 text-white rounded-full shadow-[0_8px_24px_rgba(5,150,105,0.45)] flex items-center justify-center transition-all duration-200 focus:outline-none ring-4 ring-emerald-500/20 cursor-pointer" 
             title="Adicionar Produto ao Carrinho">
       <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -622,7 +622,7 @@
           </div>
         </div>
         <div class="flex items-center space-x-1.5 shrink-0">
-          <button type="button" onclick="openExportOptionsModal()" title="Exportar ou Partilhar Lista"
+          <button type="button" data-acao="carrinho-exportar" title="Exportar ou Partilhar Lista"
             class="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl transition-all font-semibold flex items-center space-x-1.5 text-xs cursor-pointer">
             <svg class="w-4 h-4 text-slate-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -632,7 +632,7 @@
             <span class="hidden sm:inline">Exportar</span>
           </button>
           
-          <button type="button" onclick="askClearCart()" title="Limpar Itens"
+          <button type="button" data-acao="carrinho-limpar" title="Limpar Itens"
             class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800/80 dark:hover:bg-slate-700 dark:text-rose-400 rounded-xl transition-all flex items-center justify-center cursor-pointer shrink-0">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -640,7 +640,7 @@
               </path>
             </svg>
           </button>
-          <button type="button" onclick="askFinishPurchase()" class="touch-target px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center space-x-1.5">
+          <button type="button" data-acao="carrinho-finalizar" class="touch-target px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center space-x-1.5">
             <span>Finalizar</span>
           </button>
         </div>
@@ -688,14 +688,14 @@
     <!-- GUIA FLUTUANTE: COMPARATIVO GERAL DE SUPERMERCADOS DA LISTA -->
     <div id="modalComparativoMercadosLista" 
          class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs"
-         onclick="if(event.target === this) fecharGuiaComparativoMercados();">
+         data-acao="carrinho-guia-fundo">
       <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700 flex flex-col space-y-3.5 max-h-[85vh] overflow-y-auto">
         <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2.5">
           <div>
             <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm">Cotação Total por Supermercado</h3>
             <p class="text-[10px] text-slate-400">Valores computados para os itens do seu carrinho</p>
           </div>
-          <button type="button" onclick="fecharGuiaComparativoMercados()" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg text-lg font-bold cursor-pointer">✕</button>
+          <button type="button" data-acao="carrinho-guia-fechar" class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg text-lg font-bold cursor-pointer">✕</button>
         </div>
 
         <!-- Lista dinâmica injetada via JS -->
@@ -707,32 +707,39 @@
     <div id="toastStack" style="top: 62px;" class="fixed left-3 right-3 sm:left-auto sm:right-4 z-50 flex flex-col space-y-2 pointer-events-none sm:max-w-md"></div>
 
     <!-- SCRIPTS DE LÓGICA (CARREGAMENTO ESTÁTICO IMEDIATO) -->
-    <script src="js/eventos.js?v=5.4.0"></script>
-    <script src="js/ui/acoes.js?v=5.4.0"></script>
-    <script src="js/armazenamento.js?v=5.4.0"></script>
-    <script src="js/state.js?v=5.4.0"></script>
-    <script src="js/sync-coordenador.js?v=5.4.0"></script>
-    <script src="js/origem.js?v=5.4.0"></script>
-    <script src="js/templates.js?v=5.4.0"></script>
-    <script src="js/ui.js?v=5.4.0"></script>
-    <script src="js/api.js?v=5.4.0"></script>
-    <script src="js/io.js?v=5.4.0"></script>
+    <script src="js/eventos.js?v=5.6.0"></script>
+    <script src="js/ui/acoes.js?v=5.6.0"></script>
+    <script src="js/armazenamento.js?v=5.6.0"></script>
+    <script src="js/state.js?v=5.6.0"></script>
+    <script src="js/sync-coordenador.js?v=5.6.0"></script>
+    <script src="js/origem.js?v=5.6.0"></script>
+    <script src="js/templates.js?v=5.6.0"></script>
+    <script src="js/ui.js?v=5.6.0"></script>
+    <script src="js/api.js?v=5.6.0"></script>
+    <script src="js/io.js?v=5.6.0"></script>
     <!-- tela do histórico -->
-    <script src="js/telas/historico/dados.js?v=5.4.0"></script>
-    <script src="js/telas/historico/lista.js?v=5.4.0"></script>
-    <script src="js/telas/historico/exclusao.js?v=5.4.0"></script>
-    <script src="js/telas/historico/detalhes.js?v=5.4.0"></script>
-    <script src="js/telas/historico/comparador.js?v=5.4.0"></script>
-    <script src="js/telas/historico/acoes.js?v=5.4.0"></script>
-    <script src="js/drive-sync.js?v=5.4.0"></script>
-    <script src="js/cart.js?v=5.4.0"></script>
-    <script src="js/products.js?v=5.4.0"></script>
-    <script src="js/markets.js?v=5.4.0"></script>
-    <script src="js/calculadora.js?v=5.4.0"></script>
-    <script src="js/ui-loader.js?v=5.4.0"></script>
+    <script src="js/telas/historico/dados.js?v=5.6.0"></script>
+    <script src="js/telas/historico/lista.js?v=5.6.0"></script>
+    <script src="js/telas/historico/exclusao.js?v=5.6.0"></script>
+    <script src="js/telas/historico/detalhes.js?v=5.6.0"></script>
+    <script src="js/telas/historico/comparador.js?v=5.6.0"></script>
+    <script src="js/telas/historico/acoes.js?v=5.6.0"></script>
+    <script src="js/drive-sync.js?v=5.6.0"></script>
+    <!-- tela do carrinho -->
+    <script src="js/telas/carrinho/calculo.js?v=5.6.0"></script>
+    <script src="js/telas/carrinho/lista.js?v=5.6.0"></script>
+    <script src="js/telas/carrinho/formulario.js?v=5.6.0"></script>
+    <script src="js/telas/carrinho/edicao.js?v=5.6.0"></script>
+    <script src="js/telas/carrinho/finalizacao.js?v=5.6.0"></script>
+    <script src="js/telas/carrinho/comparativo.js?v=5.6.0"></script>
+    <script src="js/telas/carrinho/acoes.js?v=5.6.0"></script>
+    <script src="js/products.js?v=5.6.0"></script>
+    <script src="js/markets.js?v=5.6.0"></script>
+    <script src="js/calculadora.js?v=5.6.0"></script>
+    <script src="js/ui-loader.js?v=5.6.0"></script>
     <script src="js/vendor/qrcode.js"></script>
     <script src="js/vendor/jsQR.js"></script>
-    <script src="js/qrcode-sync.js?v=5.4.0"></script>
+    <script src="js/qrcode-sync.js?v=5.6.0"></script>
 
     <!-- INICIALIZAÇÃO DA APLICAÇÃO -->
     <script>

@@ -120,6 +120,26 @@ function novoId(prefixo) {
   return (prefixo || '') + aleatorio;
 }
 
+// ===== UNIDADES DOS ITENS DA LISTA DE COMPRAS =====
+// Mesma lista no formulário de adicionar (index.html) e no modal de edição do item.
+const UNIDADES = Object.freeze([
+  ['kg', 'kg (Quilo)'], ['un', 'un (Unidade)'], ['pct', 'pct (Pacote)'], ['cx', 'cx (Caixa)'],
+  ['pt', 'pt (Pote)'], ['lt', 'lt (Lata)'], ['gf', 'gf (Garrafa)'], ['dz', 'dz (Dúzia)'],
+]);
+
+function ehUnidadeDePeso(unidade) {
+  const u = String(unidade || '').trim().toLowerCase();
+  return u === 'kg' || u === 'g' || u === 'quilo';
+}
+
+/** <option>s de unidade; se o item usa uma unidade fora da lista (ex.: 'ml' do catálogo), ela entra também. */
+function opcoesUnidadeHtml(selecionada) {
+  const atual = String(selecionada || 'un').trim();
+  const lista = UNIDADES.some(([v]) => v === atual) ? UNIDADES : [[atual, atual], ...UNIDADES];
+  return lista.map(([v, rotulo]) =>
+    `<option value="${esc(v)}"${v === atual ? ' selected' : ''}>${esc(rotulo)}</option>`).join('');
+}
+
 function getSecurityToken() {
   return Armazenamento.lerTexto(CHAVES.TOKEN_PLANILHA, '') || '';
 }
