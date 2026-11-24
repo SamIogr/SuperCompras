@@ -61,17 +61,7 @@ function atualizarPrecoUnificado(prodId, marcaNome, mercadoId, preco) {
   renderCatalogUI();
 }
 window.atualizarPrecoUnificado = atualizarPrecoUnificado;
-// CLASSIFICAÇÃO DE ORIGEM DO PRODUTO
-function obterOrigemItem(p) {
-  const isPlanilha = Boolean(p.inSheet || String(p.id).startsWith("PROD-"));
-  const isDrive = Boolean(p.inDrive);
-
-  if (isPlanilha && isDrive) return "planilha-drive";
-  if (isPlanilha) return "planilha";
-  if (isDrive) return "drive";
-  return "local";
-}
-window.obterOrigemItem = obterOrigemItem;
+// obterOrigemItem / obterOrigem: ver js/origem.js
 
 function obterListaProdutosFiltrada() {
   const input = document.getElementById("input-busca-produtos");
@@ -112,107 +102,13 @@ function obterListaProdutosFiltrada() {
 }
 window.obterListaProdutosFiltrada = obterListaProdutosFiltrada;
 
-// RENDERIZAÇÃO DINÂMICA DOS BOTÕES DE ORIGEM (OCULTA FILTROS ZERADOS)
-function renderizarBotoesFiltroOrigem() {
-  const container = document.getElementById("container-filtro-origem-dinamico");
-  if (!container) return;
-
-  const lista = Array.isArray(products) ? products : [];
-  const contagens = {
-    todos: lista.length,
-    "planilha-drive": 0,
-    planilha: 0,
-    drive: 0,
-    local: 0
-  };
-
-  lista.forEach((p) => {
-    const orig = obterOrigemItem(p);
-    if (contagens[orig] !== undefined) contagens[orig]++;
-  });
-
-  if (catalogOrigemFiltro !== "todos" && !contagens[catalogOrigemFiltro]) {
-    catalogOrigemFiltro = "todos";
-  }
-
-  const opcoes = [
-    { id: "todos", label: "Todos", count: contagens.todos, visible: true },
-    { id: "planilha-drive", label: "Planilha + Drive", count: contagens["planilha-drive"], visible: contagens["planilha-drive"] > 0 },
-    { id: "planilha", label: "Só Planilha", count: contagens.planilha, visible: contagens.planilha > 0 },
-    { id: "drive", label: "Só Drive", count: contagens.drive, visible: contagens.drive > 0 },
-    { id: "local", label: "Local", count: contagens.local, visible: contagens.local > 0 }
-  ];
-
-  container.innerHTML = opcoes
-    .filter((op) => op.visible)
-    .map((op) => {
-      const ativo = catalogOrigemFiltro === op.id;
-      const classes = ativo
-        ? "px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-2xs font-bold text-xs transition-all cursor-pointer"
-        : "px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer";
-
-      return `
-        <button type="button" onclick="filtrarOrigemProdutos('${op.id}')" class="${classes}">
-          ${op.label} <span class="text-[10px] opacity-75">(${op.count})</span>
-        </button>
-      `;
-    }).join("");
-}
-window.renderizarBotoesFiltroOrigem = renderizarBotoesFiltroOrigem;
-
-window.filtrarOrigemProdutos = function(origem) {
-  catalogOrigemFiltro = origem;
-  renderizarBotoesFiltroOrigem();
-  renderCatalogUI();
-};
-
-
-// RENDERIZAÇÃO DINÂMICA DOS BOTÕES DE FILTRO DE ORIGEM (OCULTA ZERADOS)
+// BOTÕES DO FILTRO DE ORIGEM DO CATÁLOGO (só aparecem origens com produtos; ver js/origem.js)
 function renderizarBotoesFiltroOrigem() {
   const container = document.getElementById('container-filtro-origem-dinamico');
   if (!container) return;
-
-  const lista = Array.isArray(products) ? products : [];
-  const contagens = {
-    todos: lista.length,
-    'planilha-drive': 0,
-    planilha: 0,
-    drive: 0,
-    local: 0
-  };
-
-  lista.forEach(p => {
-    const orig = obterOrigemItem(p);
-    if (contagens[orig] !== undefined) contagens[orig]++;
-  });
-
-  // Se o filtro ativo ficou sem produtos (ex: zerou após sincronização), reseta para 'todos'
-  if (catalogOrigemFiltro !== 'todos' && !contagens[catalogOrigemFiltro]) {
-    catalogOrigemFiltro = 'todos';
-  }
-
-  const opcoes = [
-    { id: 'todos', label: 'Todos', count: contagens.todos, visible: true },
-    { id: 'planilha-drive', label: 'Planilha + Drive', count: contagens['planilha-drive'], visible: contagens['planilha-drive'] > 0 },
-    { id: 'planilha', label: 'Só Planilha', count: contagens.planilha, visible: contagens.planilha > 0 },
-    { id: 'drive', label: 'Só Drive', count: contagens.drive, visible: contagens.drive > 0 },
-    { id: 'local', label: 'Local', count: contagens.local, visible: contagens.local > 0 }
-  ];
-
-  container.innerHTML = opcoes
-    .filter(op => op.visible)
-    .map(op => {
-      const ativo = catalogOrigemFiltro === op.id;
-      const classes = ativo
-        ? 'px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-2xs font-bold text-xs transition-all cursor-pointer'
-        : 'px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-medium text-xs cursor-pointer';
-
-      return `
-        <button type="button" onclick="filtrarOrigemProdutos('${op.id}')" class="${classes}">
-          ${op.label} <span class="text-[10px] opacity-75">(${op.count})</span>
-        </button>
-      `;
-    }).join('');
+  const contagens = contarOrigens('produtos', Array.isArray(products) ? products : []);
+  catalogOrigemFiltro = filtroOrigemValido(catalogOrigemFiltro, contagens);
+  container.innerHTML = botoesFiltroOrigemHtml('produtos', contagens, catalogOrigemFiltro);
 }
 window.renderizarBotoesFiltroOrigem = renderizarBotoesFiltroOrigem;
 
@@ -221,6 +117,7 @@ window.filtrarOrigemProdutos = function(origem) {
   renderizarBotoesFiltroOrigem();
   renderCatalogUI();
 };
+
 
 window.filtrarSetorProdutos = function(setor, btn) {
   catalogSetorFiltro = setor;

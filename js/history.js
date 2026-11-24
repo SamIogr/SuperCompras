@@ -7,12 +7,8 @@ let selectedHistoryIds = new Set();
 
 function obterHistoricoLocal() {
   try {
-    const raw = localStorage.getItem('sc_history_v3') || localStorage.getItem('sc_purchase_history');
-    if (!raw || raw === 'undefined' || raw === 'null') {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.map(normalizarCompra) : [];
+    // chaves antigas (sc_purchase_history...) já foram migradas em armazenamento.js
+    return Armazenamento.lerLista(CHAVES.HISTORICO).map(normalizarCompra);
   } catch (e) {
     console.warn('[Historico] Dados corrompidos encontrados, reiniciando lista vazia:', e);
     return [];
@@ -24,18 +20,14 @@ function obterHistoricoLocal() {
 function obterListaHistoricoComparador() {
   const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
     ? purchaseHistory
-    : JSON.parse(localStorage.getItem('supercompras_history') || localStorage.getItem('compras') || '[]');
+    : Armazenamento.lerLista(CHAVES.HISTORICO);
   return lista.map(normalizarCompra);
 }
 
 function salvarHistoricoLocal(lista) {
   window.purchaseHistory = lista;
   if (typeof purchaseHistory !== 'undefined') purchaseHistory = lista;
-  try {
-    localStorage.setItem('sc_history_v3', JSON.stringify(lista));
-  } catch (e) {
-    console.error('[Historico] Erro ao salvar dados:', e);
-  }
+  Armazenamento.gravarJSON(CHAVES.HISTORICO, lista);
 }
 
 function resolverNomeMercado(compra) {

@@ -2,6 +2,38 @@
  * SUPERCOMPRAS PRO - GESTÃO DE REDES DE SUPERMERCADOS (js/markets.js)
  */
 
+// Filtro de origem da aba Mercados: 'todos' | 'planilha-drive' | 'planilha' | 'drive' | 'local'
+let mercadosOrigemFiltro = 'todos';
+
+function filtrarOrigemMercados(origem) {
+  mercadosOrigemFiltro = origem;
+  if (typeof renderMarketsUI === 'function') renderMarketsUI();
+}
+window.filtrarOrigemMercados = filtrarOrigemMercados;
+
+/**
+ * Troca o id de um mercado em TODOS os lugares onde ele aparece. Usado quando um mercado
+ * criado no aparelho (m-custom-...) vai para a planilha e recebe o id oficial (m-nome...).
+ * Sem isso os preços cotados nele ficariam presos no id antigo e sumiriam da tela.
+ */
+function remapearIdMercado(idAntigo, idNovo) {
+  if (!idAntigo || !idNovo || idAntigo === idNovo) return;
+  const trocarChave = (obj) => {
+    if (!obj || typeof obj !== 'object' || !Object.prototype.hasOwnProperty.call(obj, idAntigo)) return;
+    if (!Object.prototype.hasOwnProperty.call(obj, idNovo)) obj[idNovo] = obj[idAntigo];
+    delete obj[idAntigo];
+  };
+  (supermarkets || []).forEach(m => { if (m && m.id === idAntigo) m.id = idNovo; });
+  (products || []).forEach(p => {
+    if (!p) return;
+    trocarChave(p.marketPrices);
+    (Array.isArray(p.brands) ? p.brands : []).forEach(b => b && trocarChave(b.marketPrices));
+  });
+  (purchaseHistory || []).forEach(c => { if (c && c.marketId === idAntigo) c.marketId = idNovo; });
+  if (activeMarketId === idAntigo) activeMarketId = idNovo;
+}
+window.remapearIdMercado = remapearIdMercado;
+
 function selecionarMercado(id) {
   recalcularPrecosCarrinhoPorMercado(id);
   switchActiveTab('compras');

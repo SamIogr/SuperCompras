@@ -121,7 +121,7 @@ function novoId(prefixo) {
 }
 
 function getSecurityToken() {
-  return localStorage.getItem('sc_security_token') || '';
+  return Armazenamento.lerTexto(CHAVES.TOKEN_PLANILHA, '') || '';
 }
 
 function getSelectedMarketName() {
@@ -180,16 +180,12 @@ function normalizarDados() {
 }
 
 function loadApplicationData() {
-  try {
-    const savedM = JSON.parse(localStorage.getItem("sc_supermarkets_v3"));
-    if (Array.isArray(savedM) && savedM.length > 0) {
-      supermarkets = savedM;
-      if (!supermarkets.some((m) => m.id === "m-padrao"))
-        supermarkets.unshift(MERCADO_PADRAO_GENERICO);
-    } else {
-      supermarkets = [MERCADO_PADRAO_GENERICO];
-    }
-  } catch (e) {
+  const savedM = Armazenamento.lerLista(CHAVES.MERCADOS);
+  if (savedM.length > 0) {
+    supermarkets = savedM;
+    if (!supermarkets.some((m) => m && m.id === "m-padrao"))
+      supermarkets.unshift(MERCADO_PADRAO_GENERICO);
+  } else {
     supermarkets = [MERCADO_PADRAO_GENERICO];
   }
   // Dentro de loadApplicationData(), logo após carregar a variável products:
@@ -197,24 +193,15 @@ function loadApplicationData() {
     products = mesclarCatalogosDeProdutos([], products);
   }
 
-  try {
-    const savedP = localStorage.getItem("sc_products_v3");
-    if (savedP) {
-      products = JSON.parse(savedP) || [];
-      const mapaUnico = new Map();
-      products.forEach((item) => {
-        if (item && item.name) {
-          const chave = item.name.trim().toLowerCase();
-          if (!mapaUnico.has(chave)) mapaUnico.set(chave, item);
-        }
-      });
-      products = Array.from(mapaUnico.values());
-    } else {
-      products = [];
+  // remove produtos repetidos pelo nome (o app trata o nome como identidade)
+  const mapaUnico = new Map();
+  Armazenamento.lerLista(CHAVES.PRODUTOS).forEach((item) => {
+    if (item && typeof item.name === 'string' && item.name) {
+      const chave = item.name.trim().toLowerCase();
+      if (!mapaUnico.has(chave)) mapaUnico.set(chave, item);
     }
-  } catch (e) {
-    products = [];
-  }
+  });
+  products = Array.from(mapaUnico.values());
 
   // INSERÇÃO AUTOMÁTICA SE A BASE ESTIVER TOTALMENTE VAZIA
   if (!Array.isArray(products) || products.length === 0) {
@@ -229,18 +216,10 @@ function loadApplicationData() {
     }));
   }
 
-  try {
-    cart = JSON.parse(localStorage.getItem("sc_cart_v3")) || [];
-  } catch (e) {
-    cart = [];
-  }
-  try {
-    purchaseHistory = JSON.parse(localStorage.getItem("sc_history_v3")) || [];
-  } catch (e) {
-    purchaseHistory = [];
-  }
+  cart = Armazenamento.lerLista(CHAVES.CARRINHO);
+  purchaseHistory = Armazenamento.lerLista(CHAVES.HISTORICO);
 
-  const savedActiveMarket = localStorage.getItem("sc_active_market_v3");
+  const savedActiveMarket = Armazenamento.lerTexto(CHAVES.MERCADO_ATIVO);
   if (
     savedActiveMarket &&
     supermarkets.some((m) => m.id === savedActiveMarket)
@@ -255,15 +234,15 @@ function loadApplicationData() {
 }
 
 function saveAllLocalData() {
-  localStorage.setItem('sc_supermarkets_v3', JSON.stringify(supermarkets));
-  localStorage.setItem('sc_products_v3', JSON.stringify(products));
-  localStorage.setItem('sc_active_market_v3', activeMarketId);
-  localStorage.setItem('sc_cart_v3', JSON.stringify(cart));
-  localStorage.setItem('sc_history_v3', JSON.stringify(purchaseHistory));
+  Armazenamento.gravarJSON(CHAVES.MERCADOS, supermarkets);
+  Armazenamento.gravarJSON(CHAVES.PRODUTOS, products);
+  Armazenamento.gravarTexto(CHAVES.MERCADO_ATIVO, activeMarketId);
+  Armazenamento.gravarJSON(CHAVES.CARRINHO, cart);
+  Armazenamento.gravarJSON(CHAVES.HISTORICO, purchaseHistory);
 }
 
 function saveCartData() {
-  localStorage.setItem('sc_cart_v3', JSON.stringify(cart));
+  Armazenamento.gravarJSON(CHAVES.CARRINHO, cart);
   if (typeof renderCartUI === 'function') renderCartUI();
 }
 

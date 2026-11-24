@@ -25,7 +25,7 @@ test('todos os scripts carregam na ordem do index.html sem erro', () => {
 test('funções públicas de sincronização passam pela fila (não são as versões internas)', () => {
   const app = carregarApp(scripts);
   for (const fn of ['sincronizarComPlanilha', 'abrirModalSincronizacaoSeletiva', 'sincronizarCatalogoDireto',
-    'promoverProdutoEmEdicaoParaPlanilha', 'promoverMercadoEmEdicaoParaPlanilha', 'driveSincronizar']) {
+    'promoverProdutoEmEdicaoParaPlanilha', 'driveSincronizar']) {
     assert.match(String(app[fn]), /scRodar\(/, fn);
   }
 });

@@ -295,8 +295,8 @@ window.abrirModalBackup = abrirModalBackup;
 
 // CONTROLE DE MODO ESCURO/CLARO (TEMA)
 function aplicarTemaInicial() {
-  const isDark = localStorage.getItem('sc_theme') === 'dark' || 
-                 (!('sc_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const isDark = Armazenamento.lerTexto(CHAVES.TEMA) === 'dark' || 
+                 (!Armazenamento.existe(CHAVES.TEMA) && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
   if (isDark) {
     document.documentElement.classList.add('dark');
@@ -311,7 +311,7 @@ function aplicarTemaInicial() {
 
 function alternarTemaApp() {
   const isDark = document.documentElement.classList.toggle('dark');
-  localStorage.setItem('sc_theme', isDark ? 'dark' : 'light');
+  Armazenamento.gravarTexto(CHAVES.TEMA, isDark ? 'dark' : 'light');
   
   if (isDark) {
     document.getElementById('themeDarkIcon')?.classList.remove('hidden');
@@ -327,7 +327,7 @@ window.alternarTemaApp = alternarTemaApp;
 
 // Observa mudanças automáticas no sistema operativo
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-  if (!localStorage.getItem('sc_theme')) aplicarTemaInicial();
+  if (!Armazenamento.existe(CHAVES.TEMA)) aplicarTemaInicial();
 });
 
 // Aplica imediatamente ao carregar o ficheiro
@@ -515,18 +515,18 @@ window.aplicarZoomGlobal = function(valor) {
   // Aplica zoom na raiz. Jamais execute loops aplicando zoom direto em modais
   document.documentElement.style.zoom = fator;
 
-  localStorage.setItem('supercompras_app_zoom', String(escala));
+  Armazenamento.gravarTexto(CHAVES.ZOOM, escala);
 };
 
 window.alterarZoomGlobal = function(delta) {
   const slider = document.getElementById('sliderZoomGlobal');
-  const valorAtual = Number(slider?.value || localStorage.getItem('supercompras_app_zoom') || 100);
+  const valorAtual = Number(slider?.value || Armazenamento.lerTexto(CHAVES.ZOOM) || 100);
   window.aplicarZoomGlobal(valorAtual + delta);
 };
 
 // Restauração automática da escala salva
 (function restaurarZoom() {
-  const escalaSalva = Number(localStorage.getItem('supercompras_app_zoom') || 100);
+  const escalaSalva = Number(Armazenamento.lerTexto(CHAVES.ZOOM) || 100);
   if (escalaSalva !== 100) {
     window.aplicarZoomGlobal(escalaSalva);
   }

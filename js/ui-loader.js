@@ -9,7 +9,7 @@
  */
 
 const UI_LOADER_DEV = ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname) || location.protocol === 'file:';
-const UI_LOADER_CHAVE_COPIA = 'sc_ui_componente_';
+const UI_LOADER_CHAVE_COPIA = CHAVES.PREFIXO_COMPONENTE_UI;
 
 function carregarComponentesUI() {
   const componentes = [
@@ -50,9 +50,9 @@ function carregarComponentesUI() {
       try {
         const html = await buscar(comp.url);
         el.innerHTML = html;
-        try { localStorage.setItem(chave, html); } catch (e) { /* armazenamento cheio: segue sem cópia */ }
+        Armazenamento.gravarTexto(chave, html);   // se o armazenamento estiver cheio, segue sem cópia
       } catch (err) {
-        const copia = localStorage.getItem(chave);
+        const copia = Armazenamento.lerTexto(chave);
         if (copia) {
           el.innerHTML = copia;
           console.warn(`[UI Loader] ${comp.url} sem rede; usando a última cópia salva.`);

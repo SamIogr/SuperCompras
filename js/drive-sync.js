@@ -12,10 +12,10 @@ const DRIVE_CLIENT_ID = '1005329591365-p2ibvui3iq1ssqgmrj4hb02pc3bqgabb.apps.goo
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const DRIVE_ARQUIVO = 'supercompras_backup_v2.json';
 const DRIVE_ARQUIVO_ANTIGO = 'supercompras_backup.json';   // só para recuperação (versão 1)
-const DRIVE_META_KEY = 'sc_drive_meta_v2';
-const DRIVE_META_KEY_ANTIGA = 'sc_drive_meta_v1';
-const DRIVE_FLAG_KEY = 'sc_drive_conectado';
-const DRIVE_EMAIL_KEY = 'sc_drive_email';
+const DRIVE_META_KEY = CHAVES.DRIVE_META;
+const DRIVE_META_KEY_ANTIGA = CHAVES.DRIVE_META_ANTIGA;
+const DRIVE_FLAG_KEY = CHAVES.DRIVE_CONECTADO;
+const DRIVE_EMAIL_KEY = CHAVES.DRIVE_EMAIL;
 const DRIVE_TOMBSTONE_DIAS = 90;       // por quanto tempo lembrar o que foi apagado
 const DRIVE_ATRASO_SYNC_MS = 8000;     // espera após uma alteração para sincronizar sozinho
 const DRIVE_ATRASO_CARIMBO_MS = 1000;  // registra o horário das alterações
@@ -171,16 +171,34 @@ function driveHash(obj) {
 // ===== 4. METADADOS LOCAIS (horário de cada alteração e o que foi apagado) =====
 function driveLerMeta() {
   let m = {};
-  try { m = JSON.parse(localStorage.getItem(DRIVE_META_KEY)) || {}; } catch (e) { m = {}; }
+  m = Armazenamento.lerJSON(DRIVE_META_KEY, {}) || {};
   m.ents = m.ents || {};
   m.tomb = m.tomb || {};
   return m;
 }
 
 function driveGravarMeta(m) {
-  try { localStorage.setItem(DRIVE_META_KEY, JSON.stringify(m)); }
-  catch (e) { console.warn('[Drive] Não foi possível gravar os metadados:', e); }
+  Armazenamento.gravarJSON(DRIVE_META_KEY, m);
+  _driveMetaCache = null;
 }
+
+/**
+ * O item já está no backup do Drive? (usado nos selos e filtros de origem)
+ * Verdadeiro só se o Drive está conectado, já houve uma sincronização e a última alteração
+ * do item é anterior a ela, ou seja, já subiu. Item alterado e ainda não enviado conta como local.
+ * tipo: 'produtos' (chave = nome normalizado) | 'mercados' (chave = id)
+ */
+let _driveMetaCache = null;
+function driveEstaNoBackup(tipo, item) {
+  if (!item || !Armazenamento.existe(DRIVE_FLAG_KEY)) return false;
+  if (!_driveMetaCache) _driveMetaCache = driveLerMeta();
+  const meta = _driveMetaCache;
+  if (!meta.ultimaSync) return false;
+  const chave = tipo === 'produtos' ? driveNormalizarNome(item.name) : String(item.id || '');
+  const reg = chave && meta.ents[tipo] && meta.ents[tipo][chave];
+  return Boolean(reg && reg.t <= meta.ultimaSync);
+}
+window.driveEstaNoBackup = driveEstaNoBackup;
 
 /** Compara o estado atual com o último sincronizado: marca o que mudou e o que foi apagado. */
 function driveCarimbar(meta, agora, remoto) {
@@ -306,8 +324,8 @@ function driveStatus(texto, erro) {
 }
 
 function driveMostrarConta() {
-  const conectado = !!localStorage.getItem(DRIVE_FLAG_KEY);
-  const email = localStorage.getItem(DRIVE_EMAIL_KEY);
+  const conectado = Armazenamento.existe(DRIVE_FLAG_KEY);
+  const email = Armazenamento.lerTexto(DRIVE_EMAIL_KEY);
   const elConta = document.getElementById('driveSyncConta');
   if (elConta) elConta.textContent = conectado ? ('Conta: ' + (email || 'Google conectado')) : 'Não conectado';
   const btnDes = document.getElementById('driveBtnDesconectar');
@@ -319,7 +337,7 @@ function driveMostrarConta() {
 function driveAtualizarBotao(sincronizando) {
   const btn = document.getElementById('btnDriveSync');
   if (!btn) return;
-  const conectado = !!localStorage.getItem(DRIVE_FLAG_KEY);
+  const conectado = Armazenamento.existe(DRIVE_FLAG_KEY);
   const icone = document.getElementById('driveSyncIcone');
   const ponto = document.getElementById('driveSyncPonto');
   if (icone) icone.classList.toggle('animate-pulse', !!sincronizando);
@@ -329,7 +347,7 @@ function driveAtualizarBotao(sincronizando) {
     ponto.classList.toggle('bg-emerald-300', !(conectado && _drivePendente));
   }
   btn.disabled = !!sincronizando;
-  const email = localStorage.getItem(DRIVE_EMAIL_KEY) || 'conectado';
+  const email = Armazenamento.lerTexto(DRIVE_EMAIL_KEY) || 'conectado';
   btn.title = !conectado ? 'Conectar ao Google Drive e sincronizar'
     : (_drivePendente ? 'Alterações pendentes: toque para sincronizar (' + email + ')'
                       : 'Sincronizar com o Google Drive (' + email + ')');
@@ -339,7 +357,7 @@ async function driveAtualizarConta(token) {
   try {
     const r = await driveFetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)', {}, token);
     const u = (await r.json()).user || {};
-    if (u.emailAddress) localStorage.setItem(DRIVE_EMAIL_KEY, u.emailAddress);
+    if (u.emailAddress) Armazenamento.gravarTexto(DRIVE_EMAIL_KEY, u.emailAddress);
   } catch (e) { /* o e-mail é só para exibir */ }
   driveMostrarConta();
 }
@@ -401,13 +419,16 @@ async function _driveSincronizarAgora(interativo) {
     meta.ultimaSync = Date.now();
     driveGravarMeta(meta);
     _drivePendente = false;
-    localStorage.setItem(DRIVE_FLAG_KEY, '1');
+    Armazenamento.gravarTexto(DRIVE_FLAG_KEY, '1');
+    // redesenha de novo: agora os itens enviados ganham o selo "Drive"
+    if (typeof renderCatalogUI === 'function') renderCatalogUI();
+    if (typeof renderMarketsUI === 'function') renderMarketsUI();
     await driveAtualizarConta(token);
     driveStatus('Sincronizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     if (interativo && typeof showAppToast === 'function') showAppToast('Backup sincronizado com o Google Drive.', 'success');
   } catch (e) {
     console.warn('[Drive] Falha na sincronização:', e);
-    if (localStorage.getItem(DRIVE_FLAG_KEY)) _drivePendente = true;
+    if (Armazenamento.existe(DRIVE_FLAG_KEY)) _drivePendente = true;
     driveStatus(driveMensagemErro(e), !!interativo);
     if (interativo && typeof showAppToast === 'function') showAppToast(driveMensagemErro(e), 'error');
   } finally {
@@ -426,7 +447,8 @@ function driveDesconectar() {
   _driveToken = null;
   _driveTokenExp = 0;
   _drivePendente = false;
-  [DRIVE_FLAG_KEY, DRIVE_EMAIL_KEY, DRIVE_META_KEY].forEach(k => localStorage.removeItem(k));
+  [DRIVE_FLAG_KEY, DRIVE_EMAIL_KEY, DRIVE_META_KEY].forEach(k => Armazenamento.remover(k));
+  _driveMetaCache = null;
   driveMostrarConta();
   driveStatus('Desconectado. Os dados deste aparelho foram mantidos.');
 }
@@ -460,7 +482,7 @@ function driveCarimbarAlteracoes() {
 }
 
 function driveAgendarSync() {
-  if (_driveAplicando || !localStorage.getItem(DRIVE_FLAG_KEY)) return;
+  if (_driveAplicando || !Armazenamento.existe(DRIVE_FLAG_KEY)) return;
   _drivePendente = true;
   driveAtualizarBotao(_driveSincronizando);
   clearTimeout(_driveTimerCarimbo);
@@ -482,14 +504,14 @@ function driveEncaixarGancho(nome) {
 }
 
 function driveIniciar() {
-  try { localStorage.removeItem(DRIVE_META_KEY_ANTIGA); } catch (e) { /* sem problema */ }
+  Armazenamento.remover(DRIVE_META_KEY_ANTIGA);
   driveEncaixarGancho('saveAllLocalData');
   driveEncaixarGancho('salvarHistoricoLocal');
   driveMostrarConta();      // sem sincronizar sozinho ao abrir: o login do Google só abre com um toque
 }
 window.addEventListener('load', driveIniciar);
 window.addEventListener('online', () => {
-  if (localStorage.getItem(DRIVE_FLAG_KEY) && driveTokenValido()) driveSincronizar(false);
+  if (Armazenamento.existe(DRIVE_FLAG_KEY) && driveTokenValido()) driveSincronizar(false);
 });
 
 window.driveSincronizar = driveSincronizar;

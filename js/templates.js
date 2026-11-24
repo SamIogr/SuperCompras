@@ -10,7 +10,8 @@ window.AppTemplates = {
     add: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>`,
     route: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>`,
     check: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>`,
-    close: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>`
+    close: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>`,
+    upload: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>`
   },
   // 8. MODAL DA CALCULADORA COMPARATIVA
   renderPriceComparatorModal() {
@@ -258,6 +259,11 @@ window.AppTemplates = {
                 <span>Novo Supermercado</span>
               </button>
             </div>
+            <!-- FILTRO DE ORIGEM DOS MERCADOS (igual ao do catálogo) -->
+            <div class="flex items-center justify-between flex-wrap gap-1.5">
+              <div id="container-filtro-origem-mercados" class="flex flex-wrap items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-semibold gap-0.5"></div>
+              <span id="contador-mercados" class="text-[10px] font-semibold text-slate-400">0 mercados</span>
+            </div>
             <div id="area-cards-mercados" class="space-y-2 pt-1"></div>
           </section>
         </div>`;
@@ -268,24 +274,12 @@ window.AppTemplates = {
   },
 
   // 2. CARD DO SUPERMERCADO
-  // 2. CARD DO SUPERMERCADO
   marketCard(market) {
     const isCurrent = market.id === activeMarketId;
-    
-    // Identificação de origem para supermercados
-    const isPlanilha = Boolean(market.inSheet || market.colIndex || (market.id && !String(market.id).startsWith('m-custom-')));
-    const isDrive = Boolean(market.inDrive);
-
-    let tagOrigemHtml = '';
-    if (isPlanilha && isDrive) {
-      tagOrigemHtml = '<span class="bg-purple-100 text-purple-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-purple-200">Planilha + Drive</span>';
-    } else if (isPlanilha) {
-      tagOrigemHtml = '<span class="bg-sky-100 text-sky-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-sky-200">Planilha</span>';
-    } else if (isDrive) {
-      tagOrigemHtml = '<span class="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">Drive</span>';
-    } else {
-      tagOrigemHtml = '<span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-md border border-amber-200">Local</span>';
-    }
+    const origem = obterOrigem('mercados', market);
+    const tagOrigemHtml = seloOrigemHtml(origem, 'text-[9px]');
+    // mercado criado no aparelho pode ser enviado para a planilha (só administrador)
+    const podeEnviarPlanilha = (origem === 'local' || origem === 'drive') && typeof scEhAdmin === 'function' && scEhAdmin();
 
     return `
       <div class="bg-white rounded-2xl p-3.5 border ${isCurrent ? 'border-emerald-500 ring-2 ring-emerald-500/15 bg-emerald-50/10' : 'border-slate-200 hover:border-slate-300'} shadow-2xs transition-all my-2 flex items-center justify-between gap-3">
@@ -302,6 +296,8 @@ window.AppTemplates = {
         <div class="flex items-center space-x-1.5 shrink-0">
           ${market.address ? `
             <button type="button" data-acao="mercado-rota" data-id="${esc(market.id)}" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-xl transition-colors cursor-pointer" title="Traçar rota no Maps">${this.icons.route}</button>` : ''}
+          ${podeEnviarPlanilha ? `
+            <button type="button" data-acao="mercado-planilha" data-admin-only data-id="${esc(market.id)}" class="p-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-xl transition-colors cursor-pointer" title="Enviar este mercado para a planilha">${this.icons.upload}</button>` : ''}
           <button type="button" data-acao="mercado-editar" data-id="${esc(market.id)}" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar rede">${this.icons.edit}</button>
           ${market.id !== 'm-padrao' ? `
             <button type="button" data-acao="mercado-excluir" data-id="${esc(market.id)}" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir rede">${this.icons.delete}</button>` : ''}
@@ -310,21 +306,8 @@ window.AppTemplates = {
   },
 
   // 3. CARD DO PRODUTO (COM CHECKBOX E REALCE VERDE)
-  // 3. CARD DO PRODUTO (COM CHECKBOX E REALCE VERDE)
   productCard(prod, nomeMercadoAtivo) {
-    const isPlanilha = Boolean(prod.inSheet || String(prod.id).startsWith('PROD-'));
-    const isDrive = Boolean(prod.inDrive);
-
-    let tagOrigemHtml = '';
-    if (isPlanilha && isDrive) {
-      tagOrigemHtml = '<span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-purple-200">Planilha + Drive</span>';
-    } else if (isPlanilha) {
-      tagOrigemHtml = '<span class="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-sky-200">Planilha</span>';
-    } else if (isDrive) {
-      tagOrigemHtml = '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">Drive</span>';
-    } else {
-      tagOrigemHtml = '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-amber-200">Local</span>';
-    }
+    const tagOrigemHtml = seloOrigemHtml(obterOrigem('produtos', prod), 'text-[10px]');
     const precoBase = Number(prod.basePrice) || (prod.marketPrices ? Number(prod.marketPrices['m-padrao']) : 0) || 0;
     const isChecked = typeof selectedCatalogProductIds !== 'undefined' && selectedCatalogProductIds.has(String(prod.id));
 
@@ -428,7 +411,20 @@ window.AppTemplates = {
       return;
     }
 
-    container.innerHTML = lista.map(m => this.marketCard(m)).join('');
+    const contagens = contarOrigens('mercados', lista);
+    mercadosOrigemFiltro = filtroOrigemValido(mercadosOrigemFiltro, contagens);
+    const filtro = document.getElementById('container-filtro-origem-mercados');
+    if (filtro) filtro.innerHTML = botoesFiltroOrigemHtml('mercados', contagens, mercadosOrigemFiltro);
+
+    const visiveis = mercadosOrigemFiltro === 'todos'
+      ? lista
+      : lista.filter(m => obterOrigem('mercados', m) === mercadosOrigemFiltro);
+    const contador = document.getElementById('contador-mercados');
+    if (contador) contador.textContent = visiveis.length + (visiveis.length === 1 ? ' mercado' : ' mercados');
+
+    container.innerHTML = visiveis.length
+      ? visiveis.map(m => this.marketCard(m)).join('')
+      : this.emptyState('Nenhum supermercado com esta origem.');
   },
 
   // 4. CARRINHO DE COMPRAS
@@ -643,6 +639,9 @@ window.AppTemplates = {
   // 7. MODAL DINÂMICO DE SUPERMERCADO
   renderMarketEditModal(mercado) {
     document.querySelectorAll('#modalMarketEditDynamic').forEach(el => el.remove());
+    const origem = mercado ? obterOrigem('mercados', mercado) : 'local';
+    const podeEnviarPlanilha = Boolean(mercado) && (origem === 'local' || origem === 'drive')
+      && typeof scEhAdmin === 'function' && scEhAdmin();
 
     const modalHtml = `
       <div id="modalMarketEditDynamic" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs" onclick="if(event.target === this) closeMarketEditModal();">
@@ -670,6 +669,12 @@ window.AppTemplates = {
               <label class="block text-[11px] font-bold text-slate-600 mb-1">Dias de Promoção / Encarte</label>
               <input type="text" id="dinMarketPromoDay" value="${esc(mercado ? (mercado.promoDay || '') : '')}" placeholder="Ex: Terça e Quarta da Carne" class="w-full text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500">
             </div>
+
+            ${podeEnviarPlanilha ? `
+            <div class="bg-sky-50 border border-sky-200 rounded-xl p-2.5 space-y-1.5">
+              <p class="text-[11px] text-sky-800">Este mercado existe só neste aparelho${origem === 'drive' ? ' e no seu Drive' : ''}. Enviar para a planilha cria uma coluna de preços para ele.</p>
+              <button type="button" id="btnPromoverMercado" data-acao="mercado-planilha" data-admin-only data-id="${esc(mercado.id)}" class="w-full px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-lg transition-all cursor-pointer">Enviar este mercado para a planilha</button>
+            </div>` : ''}
 
             <div class="border-t border-slate-100 pt-3 flex items-center justify-end space-x-2 bg-white">
               <button type="button" onclick="closeMarketEditModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer">Cancelar</button>
@@ -702,6 +707,10 @@ const ACOES_CLIQUE = {
   'mercado-rota':       el => abrirSupermercadoNoMaps(el.dataset.id, true),
   'mercado-editar':     el => openMarketEditModal(el.dataset.id),
   'mercado-excluir':    el => excluirMercadoCatalogo(el.dataset.id),
+  'mercado-planilha':   el => enviarMercadoParaPlanilha(el.dataset.id),
+  'filtro-origem':      el => (el.dataset.alvo === 'mercados'
+                                 ? filtrarOrigemMercados(el.dataset.origem)
+                                 : filtrarOrigemProdutos(el.dataset.origem)),
   'produto-editar':     el => openProductEditModal(el.dataset.id),
   'produto-excluir':    el => askDeleteSingleProduct(el.dataset.id),
   'produto-adicionar':  el => quickAddToCartFromCatalog(el.dataset.id),

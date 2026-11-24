@@ -28,7 +28,7 @@ function salvarChaveSeguranca() {
     showAppToast('Informe uma chave válida.', 'error');
     return;
   }
-  localStorage.setItem('sc_security_token', val);
+  Armazenamento.gravarTexto(CHAVES.TOKEN_PLANILHA, val);
   showAppToast('Chave de segurança salva neste aparelho!', 'success');
   if (typeof scAplicarModoAdmin === 'function') scAplicarModoAdmin();
   document.getElementById('modalBackup')?.classList.add('hidden');
@@ -43,10 +43,10 @@ async function _sincronizarComPlanilha() {
       return;
     }
     token = chave.trim();
-    localStorage.setItem('sc_security_token', token);
+    Armazenamento.gravarTexto(CHAVES.TOKEN_PLANILHA, token);
   }
 
-  localStorage.removeItem('sc_ignored_markets');
+  Armazenamento.remover(CHAVES.MERCADOS_IGNORADOS);
 
   const btn = document.getElementById('btnSyncPlanilha');
   if (btn) btn.classList.add('animate-spin');
@@ -107,7 +107,7 @@ async function _sincronizarComPlanilha() {
         showAppToast(`Sincronizado: ${products.length} itens e ${totalRedesReais} redes!`, 'success');
       }
     } else {
-      if (json.message && json.message.includes('não autorizado')) localStorage.removeItem('sc_security_token');
+      if (json.message && json.message.includes('não autorizado')) Armazenamento.remover(CHAVES.TOKEN_PLANILHA);
       throw new Error(json.message || 'Falha na resposta da API');
     }
   } catch (err) {
@@ -119,12 +119,13 @@ async function _sincronizarComPlanilha() {
   }
 }
 
-async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = 'Padrão') {
+// Devolve true se a planilha confirmou. silencioso: não mostra um aviso por preço (envio em lote).
+async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = 'Padrão', silencioso = false) {
   const token = getSecurityToken();
-  if (!token || marketId === 'm-padrao') return;
+  if (!token || marketId === 'm-padrao') return false;
 
   const mercadoAlvo = supermarkets.find(m => m.id === marketId);
-  if (!mercadoAlvo || !mercadoAlvo.colIndex) return;
+  if (!mercadoAlvo || !mercadoAlvo.colIndex) return false;
 
   const payload = {
     token: token,
@@ -147,11 +148,13 @@ async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = '
     });
     const json = await res.json();
     if (json.status === 'success') {
-      showAppToast(`Preço de "${produto.name} (${brandName})" sincronizado na planilha!`, 'success');
+      if (!silencioso) showAppToast(`Preço de "${produto.name} (${brandName})" sincronizado na planilha!`, 'success');
+      return true;
     }
   } catch (err) {
     console.warn("Erro na sincronização em segundo plano:", err);
   }
+  return false;
 }
 
 // SINCRONIZAÇÃO SELETIVA (BLINDADA CONTRA ELEMENTOS NULOS)
@@ -161,7 +164,7 @@ async function _abrirModalSincronizacaoSeletiva() {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
     if (!chave || !chave.trim()) return;
     token = chave.trim();
-    localStorage.setItem('sc_security_token', token);
+    Armazenamento.gravarTexto(CHAVES.TOKEN_PLANILHA, token);
   }
 
   const btn = document.getElementById('btnSyncPlanilha');
@@ -407,7 +410,7 @@ async function _promoverProdutoEmEdicaoParaPlanilha() {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
     if (!chave || !chave.trim()) return;
     token = chave.trim();
-    localStorage.setItem('sc_security_token', token);
+    Armazenamento.gravarTexto(CHAVES.TOKEN_PLANILHA, token);
   }
 
   const idAtual = document.getElementById('editProdId').value;
@@ -446,54 +449,82 @@ async function _promoverProdutoEmEdicaoParaPlanilha() {
 }
 
 // PROMOVER MERCADO LOCAL PARA A PLANILHA
-async function _promoverMercadoEmEdicaoParaPlanilha() {
-  let token = getSecurityToken();
-  if (!token) {
-    const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
-    if (!chave || !chave.trim()) return;
-    token = chave.trim();
-    localStorage.setItem('sc_security_token', token);
+/**
+ * Envia um mercado criado no aparelho para a planilha (cria a coluna de preços dele).
+ * Depois troca o id local pelo oficial em todo o app e envia os preços que já tinham
+ * sido cotados nesse mercado para os produtos que estão na planilha.
+ * (Substitui a antiga promoverMercadoEmEdicaoParaPlanilha, que lia campos do modal que
+ * não existiam mais e não tinha botão na tela.)
+ */
+async function _enviarMercadoParaPlanilha(id) {
+  const token = getSecurityToken();
+  if (!token) return;
+  const m = (supermarkets || []).find(x => x && x.id === id);
+  if (!m || estaNaPlanilha('mercados', m)) return;
+
+  const normalizar = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  const duplicado = supermarkets.find(x => x !== m && estaNaPlanilha('mercados', x) && normalizar(x.name) === normalizar(m.name));
+  if (duplicado) {
+    showAppToast(`Já existe "${duplicado.name}" na planilha. Renomeie este mercado antes de enviar.`, 'warning');
+    return;
   }
 
-  const idAtual = document.getElementById('editMarketId').value;
-  const m = supermarkets.find(x => x.id === idAtual);
-  if (!m) return;
-
-  const nome = (document.getElementById('editMarketName').value || m.name || '').trim();
-  const bairro = (document.getElementById('editMarketBranch').value || m.branch || '').trim();
-  const endereco = (document.getElementById('editMarketAddress').value || m.address || '').trim();
-  const encarte = (document.getElementById('editMarketUrlEncarte').value || m.urlEncarte || '').trim();
-
-  const btn = document.getElementById('btnPromoverMercado');
-  if (btn) { btn.disabled = true; btn.innerText = 'Sincronizando...'; }
+  const botoes = document.querySelectorAll('[data-acao="mercado-planilha"]');
+  botoes.forEach(b => { b.disabled = true; });
+  showAppToast(`Enviando "${m.name}" para a planilha...`, 'info');
 
   try {
-    const res = await apiChamar(token, { action: 'criar_mercado', name: nome, branch: bairro, address: endereco, urlEncarte: encarte });
+    const res = await apiChamar(token, {
+      action: 'criar_mercado', name: m.name, branch: m.branch || '', address: m.address || '', urlEncarte: m.urlEncarte || ''
+    });
     const json = await res.json();
+    if (json.status !== 'success' || !json.novoId) throw new Error(json.message || 'resposta inesperada da planilha');
 
-    if (json.status === 'success') {
-      const idAntigo = m.id;
-      m.id = json.novoId;
-      m.colIndex = json.colIndex;
-      m.name = json.name;
-      m.address = json.address;
-      m.linkMaps = json.linkMaps;
+    const idAntigo = m.id;
+    m.colIndex = json.colIndex;
+    if (json.linkMaps) m.linkMaps = json.linkMaps;
+    remapearIdMercado(idAntigo, json.novoId);
+    saveAllLocalData();
 
-      if (activeMarketId === idAntigo) activeMarketId = json.novoId;
-
-      saveAllLocalData();
-      refreshActiveMarketUI();
-      if (typeof renderMarketsUI === 'function') renderMarketsUI();
-      if (typeof renderCatalogUI === 'function') renderCatalogUI();
-      closeMarketEditModal();
-      showAppToast(`"${json.name}" adicionado à planilha (Coluna ${json.colIndex})!`, 'success');
+    // preços já cotados neste mercado -> planilha (só produtos que estão na planilha)
+    let precosEnviados = 0;
+    for (const p of (products || [])) {
+      if (!p || !estaNaPlanilha('produtos', p)) continue;
+      const precoPadrao = Number(p.marketPrices && p.marketPrices[json.novoId]) || 0;
+      if (precoPadrao > 0 && await enviarProdutoParaPlanilha(p, json.novoId, precoPadrao, 'Padrão', true)) precosEnviados++;
+      for (const b of (Array.isArray(p.brands) ? p.brands : [])) {
+        const precoMarca = Number(b && b.marketPrices && b.marketPrices[json.novoId]) || 0;
+        if (precoMarca > 0 && await enviarProdutoParaPlanilha(p, json.novoId, precoMarca, b.name || b.id, true)) precosEnviados++;
+      }
     }
+
+    if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
+    if (typeof renderMarketsUI === 'function') renderMarketsUI();
+    if (typeof renderCatalogUI === 'function') renderCatalogUI();
+    if (typeof closeMarketEditModal === 'function') closeMarketEditModal();
+    showAppToast(`"${m.name}" está na planilha (coluna ${json.colIndex})${precosEnviados ? ` e ${precosEnviados} preço(s) foram enviados` : ''}.`, 'success');
   } catch (err) {
-    showAppToast('Erro na sincronização: ' + err.message, 'error');
+    showAppToast('Não foi possível enviar para a planilha: ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.innerText = 'Sincronizar este mercado com a planilha'; }
+    botoes.forEach(b => { b.disabled = false; });
   }
 }
+
+/** Botão "Enviar para a planilha" (card ou modal do mercado): confirma e coloca na fila. */
+function enviarMercadoParaPlanilha(id) {
+  if (!scEhAdmin()) { showAppToast('Recurso restrito ao administrador.', 'info'); return; }
+  const m = (supermarkets || []).find(x => x && x.id === id);
+  if (!m) return;
+  openCustomDialog(
+    'Enviar para a planilha?',
+    `"${m.name}" vai ganhar uma coluna de preços na planilha e passará a ser um mercado oficial. Os preços já cotados nele para produtos da planilha também serão enviados.`,
+    'Sim, enviar',
+    'Cancelar',
+    () => scRodar(true, false, () => _enviarMercadoParaPlanilha(id)),
+    () => {}
+  );
+}
+window.enviarMercadoParaPlanilha = enviarMercadoParaPlanilha;
 
 
 /**
@@ -510,7 +541,7 @@ async function _sincronizarCatalogoDireto() {
       return;
     }
     token = chave.trim();
-    localStorage.setItem('sc_security_token', token);
+    Armazenamento.gravarTexto(CHAVES.TOKEN_PLANILHA, token);
   }
 
   const icon = document.getElementById('iconSyncCatalogo');
@@ -625,10 +656,8 @@ window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
 function sincronizarComPlanilha() { return scRodar(true, true, () => _sincronizarComPlanilha()); }
 function abrirModalSincronizacaoSeletiva() { return scRodar(true, false, () => _abrirModalSincronizacaoSeletiva()); }
 function promoverProdutoEmEdicaoParaPlanilha() { return scRodar(true, false, () => _promoverProdutoEmEdicaoParaPlanilha()); }
-function promoverMercadoEmEdicaoParaPlanilha() { return scRodar(true, false, () => _promoverMercadoEmEdicaoParaPlanilha()); }
 function sincronizarCatalogoDireto() { return scRodar(true, false, () => _sincronizarCatalogoDireto()); }
 window.sincronizarComPlanilha = sincronizarComPlanilha;
 window.abrirModalSincronizacaoSeletiva = abrirModalSincronizacaoSeletiva;
 window.promoverProdutoEmEdicaoParaPlanilha = promoverProdutoEmEdicaoParaPlanilha;
-window.promoverMercadoEmEdicaoParaPlanilha = promoverMercadoEmEdicaoParaPlanilha;
 window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
