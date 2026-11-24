@@ -3,10 +3,14 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: ESTRUTURA DA ABA, CARDS E LISTAS DE PRODUTOS E MERCADOS (js/telas/catalogo/layout.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { setSubTabDados });
+import { esc, formatBRL, getSelectedMarketName } from '../../state.js';
+import { scEhAdmin } from '../../sync-coordenador.js';
+import { botoesFiltroOrigemHtml, contarOrigens, filtroOrigemValido, obterOrigem, seloOrigemHtml } from '../../origem.js';
+import { AppTemplates } from '../../ui/templates-base.js';
+import { obterListaProdutosFiltrada, renderizarBotoesFiltroOrigem } from './filtros.js';
+import { atualizarEstadoBarraLoteCatalogo } from './produtos.js';
 
-Object.assign(window.AppTemplates, {
+Object.assign(AppTemplates, {
   // 1. ESTRUTURA BASE DA ABA DADOS COM BARRA STICKY RETRÁTIL
   ensureTabDadosLayout() {
     const tabContainer = document.getElementById('tab-dados');
@@ -281,8 +285,8 @@ Object.assign(window.AppTemplates, {
   },
 });
 
-window.renderCatalogUI = () => window.AppTemplates.renderCatalog();
-window.renderMarketsUI = () => window.AppTemplates.renderMarkets();
+export function renderCatalogUI() { return AppTemplates.renderCatalog(); }
+export function renderMarketsUI() { return AppTemplates.renderMarkets(); }
 
 export function setSubTabDados(subTab = 'produtos') {
   const targetTab = subTab || 'produtos';

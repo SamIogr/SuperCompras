@@ -3,8 +3,14 @@
  * SUPERCOMPRAS PRO - CARRINHO: LIMPAR, FINALIZAR A COMPRA E ENVIAR PELO WHATSAPP (js/telas/carrinho/finalizacao.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { askClearCart, askFinishPurchase, executeFinishPurchase, compartilharCarrinhoWhatsApp });
+import { formatBRL, getSelectedMarketName, novoId, saveAllLocalData, saveCartData } from '../../state.js';
+import { renderCartUI } from '../../templates.js';
+import { openCustomDialog, playAppBeep, showAppToast } from '../../ui.js';
+import { enviarProdutoParaPlanilha } from '../../api.js';
+import { renderHistoricoUI } from '../historico/lista.js';
+import { computeItemFinancials } from './calculo.js';
+import { renderCatalogUI, renderMarketsUI } from '../catalogo/layout.js';
+import { serializarCarrinhoParaQR } from '../../qrcode-sync.js';
 
 export function askClearCart() {
   if ((cart || []).length === 0) return;

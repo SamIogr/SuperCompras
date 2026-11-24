@@ -3,12 +3,15 @@
  * SUPERCOMPRAS PRO - INTERFACE, NAVEGAÇÃO, TOASTS E MODAIS (js/ui.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { playAppBeep, showAppToast, openCustomDialog, switchActiveTab, refreshActiveMarketUI, abrirSupermercadoNoMaps, atualizarEstadoFabMobile, abrirModalBackup, aplicarTemaInicial, alternarTemaApp, verificarImportacaoUrlHash, ativarTelaAcesa, desativarTelaAcesa });
+import { Acoes } from './ui/acoes.js';
+import { Armazenamento, CHAVES } from './armazenamento.js';
+import { esc, getSecurityToken, saveAllLocalData, saveCartData } from './state.js';
+import { renderCartUI } from './templates.js';
+import { renderHistoricoUI } from './telas/historico/lista.js';
+import { setSubTabDados } from './telas/catalogo/layout.js';
+import { desserializarQRParaCarrinho, mesclarItensNoCarrinho } from './qrcode-sync.js';
 
 export const AudioCtx = window.AudioContext || window.webkitAudioContext;
-// Gestão global do Wake Lock sem colisão de TDZ
-window.screenWakeLock = null;;
 
 export function playAppBeep(kind = 'click') {
   if (typeof isSoundOn !== 'undefined' && !isSoundOn) return;
@@ -214,7 +217,6 @@ export function abrirSupermercadoNoMaps(marketId, rotaDireta = true) {
   window.open(url, '_blank');
 }
 
-
 export function atualizarEstadoFabMobile(tabName) {
   const fab = document.getElementById('fabOpenAddItem');
   if (!fab) return;
@@ -349,10 +351,10 @@ let screenWakeLock = null;
 export async function ativarTelaAcesa() {
   if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
   try {
-    if (!window.screenWakeLock) {
-      window.screenWakeLock = await navigator.wakeLock.request('screen');
-      window.screenWakeLock.addEventListener('release', () => {
-        window.screenWakeLock = null;
+    if (!screenWakeLock) {
+      screenWakeLock = await navigator.wakeLock.request('screen');
+      screenWakeLock.addEventListener('release', () => {
+        screenWakeLock = null;
       });
     }
   } catch (err) {
@@ -361,13 +363,13 @@ export async function ativarTelaAcesa() {
 }
 
 export async function desativarTelaAcesa() {
-  if (window.screenWakeLock) {
+  if (screenWakeLock) {
     try {
-      await window.screenWakeLock.release();
+      await screenWakeLock.release();
     } catch (err) {
       console.warn('Erro ao libertar Wake Lock:', err);
     } finally {
-      window.screenWakeLock = null;
+      screenWakeLock = null;
     }
   }
 }
@@ -385,13 +387,13 @@ document.addEventListener('visibilitychange', () => {
 // ZOOM GLOBAL DA APLICAÇÃO (UI)
 // ============================================================================
 
-window.toggleBarraZoomGlobal = function() {
+export function toggleBarraZoomGlobal() {
   const painel = document.getElementById('painelZoomGlobal');
   if (!painel) return;
   painel.classList.toggle('hidden');
 };
 
-window.aplicarZoomGlobal = function(valor) {
+export function aplicarZoomGlobal(valor) {
   const escala = Math.min(125, Math.max(75, Number(valor) || 100));
   const slider = document.getElementById('sliderZoomGlobal');
   const label = document.getElementById('labelValorZoomGlobal');
@@ -407,17 +409,17 @@ window.aplicarZoomGlobal = function(valor) {
   Armazenamento.gravarTexto(CHAVES.ZOOM, escala);
 };
 
-window.alterarZoomGlobal = function(delta) {
+export function alterarZoomGlobal(delta) {
   const slider = document.getElementById('sliderZoomGlobal');
   const valorAtual = Number(slider?.value || Armazenamento.lerTexto(CHAVES.ZOOM) || 100);
-  window.aplicarZoomGlobal(valorAtual + delta);
+  aplicarZoomGlobal(valorAtual + delta);
 };
 
 // Restauração automática da escala salva
 (function restaurarZoom() {
   const escalaSalva = Number(Armazenamento.lerTexto(CHAVES.ZOOM) || 100);
   if (escalaSalva !== 100) {
-    window.aplicarZoomGlobal(escalaSalva);
+    aplicarZoomGlobal(escalaSalva);
   }
 })();
 
@@ -449,5 +451,3 @@ Acoes.registrarDigitacao({
   'zoom-valor':      el => aplicarZoomGlobal(el.value),
 });
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
-Object.assign(window, { AudioCtx });

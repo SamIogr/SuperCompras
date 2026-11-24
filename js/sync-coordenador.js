@@ -16,6 +16,9 @@
  * também passe por scRodar(): as duas ficariam esperando uma pela outra.
  */
 
+import { getSecurityToken } from './state.js';
+import { showAppToast } from './ui.js';
+
 // ===== 1. FILA ÚNICA =====
 let _scFila = Promise.resolve();
 export function scExclusivo(fn) {
@@ -70,7 +73,3 @@ export function scIniciarTela() {
 }
 window.addEventListener('load', scIniciarTela);
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
-// Os arquivos que ainda não são módulos usam estes nomes como globais.
-// Quando todos eles passarem a usar import, esta linha sai.
-Object.assign(window, { scExclusivo, scEhAdmin, scRodar, scAplicarModoAdmin, scIniciarTela });

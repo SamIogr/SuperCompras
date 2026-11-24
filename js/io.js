@@ -3,8 +3,16 @@
  * SUPERCOMPRAS PRO - MÓDULO ÚNICO DE BACKUP E EXPORTAÇÃO (js/io.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { baixarArquivo, exportBackupJSON, handleRestoreJSON, exportCartCSV, gerarTextoFormatadoCarrinho, copyCartToWhatsApp, colarTextoImportacao });
+import { Acoes, noProprioElemento } from './ui/acoes.js';
+import { MERCADO_PADRAO_GENERICO, formatBRL, formatQty, getSelectedMarketName, normalizarDados, novoId, saveAllLocalData, saveCartData } from './state.js';
+import { renderCartUI } from './templates.js';
+import { abrirModalBackup, openCustomDialog, refreshActiveMarketUI, showAppToast } from './ui.js';
+import { salvarChaveSeguranca } from './api.js';
+import { renderHistoricoUI } from './telas/historico/lista.js';
+import { computeItemFinancials } from './telas/carrinho/calculo.js';
+import { compartilharCarrinhoWhatsApp } from './telas/carrinho/finalizacao.js';
+import { renderCatalogUI, renderMarketsUI } from './telas/catalogo/layout.js';
+import { abrirModalQRCode, desserializarQRParaCarrinho, mesclarItensNoCarrinho, serializarCarrinhoParaQR } from './qrcode-sync.js';
 
 export function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
   const blob = new Blob([conteudo], { type: tipoMime });
@@ -18,9 +26,8 @@ export function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
   URL.revokeObjectURL(url);
 }
 
-
 // CONTROLE DO MODAL DE EXPORTAÇÃO (WHATSAPP / CSV)
-window.openExportOptionsModal = function() {
+export function openExportOptionsModal() {
   const m = document.getElementById('modalExportOptions');
   if (m) {
     m.classList.remove('hidden');
@@ -30,7 +37,7 @@ window.openExportOptionsModal = function() {
   }
 };
 
-window.closeExportOptionsModal = function() {
+export function closeExportOptionsModal() {
   const m = document.getElementById('modalExportOptions');
   if (m) {
     m.classList.add('hidden');

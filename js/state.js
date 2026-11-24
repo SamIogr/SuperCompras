@@ -4,9 +4,9 @@
  */
 
 import { variavelGlobal } from './compartilhado.js';
+import { AVISOS, Eventos } from './eventos.js';
+import { Armazenamento, CHAVES } from './armazenamento.js';
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { parseNumberInput, formatBRL, formatQty, novoId, ehUnidadeDePeso, opcoesUnidadeHtml, getSecurityToken, getSelectedMarketName, normalizarItem, normalizarCompra, normalizarProduto, normalizarDados, loadApplicationData, saveAllLocalData, saveCartData, esc, jsArg });
 export const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
 // false = chave vai na URL (?token=), como sempre foi.
 // true  = chave vai no corpo de um POST (não fica em histórico nem em logs de URL).
@@ -24,7 +24,7 @@ export const MERCADO_PADRAO_GENERICO = {
 };
 
 // DECLARAÇÃO ÚNICA DA BASE DE ITENS FREQUENTES (SEM PREÇO E COM MARCA PADRÃO)
-window.ITENS_BASICOS_SUGERIDOS = [
+export const ITENS_BASICOS_SUGERIDOS = [
   // Mercearia e Básicos
   { name: 'Arroz Branco', category: 'Mercearia e Básicos', unit: 'kg' },
   { name: 'Feijão Carioca', category: 'Mercearia e Básicos', unit: 'kg' },
@@ -88,7 +88,7 @@ variavelGlobal('selectedSyncProducts', new Set());
 variavelGlobal('selectedSyncMarkets', new Set());
 variavelGlobal('activeSyncTab', 'produtos');
 let catalogSyncFilter = 'all';
-window.selectedCatalogProductIds = new Set();
+variavelGlobal('selectedCatalogProductIds', new Set());
 
 export const CATEGORIES = [
   'Todas', 'Açougue e Carnes', 'Laticínios e Frios', 
@@ -214,10 +214,6 @@ export function loadApplicationData() {
   } else {
     supermarkets = [MERCADO_PADRAO_GENERICO];
   }
-  // Dentro de loadApplicationData(), logo após carregar a variável products:
-  if (Array.isArray(products) && products.length > 0) {
-    products = mesclarCatalogosDeProdutos([], products);
-  }
 
   // remove produtos repetidos pelo nome (o app trata o nome como identidade)
   const mapaUnico = new Map();
@@ -231,7 +227,7 @@ export function loadApplicationData() {
 
   // INSERÇÃO AUTOMÁTICA SE A BASE ESTIVER TOTALMENTE VAZIA
   if (!Array.isArray(products) || products.length === 0) {
-    products = window.ITENS_BASICOS_SUGERIDOS.map((it, idx) => ({
+    products = ITENS_BASICOS_SUGERIDOS.map((it, idx) => ({
       id: novoId('p-custom-'),
       name: it.name,
       category: it.category,
@@ -270,8 +266,7 @@ export function saveAllLocalData() {
 
 export function saveCartData() {
   Armazenamento.gravarJSON(CHAVES.CARRINHO, cart);
-  Eventos.avisar(AVISOS.CARRINHO_SALVO);
-  if (typeof renderCartUI === 'function') renderCartUI();
+  Eventos.avisar(AVISOS.CARRINHO_SALVO);   // a tela do carrinho ouve e redesenha (templates.js)
 }
 
 export function esc(v) {
@@ -286,7 +281,4 @@ export function esc(v) {
 export function jsArg(v) {
   return esc(JSON.stringify(String(v ?? '')));
 }
-window.esc = esc;
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
-Object.assign(window, { API_GOOGLE_SHEETS_URL, API_TOKEN_VIA_POST, MERCADO_PADRAO_GENERICO, CATEGORIES, UNIDADES });

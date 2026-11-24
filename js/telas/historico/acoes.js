@@ -3,6 +3,12 @@
  * SUPERCOMPRAS PRO - HISTÓRICO: AÇÕES DOS BOTÕES (delegação, ver js/ui/acoes.js) (js/telas/historico/acoes.js)
  */
 
+import { Acoes, noProprioElemento } from '../../ui/acoes.js';
+import { toggleSelectHistoryItem } from './lista.js';
+import { excluirCompraHistorico, excluirHistoricosSelecionados, fecharModalConfirmacaoDupla, limparTodoHistorico } from './exclusao.js';
+import { abrirDetalhesCompraHistorico, fecharModalDetalhesHistorico, restaurarCompraParaCarrinho } from './detalhes.js';
+import { abrirModalComparadorHistorico, alternarModoComparacaoHistorico, atualizarMercadoPadraoDaCompra, fecharModalComparadorHistorico, renderizarComparacaoHistoricaAtual, toggleDetalhesComparadorItem } from './comparador.js';
+
 const _idx = el => Number(el.dataset.idx);
 
 Acoes.registrarClique({
@@ -31,4 +37,3 @@ Acoes.registrarMudanca({
   'historico-comparador-mercado':   () => renderizarComparacaoHistoricaAtual(),
 });
 
-export {};

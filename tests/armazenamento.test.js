@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { carregarApp, rodarArquivo, listarArquivosJs, RAIZ } = require('./carregar-app');
+const { carregarApp, carregarNoApp, listarArquivosJs, RAIZ } = require('./carregar-app');
 
 const puro = v => JSON.parse(JSON.stringify(v));
 
@@ -10,7 +10,7 @@ const puro = v => JSON.parse(JSON.stringify(v));
 function comDados(dados, arquivos = ['js/eventos.js', 'js/armazenamento.js']) {
   const app = carregarApp([]);
   for (const [k, v] of Object.entries(dados)) app.localStorage.setItem(k, v);
-  for (const arq of arquivos) rodarArquivo(app, arq);
+  carregarNoApp(app, arquivos);
   return app;
 }
 

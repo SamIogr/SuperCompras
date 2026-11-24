@@ -3,8 +3,9 @@
  * SUPERCOMPRAS PRO - CARRINHO: MELHOR MERCADO PARA A LISTA E GUIA COMPARATIVO (js/telas/carrinho/comparativo.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { obterPrecoItemMercado, analisarMelhorMercado });
+import { esc, formatBRL, saveAllLocalData } from '../../state.js';
+import { renderCartUI } from '../../templates.js';
+import { showAppToast } from '../../ui.js';
 
 // 1. FUNÇÃO AUXILIAR: CALCULA O PREÇO REAL DO PRODUTO POR SUPERMERCADO
 export function obterPrecoItemMercado(itemCarrinho, mercadoId) {
@@ -105,7 +106,7 @@ export function analisarMelhorMercado() {
 }
 
 // 3. GUIA FLUTUANTE COM O COMPARATIVO GERAL
-window.abrirGuiaComparativoMercados = function() {
+export function abrirGuiaComparativoMercados() {
   const modal = document.getElementById('modalComparativoMercadosLista');
   const container = document.getElementById('listaComparativoMercadosContainer');
   if (!modal || !container) return;
@@ -170,12 +171,12 @@ window.abrirGuiaComparativoMercados = function() {
   modal.classList.remove('hidden');
 };
 
-window.fecharGuiaComparativoMercados = function() {
+export function fecharGuiaComparativoMercados() {
   const modal = document.getElementById('modalComparativoMercadosLista');
   if (modal) modal.classList.add('hidden');
 };
 
-window.trocarMercadoPelaGuia = function(idMercado) {
+export function trocarMercadoPelaGuia(idMercado) {
   fecharGuiaComparativoMercados();
   activeMarketId = idMercado;
   const sel = document.getElementById('selectActiveMarket');

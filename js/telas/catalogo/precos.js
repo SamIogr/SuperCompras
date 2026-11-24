@@ -3,8 +3,8 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: PREÇO DE UM PRODUTO POR MARCA E MERCADO (js/telas/catalogo/precos.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { obterPrecoProdutoMarcaMercado, atualizarPrecoUnificado });
+import { saveAllLocalData } from '../../state.js';
+import { renderCatalogUI } from './layout.js';
 
 export function obterPrecoProdutoMarcaMercado(prod, marcaNome, mercadoId) {
   if (!prod) return 0;

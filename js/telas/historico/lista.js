@@ -4,13 +4,12 @@
  */
 
 import { variavelGlobal } from '../../compartilhado.js';
-
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { atualizarBarraSelecaoHistorico });
+import { esc, formatBRL } from '../../state.js';
+import { obterHistoricoLocal, obterIdCompra, resolverNomeMercado } from './dados.js';
 
 variavelGlobal('selectedHistoryIds', new Set());
 
-window.renderHistoricoUI = function() {
+export function renderHistoricoUI() {
   const container = document.getElementById('historicoListaContainer');
   const emptyState = document.getElementById('historicoVazioContainer');
   const barraSelecao = document.getElementById('barraSelecaoHistorico');
@@ -117,14 +116,14 @@ window.renderHistoricoUI = function() {
   atualizarBarraSelecaoHistorico();
 };
 
-window.toggleSelectHistoryItem = function(id, isChecked) {
+export function toggleSelectHistoryItem(id, isChecked) {
   if (isChecked) {
     selectedHistoryIds.add(id);
   } else {
     selectedHistoryIds.delete(id);
   }
   atualizarBarraSelecaoHistorico();
-  window.renderHistoricoUI();
+  renderHistoricoUI();
 };
 
 export function atualizarBarraSelecaoHistorico() {

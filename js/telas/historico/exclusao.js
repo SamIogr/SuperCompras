@@ -3,8 +3,10 @@
  * SUPERCOMPRAS PRO - HISTÓRICO: EXCLUSÃO COM DUPLA CONFIRMAÇÃO (js/telas/historico/exclusao.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { abrirModalConfirmacaoDuplaHistorico, fecharModalConfirmacaoDupla });
+import { esc } from '../../state.js';
+import { showAppToast } from '../../ui.js';
+import { obterHistoricoLocal, obterIdCompra, resolverNomeMercado, salvarHistoricoLocal } from './dados.js';
+import { renderHistoricoUI } from './lista.js';
 
 /**
  * MODAL FLUTUANTE DE DUPLA CONFIRMAÇÃO (SEM POP-UP NATIVO)
@@ -84,7 +86,7 @@ export function fecharModalConfirmacaoDupla() {
 }
 
 // 1. EXCLUSÃO INDIVIDUAL COM MODAL FLUTUANTE
-window.excluirCompraHistorico = function(idx) {
+export function excluirCompraHistorico(idx) {
   const historico = obterHistoricoLocal();
   const compra = historico[idx];
   if (!compra) return;
@@ -103,14 +105,14 @@ window.excluirCompraHistorico = function(idx) {
 
       historico.splice(idx, 1);
       salvarHistoricoLocal(historico);
-      window.renderHistoricoUI();
+      renderHistoricoUI();
       if (typeof showAppToast === 'function') showAppToast('Cupom excluído com sucesso.', 'info');
     }
   });
 };
 
 // 2. EXCLUSÃO EM LOTE (SELECIONADAS) COM MODAL FLUTUANTE
-window.excluirHistoricosSelecionados = function() {
+export function excluirHistoricosSelecionados() {
   const totalParaApagar = selectedHistoryIds.size;
   if (totalParaApagar === 0) return;
 
@@ -128,14 +130,14 @@ window.excluirHistoricosSelecionados = function() {
 
       selectedHistoryIds.clear();
       salvarHistoricoLocal(historico);
-      window.renderHistoricoUI();
+      renderHistoricoUI();
       if (typeof showAppToast === 'function') showAppToast(`${totalParaApagar} compras foram excluídas.`, 'info');
     }
   });
 };
 
 // 3. LIMPEZA TOTAL COM MODAL FLUTUANTE
-window.limparTodoHistorico = function() {
+export function limparTodoHistorico() {
   const historico = obterHistoricoLocal();
   if (historico.length === 0) {
     if (typeof showAppToast === 'function') showAppToast('O histórico já está vazio.', 'info');
@@ -150,7 +152,7 @@ window.limparTodoHistorico = function() {
     onConfirmar: () => {
       selectedHistoryIds.clear();
       salvarHistoricoLocal([]);
-      window.renderHistoricoUI();
+      renderHistoricoUI();
       if (typeof showAppToast === 'function') showAppToast('Histórico esvaziado com sucesso.', 'info');
     }
   });

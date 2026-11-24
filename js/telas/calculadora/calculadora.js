@@ -4,8 +4,7 @@
  * Código autossuficiente e blindado (sem dependências cruzadas)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { limparValorCalc, formatarMoedaCalc, abrirCalculadoraComparativa, fecharCalculadoraComparativa, toggleWholesaleSection, setCompMode, calcularComparativoPrecos, limparCalculadoraComparativa });
+import { AppTemplates } from '../../ui/templates-base.js';
 
 let compCurrentMode = 'weight';
 
@@ -29,8 +28,8 @@ export function formatarMoedaCalc(num) {
 }
 
 export function abrirCalculadoraComparativa() {
-  if (window.AppTemplates && typeof window.AppTemplates.renderPriceComparatorModal === 'function') {
-    window.AppTemplates.renderPriceComparatorModal();
+  if (AppTemplates && typeof AppTemplates.renderPriceComparatorModal === 'function') {
+    AppTemplates.renderPriceComparatorModal();
   }
   const modal = document.getElementById('modalPriceComparator');
   if (modal) {
@@ -381,4 +380,3 @@ export function limparCalculadoraComparativa() {
 
   document.getElementById('compQtyA')?.focus();
 }
-window.limparCalculadoraComparativa = limparCalculadoraComparativa

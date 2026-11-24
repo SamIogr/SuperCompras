@@ -3,8 +3,9 @@
  * SUPERCOMPRAS PRO - HISTÓRICO: LEITURA, GRAVAÇÃO E DADOS AUXILIARES DAS COMPRAS (js/telas/historico/dados.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { obterHistoricoLocal, obterListaHistoricoComparador, salvarHistoricoLocal, resolverNomeMercado, obterIdCompra, formatarDataHistoricoLegivel });
+import { AVISOS, Eventos } from '../../eventos.js';
+import { Armazenamento, CHAVES } from '../../armazenamento.js';
+import { normalizarCompra } from '../../state.js';
 
 export function obterHistoricoLocal() {
   try {

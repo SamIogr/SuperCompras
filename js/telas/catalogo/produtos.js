@@ -3,8 +3,13 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: EXCLUIR, ADICIONAR AO CARRINHO E AÇÕES EM LOTE (js/telas/catalogo/produtos.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { askDeleteSingleProduct, quickAddToCartFromCatalog, atualizarEstadoBarraLoteCatalogo, toggleSelectCatalogProduct, toggleSelectAllCatalogProducts, solicitarExclusaoLoteCatalogo, executarRemocaoItensCatalogo });
+import { getSecurityToken, novoId, saveAllLocalData, saveCartData } from '../../state.js';
+import { renderCartUI } from '../../templates.js';
+import { openCustomDialog, playAppBeep, showAppToast } from '../../ui.js';
+import { apiChamar } from '../../api.js';
+import { obterPrecoProdutoMarcaMercado } from './precos.js';
+import { renderCatalogUI } from './layout.js';
+import { obterListaProdutosFiltrada } from './filtros.js';
 
 export function askDeleteSingleProduct(id) {
   const prod = (products || []).find(p => String(p.id) === String(id));

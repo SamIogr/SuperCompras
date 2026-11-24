@@ -3,6 +3,9 @@
  * SUPERCOMPRAS PRO - CALCULADORA: AÇÕES (delegação, ver js/ui/acoes.js) (js/telas/calculadora/acoes.js)
  */
 
+import { Acoes } from '../../ui/acoes.js';
+import { abrirCalculadoraComparativa, calcularComparativoPrecos, fecharCalculadoraComparativa, limparCalculadoraComparativa, setCompMode, toggleWholesaleSection } from './calculadora.js';
+
 Acoes.registrarClique({
   'calculadora-abrir':      () => abrirCalculadoraComparativa(),
   'calculadora-fechar':     () => fecharCalculadoraComparativa(),
@@ -18,4 +21,3 @@ Acoes.registrarDigitacao({
   'calculadora-recalcular': () => calcularComparativoPrecos(),
 });
 
-export {};

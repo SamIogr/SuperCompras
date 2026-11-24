@@ -3,15 +3,18 @@
  * SUPERCOMPRAS PRO - HISTÓRICO: COMPARADOR DE UMA COMPRA COM OS PREÇOS ATUAIS (js/telas/historico/comparador.js)
  */
 
+import { esc, formatBRL } from '../../state.js';
+import { showAppToast } from '../../ui.js';
+import { formatarDataHistoricoLegivel, obterListaHistoricoComparador } from './dados.js';
+
 // ============================================================================
 // COMPARADOR HISTÓRICO CONSOLIDADO (DESIGN RESPONSIVO, CORES E TEMA)
 // ============================================================================
 
 let modoComparacaoHistoricoAtual = 'catalogo';
 
-
 // Abertura do modal e inicialização dos seletores
-window.abrirModalComparadorHistorico = function(indiceOpcional) {
+export function abrirModalComparadorHistorico(indiceOpcional) {
   const modal = document.getElementById('modalHistoricoComparativo');
   const selectCompra = document.getElementById('histSelectCompraComparar');
   const selectMercado = document.getElementById('histSelectMercadoAlvo');
@@ -53,12 +56,12 @@ window.abrirModalComparadorHistorico = function(indiceOpcional) {
   modal.classList.remove('hidden');
 };
 
-window.fecharModalComparadorHistorico = function() {
+export function fecharModalComparadorHistorico() {
   const modal = document.getElementById('modalHistoricoComparativo');
   if (modal) modal.classList.add('hidden');
 };
 
-window.atualizarMercadoPadraoDaCompra = function() {
+export function atualizarMercadoPadraoDaCompra() {
   const selectCompra = document.getElementById('histSelectCompraComparar');
   const selectMercado = document.getElementById('histSelectMercadoAlvo');
   if (!selectCompra || !selectMercado) return;
@@ -71,7 +74,7 @@ window.atualizarMercadoPadraoDaCompra = function() {
   }
 };
 
-window.alternarModoComparacaoHistorico = function(novoModo) {
+export function alternarModoComparacaoHistorico(novoModo) {
   modoComparacaoHistoricoAtual = novoModo;
   const btnCat = document.getElementById('btnModoCompCatalogo');
   const btnCar = document.getElementById('btnModoCompCarrinho');
@@ -87,7 +90,7 @@ window.alternarModoComparacaoHistorico = function(novoModo) {
   renderizarComparacaoHistoricaAtual();
 };
 
-window.toggleDetalhesComparadorItem = function(idx) {
+export function toggleDetalhesComparadorItem(idx) {
   const gaveta = document.getElementById(`gavetaDetalhesComp_${idx}`);
   const icone = document.getElementById(`iconeSetaItemComp_${idx}`);
   if (!gaveta) return;
@@ -102,7 +105,7 @@ window.toggleDetalhesComparadorItem = function(idx) {
 };
 
 // Renderização completa da tela comparativa
-window.renderizarComparacaoHistoricaAtual = function() {
+export function renderizarComparacaoHistoricaAtual() {
   const selectCompra = document.getElementById('histSelectCompraComparar');
   const selectMercado = document.getElementById('histSelectMercadoAlvo');
   const cardsResumo = document.getElementById('histCompCardsResumo');
@@ -489,4 +492,3 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-export {};

@@ -30,58 +30,36 @@ test('nenhum script do index.html trava a página: todos são defer ou módulo (
   }
 });
 
-test('ponte da transição: cada módulo publica no window exatamente o que exporta', () => {
+test('fim da transição: nenhuma ponte (Object.assign(window, ...)) e nenhuma função criada como window.X', () => {
   for (const m of modulos) {
     const codigo = ler(m);
-    const exportados = [...exportsDoModulo(codigo)].sort();
-    // pode haver duas pontes: funções no começo do arquivo e constantes no fim
-    const publicados = [...codigo.matchAll(/Object\.assign\(window,\s*\{([^}]*)\}\);/g)]
-      .flatMap(p => p[1].split(',').map(s => s.trim()).filter(Boolean)).sort();
-    assert.deepEqual(publicados, exportados, m);
+    assert.doesNotMatch(codigo, /Object\.assign\(window,/, m + ': ainda publica no window');
+    assert.doesNotMatch(codigo, /^window\.[A-Za-z_$][\w$]*\s*=\s*(async\s+)?(function|\()/m, m + ': função criada como window.X');
   }
 });
 
-// importa o módulo DE VERDADE (Node ESM), com um navegador mínimo de mentira no globalThis
-async function importarDeVerdade(arq) {
-  const fonte = ler(arq);
-  return import('data:text/javascript;charset=utf-8,' + encodeURIComponent(fonte));
-}
+test('imports em dia: cada arquivo importa exatamente o que usa (npm run imports)', () => {
+  const { execFileSync } = require('child_process');
+  execFileSync(process.execPath, [path.join(RAIZ, 'scripts', 'imports.js'), '--conferir'], { stdio: 'pipe' });
+});
 
-test('os módulos sem dependências carregam como ES modules de verdade (modo estrito, exports)', async () => {
-  const dados = new Map();
-  Object.assign(globalThis, {
-    window: globalThis,
-    document: { addEventListener() {} },
-    localStorage: {
-      getItem: k => (dados.has(k) ? dados.get(k) : null),
-      setItem: (k, v) => dados.set(k, String(v)),
-      removeItem: k => dados.delete(k),
-    },
-  });
-  try {
-    const eventos = await importarDeVerdade('js/eventos.js');
-    assert.equal(typeof eventos.Eventos.ouvir, 'function');
-    assert.equal(eventos.AVISOS.DADOS_SALVOS, 'dados-salvos');
-
-    const acoes = await importarDeVerdade('js/ui/acoes.js');
-    assert.equal(typeof acoes.Acoes.registrarClique, 'function');
-
-    const arm = await importarDeVerdade('js/armazenamento.js');
-    assert.equal(arm.Armazenamento.gravarJSON(arm.CHAVES.CARRINHO, [1]), true);
-    assert.deepEqual(arm.Armazenamento.lerLista(arm.CHAVES.CARRINHO), [1]);
-
-    const origem = await importarDeVerdade('js/origem.js');
-    assert.equal(origem.obterOrigem('mercados', { id: 'm-padrao' }), 'padrao');
-
-    // a ponte publicou no "window"
-    assert.equal(globalThis.Armazenamento, arm.Armazenamento);
-  } finally {
-    for (const k of ['window', 'document', 'localStorage', 'AVISOS', 'Eventos', 'Acoes', 'noProprioElemento',
-      'CHAVES', 'CHAVES_HISTORICO_ANTIGAS', 'Armazenamento', 'ORIGENS', 'ORDEM_FILTRO_ORIGEM', 'estaNaPlanilha',
-      'obterOrigem', 'obterOrigemItem', 'seloOrigemHtml', 'contarOrigens', 'botoesFiltroOrigemHtml', 'filtroOrigemValido']) {
-      delete globalThis[k];
+test('nenhum arquivo usa uma função ou constante de outro módulo sem importar', () => {
+  const { analisar } = require('../scripts/analise');
+  const dono = new Map();
+  for (const m of modulos) for (const n of exportsDoModulo(ler(m))) dono.set(n, m);
+  const faltando = [];
+  for (const m of modulos) {
+    const { declarados, importados, usados } = analisar(ler(m));
+    for (const n of usados) {
+      if (dono.has(n) && dono.get(n) !== m && !declarados.has(n) && !importados.has(n)) faltando.push(`${m} usa ${n} (de ${dono.get(n)})`);
     }
   }
+  assert.deepEqual(faltando, []);
+});
+
+test('o estado (state.js) não depende de nenhuma tela: só de compartilhado, eventos e armazenamento', () => {
+  const imports = [...ler('js/state.js').matchAll(/^import \{[^}]*\} from '([^']+)';/gm)].map(m => m[1]).sort();
+  assert.deepEqual(imports, ['./armazenamento.js', './compartilhado.js', './eventos.js']);
 });
 
 // ------------------------------------------------------------ import map
@@ -129,41 +107,6 @@ test('npm run versao troca a versão de todas as tags e do import map de uma vez
   for (const [chave, valor] of Object.entries(mapa)) assert.equal(valor, chave + '?v=9.9.9');
 });
 
-// ------------------------------------------------------------ árvore de módulos de verdade (com os imports)
-test('drive-sync.js e o que ele importa carregam como ES modules de verdade (nomes importados existem)', async () => {
-  const os = require('os');
-  const { pathToFileURL } = require('url');
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'modulos-'));
-  fs.writeFileSync(path.join(tmp, 'package.json'), '{"type":"module"}');
-  for (const m of modulos) {
-    fs.mkdirSync(path.join(tmp, path.dirname(m)), { recursive: true });
-    fs.copyFileSync(path.join(RAIZ, m), path.join(tmp, m));
-  }
-  const ouvintes = [];
-  const dados = new Map();
-  const nomesAntes = new Set(Object.keys(globalThis));
-  Object.assign(globalThis, {
-    window: globalThis,
-    addEventListener: (tipo) => ouvintes.push(tipo),
-    document: { addEventListener() {}, getElementById: () => null, querySelectorAll: () => [] },
-    localStorage: { getItem: k => (dados.has(k) ? dados.get(k) : null), setItem: (k, v) => dados.set(k, String(v)), removeItem: k => dados.delete(k) },
-    getSecurityToken: () => '',
-    formatBRL: n => String(n),
-  });
-  try {
-    const drive = await import(pathToFileURL(path.join(tmp, 'js/drive-sync.js')).href);
-    assert.equal(typeof drive.driveSincronizar, 'function');
-    assert.equal(drive.DRIVE_META_KEY, 'sc_drive_meta_v2', 'importou CHAVES do armazenamento');
-    assert.ok(ouvintes.includes('load'), 'registrou driveIniciar no load');
-    assert.equal('_driveToken' in drive, false, 'nomes com _ continuam privados');
-
-    const calc = await import(pathToFileURL(path.join(tmp, 'js/telas/carrinho/calculo.js')).href);
-    assert.equal(calc.computeItemFinancials(2, 10).finalSubtotal, 20);
-  } finally {
-    for (const k of Object.keys(globalThis)) if (!nomesAntes.has(k)) delete globalThis[k];
-  }
-});
-
 // ------------------------------------------------------------ modo estrito e variáveis compartilhadas
 test('nenhuma atribuição a variável nunca declarada (em módulo isso quebra a tela)', () => {
   const { atribuicoesSoltas } = require('./modo-estrito');
@@ -181,7 +124,7 @@ test('todos os arquivos do app são módulos (só js/vendor continua como script
 test('variáveis compartilhadas: cada uma criada uma única vez, por um dono conhecido', () => {
   const ESPERADAS = {
     'js/state.js': ['supermarkets', 'products', 'cart', 'activeMarketId', 'purchaseHistory', 'currentTab', 'cartFilterMode',
-      'isSoundOn', 'pendingSyncPayload', 'selectedSyncProducts', 'selectedSyncMarkets', 'activeSyncTab'],
+      'isSoundOn', 'pendingSyncPayload', 'selectedSyncProducts', 'selectedSyncMarkets', 'activeSyncTab', 'selectedCatalogProductIds'],
     'js/telas/historico/lista.js': ['selectedHistoryIds'],
     'js/telas/catalogo/modal-produto.js': ['textoNovaMarcaEmEdicao'],
     'js/telas/catalogo/mercados.js': ['mercadosOrigemFiltro'],
@@ -196,7 +139,7 @@ test('variáveis compartilhadas: cada uma criada uma única vez, por um dono con
 
 test('variavelGlobal: ler e alterar de qualquer arquivo; criar o mesmo nome duas vezes é erro', () => {
   const { carregarApp } = require('./carregar-app');
-  const app = carregarApp([]);
+  const app = carregarApp(['js/compartilhado.js']);
   app.variavelGlobal('teste_compartilhado', 1);
   app.$('teste_compartilhado = teste_compartilhado + 41');
   assert.equal(app.$('teste_compartilhado'), 42);

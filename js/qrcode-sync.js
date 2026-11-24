@@ -5,8 +5,10 @@
  * 100% offline: usa js/vendor/qrcode.js (gerar) e js/vendor/jsQR.js (ler).
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { qrDeflate, qrInflate, bytesParaB64Url, b64UrlParaBytes, normalizarNome, qrStatus, serializarCarrinhoParaQR, desserializarQRLegado, desserializarQRParaCarrinho, dividirPayloadQR, qrReiniciarPartes, qrReceberParte, abrirModalQRCode, fecharModalQRCode, alternarAbaModalQR, desenharQRNoCanvas, pararRotacaoQR, gerarVisualizacaoQRCode, lerQRComJsQR, iniciarScannerCamera, pararScannerCamera, garantirProdutosNoCatalogo, mesclarItensNoCarrinho, processarResultadoLeitura, concluirImportacaoQR, lerQRCodeDeArquivo });
+import { Acoes } from './ui/acoes.js';
+import { novoId, saveAllLocalData, saveCartData } from './state.js';
+import { renderCartUI } from './templates.js';
+import { openCustomDialog, playAppBeep, refreshActiveMarketUI, showAppToast, switchActiveTab } from './ui.js';
 
 // ===== CONFIGURAÇÕES =====
 export const QR_STORAGE_PREFIX = 'SC_QR_V1:';      // formato antigo (só leitura)
@@ -585,5 +587,3 @@ Acoes.registrarMudanca({
   'qr-arquivo': el => lerQRCodeDeArquivo(el),
 });
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
-Object.assign(window, { QR_STORAGE_PREFIX, QR_PREFIXO_COMPACTO, QR_PREFIXO_SEM_COMPRESSAO, QR_TAMANHO_PARTE, QR_SE_JA_NO_CARRINHO });

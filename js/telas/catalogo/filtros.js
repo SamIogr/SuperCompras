@@ -3,8 +3,8 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: BUSCA, ORDEM, SETOR E ORIGEM DOS PRODUTOS (js/telas/catalogo/filtros.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { obterListaProdutosFiltrada, renderizarBotoesFiltroOrigem });
+import { botoesFiltroOrigemHtml, contarOrigens, filtroOrigemValido, obterOrigemItem } from '../../origem.js';
+import { renderCatalogUI } from './layout.js';
 
 let catalogSortMode = 'az';
 let catalogOrigemFiltro = 'todos';
@@ -57,14 +57,13 @@ export function renderizarBotoesFiltroOrigem() {
   container.innerHTML = botoesFiltroOrigemHtml('produtos', contagens, catalogOrigemFiltro);
 }
 
-window.filtrarOrigemProdutos = function(origem) {
+export function filtrarOrigemProdutos(origem) {
   catalogOrigemFiltro = origem;
   renderizarBotoesFiltroOrigem();
   renderCatalogUI();
 };
 
-
-window.filtrarSetorProdutos = function(setor, btn) {
+export function filtrarSetorProdutos(setor, btn) {
   catalogSetorFiltro = setor;
   if (btn && btn.parentElement) {
     btn.parentElement.querySelectorAll('button').forEach(b => {
@@ -75,11 +74,11 @@ window.filtrarSetorProdutos = function(setor, btn) {
   renderCatalogUI();
 };
 
-window.filtrarProdutosCatalogo = function() {
+export function filtrarProdutosCatalogo() {
   renderCatalogUI();
 };
 
-window.ordenarProdutosCatalogo = function() {
+export function ordenarProdutosCatalogo() {
   const select = document.getElementById('select-ordenacao-produtos');
   if (select) catalogSortMode = select.value;
   renderCatalogUI();

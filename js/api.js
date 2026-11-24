@@ -3,8 +3,16 @@
  * SUPERCOMPRAS PRO - SERVIÇOS DE REDE E SINCRONIZAÇÃO GOOGLE SHEETS
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { apiChamar, salvarChaveSeguranca, enviarProdutoParaPlanilha, closeSelectiveSyncModal, switchSyncTab, renderSyncLists, toggleSelectAllSync, toggleSingleProductSync, toggleSingleMarketSync, syncSingleItemNow, applySelectiveSync, enviarMercadoParaPlanilha, sincronizarComPlanilha, abrirModalSincronizacaoSeletiva, promoverProdutoEmEdicaoParaPlanilha, sincronizarCatalogoDireto });
+import { Acoes } from './ui/acoes.js';
+import { Armazenamento, CHAVES } from './armazenamento.js';
+import { API_GOOGLE_SHEETS_URL, API_TOKEN_VIA_POST, MERCADO_PADRAO_GENERICO, esc, getSecurityToken, novoId, parseNumberInput, saveAllLocalData } from './state.js';
+import { scAplicarModoAdmin, scEhAdmin, scRodar } from './sync-coordenador.js';
+import { estaNaPlanilha } from './origem.js';
+import { renderCartUI } from './templates.js';
+import { openCustomDialog, refreshActiveMarketUI, showAppToast } from './ui.js';
+import { renderCatalogUI, renderMarketsUI } from './telas/catalogo/layout.js';
+import { closeProductEditModal } from './telas/catalogo/modal-produto.js';
+import { closeMarketEditModal, remapearIdMercado } from './telas/catalogo/mercados.js';
 
 /**
  * Ponto único de chamada à planilha (Apps Script).
@@ -529,7 +537,6 @@ export function enviarMercadoParaPlanilha(id) {
   );
 }
 
-
 /**
  * SINCRONIZAÇÃO INTELIGENTE DO CATÁLOGO DE PRODUTOS
  * - Produtos locais: cadastrados na planilha Google e convertidos em Nuvem.
@@ -651,7 +658,6 @@ async function _sincronizarCatalogoDireto() {
     if (icon) icon.classList.remove('animate-spin');
   }
 }
-
 
 // ===== FUNÇÕES PÚBLICAS: passam pela fila única do sync-coordenador.js =====
 // (a planilha e o Drive nunca rodam ao mesmo tempo; sem chave de administrador, a planilha nem é chamada)

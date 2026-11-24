@@ -4,9 +4,13 @@
  */
 
 import { variavelGlobal } from '../../compartilhado.js';
-
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { filtrarOrigemMercados, remapearIdMercado, selecionarMercado, excluirMercadoCatalogo, openMarketEditModal, closeMarketEditModal, salvarSupermercadoSubmit });
+import { esc, getSelectedMarketName, novoId, saveAllLocalData } from '../../state.js';
+import { scEhAdmin } from '../../sync-coordenador.js';
+import { obterOrigem } from '../../origem.js';
+import { AppTemplates } from '../../ui/templates-base.js';
+import { openCustomDialog, refreshActiveMarketUI, showAppToast, switchActiveTab } from '../../ui.js';
+import { recalcularPrecosCarrinhoPorMercado } from '../carrinho/lista.js';
+import { renderMarketsUI } from './layout.js';
 
 // Filtro de origem da aba Mercados: 'todos' | 'planilha-drive' | 'planilha' | 'drive' | 'local'
 variavelGlobal('mercadosOrigemFiltro', 'todos');
@@ -68,8 +72,8 @@ export function excluirMercadoCatalogo(marketId) {
 
 export function openMarketEditModal(marketId = null) {
   const mercado = marketId ? (supermarkets || []).find(x => x.id === marketId) : null;
-  if (window.AppTemplates && typeof window.AppTemplates.renderMarketEditModal === 'function') {
-    window.AppTemplates.renderMarketEditModal(mercado);
+  if (AppTemplates && typeof AppTemplates.renderMarketEditModal === 'function') {
+    AppTemplates.renderMarketEditModal(mercado);
   }
 }
 
@@ -116,7 +120,7 @@ export function salvarSupermercadoSubmit(e) {
   if (typeof showAppToast === 'function') showAppToast('Supermercado salvo com sucesso!', 'success');
 }
 
-Object.assign(window.AppTemplates, {
+Object.assign(AppTemplates, {
   // 7. MODAL DINÂMICO DE SUPERMERCADO
   renderMarketEditModal(mercado) {
     document.querySelectorAll('#modalMarketEditDynamic').forEach(el => el.remove());

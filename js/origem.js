@@ -11,6 +11,8 @@
  *  - padrao:   o "Mercado" de referência embutido no app (não é planilha nem Drive)
  */
 
+import { driveEstaNoBackup } from './drive-sync.js';
+
 export const ORIGENS = Object.freeze({
   'planilha-drive': { rotulo: 'Planilha + Drive', filtro: 'Planilha + Drive', cor: 'bg-purple-100 text-purple-800 border-purple-200' },
   planilha:         { rotulo: 'Planilha',         filtro: 'Só Planilha',      cor: 'bg-sky-100 text-sky-800 border-sky-200' },
@@ -84,7 +86,3 @@ export function filtroOrigemValido(filtroAtual, contagens) {
   return (filtroAtual !== 'todos' && !contagens[filtroAtual]) ? 'todos' : filtroAtual;
 }
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
-// Os arquivos que ainda não são módulos usam estes nomes como globais.
-// Quando todos eles passarem a usar import, esta linha sai.
-Object.assign(window, { ORIGENS, ORDEM_FILTRO_ORIGEM, estaNaPlanilha, obterOrigem, obterOrigemItem, seloOrigemHtml, contarOrigens, botoesFiltroOrigemHtml, filtroOrigemValido });

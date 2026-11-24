@@ -3,8 +3,10 @@
  * SUPERCOMPRAS PRO - CARRINHO: MODAL DE EDIÇÃO DE UM ITEM (js/telas/carrinho/edicao.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { openEditCartItemModal, atualizarAtalhosEdicao, closeEditCartItemModal, setEditPromoType, setEditQty, confirmarNovaMarcaModalEdicao, cancelarNovaMarcaModalEdicao, getEditFormPromoConfig, atualizarSubtotalModalEdicao, salvarEdicaoItemCarrinho });
+import { ehUnidadeDePeso, esc, formatBRL, opcoesUnidadeHtml, parseNumberInput, saveCartData } from '../../state.js';
+import { renderCartUI } from '../../templates.js';
+import { showAppToast } from '../../ui.js';
+import { computeItemFinancials } from './calculo.js';
 
 // 4. MODAL DE EDIÇÃO DE ITEM DO CARRINHO (COMPATIBILIZADO)
 let editingCartItemId = null;

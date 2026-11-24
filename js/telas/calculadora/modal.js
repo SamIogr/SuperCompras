@@ -3,7 +3,9 @@
  * SUPERCOMPRAS PRO - CALCULADORA: JANELA DO COMPARADOR DE PREÇO E ATACADO (js/telas/calculadora/modal.js)
  */
 
-Object.assign(window.AppTemplates, {
+import { AppTemplates } from '../../ui/templates-base.js';
+
+Object.assign(AppTemplates, {
   // 8. MODAL DA CALCULADORA COMPARATIVA
   renderPriceComparatorModal() {
     document.querySelectorAll('#modalPriceComparator').forEach(el => el.remove());
@@ -136,4 +138,3 @@ Object.assign(window.AppTemplates, {
   },
 });
 
-export {};

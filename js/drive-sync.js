@@ -8,10 +8,16 @@
  * Itens que vêm da planilha do administrador NÃO entram aqui (ver DRIVE_EXCLUIR_ITENS_DA_PLANILHA).
  */
 
-import { CHAVES, Armazenamento } from './armazenamento.js';
-import { Eventos, AVISOS } from './eventos.js';
+import { AVISOS, Eventos } from './eventos.js';
 import { Acoes, noProprioElemento } from './ui/acoes.js';
+import { Armazenamento, CHAVES } from './armazenamento.js';
+import { formatBRL, saveAllLocalData } from './state.js';
 import { scRodar } from './sync-coordenador.js';
+import { renderCartUI } from './templates.js';
+import { refreshActiveMarketUI, showAppToast } from './ui.js';
+import { resolverNomeMercado, salvarHistoricoLocal } from './telas/historico/dados.js';
+import { renderHistoricoUI } from './telas/historico/lista.js';
+import { renderCatalogUI, renderMarketsUI } from './telas/catalogo/layout.js';
 
 // ===== CONFIGURAÇÃO =====
 export const DRIVE_CLIENT_ID = '1005329591365-p2ibvui3iq1ssqgmrj4hb02pc3bqgabb.apps.googleusercontent.com';   // MANTENHA O SEU ID
@@ -301,7 +307,7 @@ export function driveSalvarLocal() {
   catch (e) { console.warn('[Drive] Falha ao salvar localmente:', e); }
   try {
     // atenção: salvarHistoricoLocal(lista) EXIGE a lista como argumento (grava nas duas chaves do histórico)
-    if (typeof window.salvarHistoricoLocal === 'function') window.salvarHistoricoLocal(driveHistoricoAtual());
+    if (typeof salvarHistoricoLocal === 'function') salvarHistoricoLocal(driveHistoricoAtual());
   } catch (e) { console.warn('[Drive] Falha ao salvar o histórico:', e); }
 }
 
@@ -313,9 +319,9 @@ export function driveAtualizarTelas() {
       activeMarketId = supermarkets[0].id;                       // o mercado ativo foi apagado em outro aparelho
     }
   } catch (e) { /* activeMarketId pode ser constante em alguma versão */ }
-  ['renderCatalogUI', 'renderMarketsUI', 'renderHistoricoUI', 'renderCartUI', 'refreshActiveMarketUI'].forEach(fn => {
-    try { if (typeof window[fn] === 'function') window[fn](); }
-    catch (e) { console.warn('[Drive] Falha ao atualizar a tela (' + fn + '):', e); }
+  [renderCatalogUI, renderMarketsUI, renderHistoricoUI, renderCartUI, refreshActiveMarketUI].forEach(fn => {
+    try { fn(); }
+    catch (e) { console.warn('[Drive] Falha ao atualizar a tela (' + fn.name + '):', e); }
   });
 }
 
@@ -511,7 +517,6 @@ window.addEventListener('online', () => {
   if (Armazenamento.existe(DRIVE_FLAG_KEY) && driveTokenValido()) driveSincronizar(false);
 });
 
-
 // ===== 9. VER O QUE ESTÁ GUARDADO NO BACKUP =====
 export async function driveLerBackup(nomeArquivo) {
   const token = await driveObterToken(true);
@@ -638,7 +643,6 @@ export async function driveBaixarBackup(antigo) {
   }
 }
 
-
 // ===== 10. JANELA DO DRIVE (botão da nuvem no topo) =====
 export function openDriveSyncModal() {
   const m = document.getElementById('modalDriveSync');
@@ -665,7 +669,3 @@ Acoes.registrarClique({
   'drive-baixar-backup': () => driveBaixarBackup(),
 });
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
-// Os arquivos que ainda não são módulos usam estes nomes como globais.
-// Quando todos eles passarem a usar import, esta linha sai.
-Object.assign(window, { DRIVE_CLIENT_ID, DRIVE_SCOPE, DRIVE_ARQUIVO, DRIVE_ARQUIVO_ANTIGO, DRIVE_META_KEY, DRIVE_META_KEY_ANTIGA, DRIVE_FLAG_KEY, DRIVE_EMAIL_KEY, DRIVE_TOMBSTONE_DIAS, DRIVE_ATRASO_SYNC_MS, DRIVE_ATRASO_CARIMBO_MS, DRIVE_EXCLUIR_ITENS_DA_PLANILHA, driveTokenValido, driveCarregarGIS, driveObterToken, driveFetch, driveAcharArquivo, driveBaixarArquivo, driveCriarArquivo, driveAtualizarArquivo, driveNormalizarNome, driveProdutoDaPlanilha, driveMercadoDaPlanilha, driveHistoricoAtual, driveEntidades, driveHash, driveLerMeta, driveGravarMeta, driveEstaNoBackup, driveCarimbar, driveMesclar, driveAplicar, driveSalvarLocal, driveAtualizarTelas, driveStatus, driveMostrarConta, driveAtualizarBotao, driveAtualizarConta, driveMensagemErro, driveSincronizar, driveDesconectar, driveRecuperarHistoricoAntigo, driveCarimbarAlteracoes, driveAgendarSync, driveIniciar, driveLerBackup, driveResumirBackup, driveContarLocal, driveDescreverCompra, driveCriarEl, driveCriarLista, driveVerBackup, driveBaixarBackup, openDriveSyncModal, closeDriveSyncModal });

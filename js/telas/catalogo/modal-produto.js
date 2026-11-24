@@ -4,16 +4,18 @@
  */
 
 import { variavelGlobal } from '../../compartilhado.js';
-
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { openProductEditModal, closeProductEditModal, alternarMinimizarRedesModal, renderizarSelectMarcasModal, aoMudarSelectMarcaModal, adicionarMarcaInlineModal, excluirMarcaModalEdicao, renderizarComparativoPrecosModal, salvarPrecoDiretoModal, salvarEdicaoProdutoForm });
+import { esc, formatBRL, novoId, parseNumberInput, saveAllLocalData } from '../../state.js';
+import { AppTemplates } from '../../ui/templates-base.js';
+import { showAppToast } from '../../ui.js';
+import { atualizarPrecoUnificado, obterPrecoProdutoMarcaMercado } from './precos.js';
+import { renderCatalogUI } from './layout.js';
 
 let currentCompareBrand = 'Padrão';
 let activeCatalogProductId = null;
 let redesComparativoMinimizado = true;
 variavelGlobal('textoNovaMarcaEmEdicao', '');
 
-Object.assign(window.AppTemplates, {
+Object.assign(AppTemplates, {
   // 6. MODAL DINÂMICO DE PRODUTO
   renderProductEditModal(prod) {
     document.querySelectorAll('#modalProductEditDynamic').forEach(el => el.remove());
@@ -113,7 +115,7 @@ export function openProductEditModal(id = null) {
   currentCompareBrand = 'Padrão';
   textoNovaMarcaEmEdicao = '';
 
-  window.AppTemplates.renderProductEditModal(prod);
+  AppTemplates.renderProductEditModal(prod);
   renderizarSelectMarcasModal(prod);
   renderizarComparativoPrecosModal(prod);
 }

@@ -3,11 +3,15 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: IMPORTAR ITENS BÁSICOS SUGERIDOS (js/telas/catalogo/sugeridos.js)
  */
 
+import { ITENS_BASICOS_SUGERIDOS, novoId, saveAllLocalData } from '../../state.js';
+import { showAppToast } from '../../ui.js';
+import { renderCatalogUI } from './layout.js';
+
 // MODAL DE IMPORTAÇÃO SELETIVA DE ITENS BÁSICOS (ANTI-DUPLICAÇÃO)
-window.abrirModalCatalogoSugerido = function() {
+export function abrirModalCatalogoSugerido() {
   document.querySelectorAll('#modalCatalogoSugerido').forEach(el => el.remove());
 
-  const itensFonte = window.ITENS_BASICOS_SUGERIDOS || [];
+  const itensFonte = ITENS_BASICOS_SUGERIDOS || [];
   const nomesCadastrados = new Set(
     (products || []).map(p => (p.name || '').trim().toLowerCase())
   );
@@ -16,7 +20,7 @@ window.abrirModalCatalogoSugerido = function() {
   modalEl.id = 'modalCatalogoSugerido';
   modalEl.className = 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs';
   modalEl.onclick = function(e) {
-    if (e.target === this) window.fecharModalCatalogoSugerido();
+    if (e.target === this) fecharModalCatalogoSugerido();
   };
 
   const categoriasMap = {};
@@ -93,21 +97,21 @@ window.abrirModalCatalogoSugerido = function() {
   `;
 
   document.body.appendChild(modalEl);
-  window.atualizarContadorModalSugeridos();
+  atualizarContadorModalSugeridos();
 };
 
-window.fecharModalCatalogoSugerido = function() {
+export function fecharModalCatalogoSugerido() {
   document.querySelectorAll('#modalCatalogoSugerido').forEach(el => el.remove());
 };
 
-window.toggleSelectAllSugeridos = function(marcar) {
+export function toggleSelectAllSugeridos(marcar) {
   document.querySelectorAll('#modalCatalogoSugerido input[name="chkSugeridoItem"]:not([disabled])').forEach(chk => {
     chk.checked = marcar;
   });
-  window.atualizarContadorModalSugeridos();
+  atualizarContadorModalSugeridos();
 };
 
-window.atualizarContadorModalSugeridos = function() {
+export function atualizarContadorModalSugeridos() {
   const selecionados = document.querySelectorAll('#modalCatalogoSugerido input[name="chkSugeridoItem"]:checked').length;
   const badge = document.getElementById('badgeContadorSugeridos');
   const btn = document.getElementById('btnConfirmarInclusaoSugeridos');
@@ -120,11 +124,11 @@ window.atualizarContadorModalSugeridos = function() {
   }
 };
 
-window.adicionarItensSugeridosSelecionados = function() {
+export function adicionarItensSugeridosSelecionados() {
   const checkboxes = Array.from(document.querySelectorAll('#modalCatalogoSugerido input[name="chkSugeridoItem"]:checked'));
   if (checkboxes.length === 0) return;
 
-  const itensFonte = window.ITENS_BASICOS_SUGERIDOS || [];
+  const itensFonte = ITENS_BASICOS_SUGERIDOS || [];
   if (!Array.isArray(products)) products = [];
 
   const nomesExistentes = new Set(products.map(p => (p.name || '').trim().toLowerCase()));
@@ -158,8 +162,7 @@ window.adicionarItensSugeridosSelecionados = function() {
     showAppToast('Nenhum item novo precisou ser adicionado.', 'info');
   }
 
-  window.fecharModalCatalogoSugerido();
+  fecharModalCatalogoSugerido();
 };
 window.selectedCatalogProductIds = window.selectedCatalogProductIds || new Set();
 
-export {};

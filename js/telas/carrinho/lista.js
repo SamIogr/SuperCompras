@@ -3,8 +3,12 @@
  * SUPERCOMPRAS PRO - CARRINHO: LISTA, FILTROS, TOTAIS E AÇÕES RÁPIDAS DOS ITENS (js/telas/carrinho/lista.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { setCartFilterMode, recalcularPrecosCarrinhoPorMercado, updateCartTotals, toggleCartItemCheck, stepCartQty, removeCartItem });
+import { formatBRL, saveAllLocalData, saveCartData } from '../../state.js';
+import { AppTemplates } from '../../ui/templates-base.js';
+import { renderCartUI } from '../../templates.js';
+import { playAppBeep, refreshActiveMarketUI, showAppToast } from '../../ui.js';
+import { computeItemFinancials } from './calculo.js';
+import { obterPrecoProdutoMarcaMercado } from '../catalogo/precos.js';
 
 // 3. FILTRAGEM DO CARRINHO (TODOS, NO CORREDOR, NO CARRINHO)
 export function setCartFilterMode(mode) {
@@ -23,7 +27,7 @@ export function setCartFilterMode(mode) {
   if (mode === 'checked' && btnChecked) btnChecked.className = 'px-3 py-1.5 rounded-lg bg-white text-slate-800 shadow-sm transition-all';
 
   if (typeof renderCartUI === 'function') renderCartUI();
-  else if (window.AppTemplates && typeof window.AppTemplates.renderCart === 'function') window.AppTemplates.renderCart();
+  else if (AppTemplates && typeof AppTemplates.renderCart === 'function') AppTemplates.renderCart();
 }
 
 export function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {

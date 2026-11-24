@@ -3,8 +3,14 @@
  * SUPERCOMPRAS PRO - HISTÓRICO: CUPOM DA COMPRA E REPETIR NO CARRINHO (js/telas/historico/detalhes.js)
  */
 
+import { esc, formatBRL, novoId, saveAllLocalData, saveCartData } from '../../state.js';
+import { renderCartUI } from '../../templates.js';
+import { refreshActiveMarketUI, showAppToast, switchActiveTab } from '../../ui.js';
+import { obterHistoricoLocal, resolverNomeMercado } from './dados.js';
+import { fecharModalConfirmacaoDupla } from './exclusao.js';
+
 // MODAL DE CUPOM (ESTRUTURA IMUTÁVEL)
-window.abrirDetalhesCompraHistorico = function(idx) {
+export function abrirDetalhesCompraHistorico(idx) {
   const historico = obterHistoricoLocal();
   const compra = historico[idx];
   if (!compra) return;
@@ -60,7 +66,7 @@ window.abrirDetalhesCompraHistorico = function(idx) {
   modalContainer.id = 'modalDetalhesHistorico';
   modalContainer.className = 'fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs';
   modalContainer.onclick = function(e) {
-    if (e.target === this) window.fecharModalDetalhesHistorico();
+    if (e.target === this) fecharModalDetalhesHistorico();
   };
 
   modalContainer.innerHTML = `
@@ -107,18 +113,18 @@ window.abrirDetalhesCompraHistorico = function(idx) {
   document.body.appendChild(modalContainer);
 };
 
-window.fecharModalDetalhesHistorico = function() {
+export function fecharModalDetalhesHistorico() {
   document.querySelectorAll('#modalDetalhesHistorico').forEach(el => el.remove());
 };
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    window.fecharModalDetalhesHistorico();
+    fecharModalDetalhesHistorico();
     fecharModalConfirmacaoDupla();
   }
 });
 
-window.restaurarCompraParaCarrinho = function(idx) {
+export function restaurarCompraParaCarrinho(idx) {
   const historico = obterHistoricoLocal();
   const compra = historico[idx];
   const itens = compra?.items;
@@ -189,4 +195,3 @@ window.restaurarCompraParaCarrinho = function(idx) {
   }
 };
 
-export {};

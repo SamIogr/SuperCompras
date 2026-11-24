@@ -3,6 +3,16 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: AÇÕES DOS BOTÕES E CAMPOS (delegação, ver js/ui/acoes.js) (js/telas/catalogo/acoes.js)
  */
 
+import { Acoes, noProprioElemento } from '../../ui/acoes.js';
+import { abrirSupermercadoNoMaps } from '../../ui.js';
+import { enviarMercadoParaPlanilha, sincronizarCatalogoDireto } from '../../api.js';
+import { setSubTabDados } from './layout.js';
+import { filtrarOrigemProdutos, filtrarProdutosCatalogo, filtrarSetorProdutos, ordenarProdutosCatalogo } from './filtros.js';
+import { adicionarMarcaInlineModal, alternarMinimizarRedesModal, aoMudarSelectMarcaModal, closeProductEditModal, excluirMarcaModalEdicao, openProductEditModal, salvarEdicaoProdutoForm, salvarPrecoDiretoModal } from './modal-produto.js';
+import { askDeleteSingleProduct, quickAddToCartFromCatalog, solicitarExclusaoLoteCatalogo, toggleSelectAllCatalogProducts, toggleSelectCatalogProduct } from './produtos.js';
+import { abrirModalCatalogoSugerido, adicionarItensSugeridosSelecionados, atualizarContadorModalSugeridos, fecharModalCatalogoSugerido, toggleSelectAllSugeridos } from './sugeridos.js';
+import { closeMarketEditModal, excluirMercadoCatalogo, filtrarOrigemMercados, openMarketEditModal, salvarSupermercadoSubmit, selecionarMercado } from './mercados.js';
+
 Acoes.registrarClique({
   // abas e barra do catálogo
   'catalogo-subaba':                  el => setSubTabDados(el.dataset.aba),
@@ -62,4 +72,3 @@ Acoes.registrarEnvio({
   'mercado-modal-salvar':             (el, e) => salvarSupermercadoSubmit(e),
 });
 
-export {};

@@ -63,20 +63,57 @@ function carregarApp(arquivos) {
   };
   ctx.window = ctx;
   vm.createContext(ctx);
-  // compartilhado.js é a base (variavelGlobal), sempre o primeiro, como no index.html
-  if (!arquivos.includes('js/compartilhado.js')) arquivos = ['js/compartilhado.js', ...arquivos];
-  for (const arq of arquivos) {
-    const codigo = fs.readFileSync(path.join(RAIZ, arq), 'utf8');
-    vm.runInContext(ehModulo(codigo) ? comoScriptEstrito(codigo) : codigo, ctx, { filename: arq });
-  }
   ctx.$ = expr => vm.runInContext(expr, ctx);
+  carregarNoApp(ctx, arquivos);
   return ctx;
 }
 
-/** Roda mais um arquivo do app num contexto já criado (scripts comuns ou módulos). */
+/** Acrescenta arquivos (e o que eles importam) a um app já criado, sem repetir os já carregados. */
+function carregarNoApp(ctx, arquivos) {
+  ctx.__carregados = ctx.__carregados || new Set();
+  for (const arq of comDependencias(arquivos)) {
+    if (ctx.__carregados.has(arq)) continue;
+    rodarArquivo(ctx, arq);
+  }
+}
+
+/**
+ * A lista pedida + tudo o que esses arquivos importam (direta ou indiretamente), na ordem
+ * do index.html. Assim os testes não precisam manter listas de dependências à mão.
+ */
+function comDependencias(arquivos) {
+  const conjunto = new Set();
+  const visitar = arq => {
+    if (conjunto.has(arq)) return;
+    conjunto.add(arq);
+    const codigo = fs.readFileSync(path.join(RAIZ, arq), 'utf8');
+    for (const m of codigo.matchAll(/^\s*import\s[^;]*?from\s+'([^']+)';/gm)) {
+      visitar(path.posix.normalize(path.posix.join(path.posix.dirname(arq), m[1])));
+    }
+  };
+  arquivos.forEach(visitar);
+  const ordem = scriptsDoIndex();
+  const pos = a => (ordem.includes(a) ? ordem.indexOf(a) : ordem.length);
+  return [...conjunto].sort((a, b) => pos(a) - pos(b));
+}
+
+/**
+ * Roda mais um arquivo do app num contexto já criado (scripts comuns ou módulos).
+ * Nos testes, os exports do arquivo também ficam acessíveis como app.Nome (no app de
+ * verdade eles só chegam a quem importa).
+ */
 function rodarArquivo(ctx, arq) {
   const codigo = fs.readFileSync(path.join(RAIZ, arq), 'utf8');
-  vm.runInContext(ehModulo(codigo) ? comoScriptEstrito(codigo) : codigo, ctx, { filename: arq });
+  const modulo = ehModulo(codigo);
+  (ctx.__carregados = ctx.__carregados || new Set()).add(arq);
+  vm.runInContext(modulo ? comoScriptEstrito(codigo) : codigo, ctx, { filename: arq });
+  if (modulo) {
+    for (const nome of exportsDoModulo(codigo)) {
+      if (!Object.prototype.hasOwnProperty.call(ctx, nome)) {
+        Object.defineProperty(ctx, nome, { get: () => vm.runInContext(nome, ctx), configurable: true, enumerable: true });
+      }
+    }
+  }
 }
 
 // ===== Módulos (etapa 4, fase de transição) =====
@@ -143,4 +180,4 @@ function listarArquivosJs(pasta = 'js') {
   return saida;
 }
 
-module.exports = { carregarApp, rodarArquivo, criarDocumento, criarLocalStorage, scriptsDoIndex, ehModulo, exportsDoModulo, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };
+module.exports = { carregarApp, carregarNoApp, rodarArquivo, criarDocumento, criarLocalStorage, scriptsDoIndex, ehModulo, exportsDoModulo, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

@@ -3,8 +3,13 @@
  * SUPERCOMPRAS PRO - CARRINHO: FORMULÁRIO DE ADICIONAR ITEM (GAVETA, MARCA, PROMOÇÃO, SUGESTÕES) (js/telas/carrinho/formulario.js)
  */
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
-Object.assign(window, { setCartPromoMode, getCartFormPromoConfig, updateCartItemPreview, setCartQuickQty, atualizarSelectMarcasInline, aoMudarSelectMarcaInline, confirmarNovaMarcaInline, cancelarNovaMarcaInline, sincronizarPrecoFormularioCarrinho, selectProductForCart, atualizarAtalhosQuantidade, abrirSheetAdicionarItem, fecharSheetAdicionarItem, higienizarInputsCarrinho });
+import { ehUnidadeDePeso, esc, formatBRL, novoId, parseNumberInput, saveAllLocalData, saveCartData } from '../../state.js';
+import { renderCartUI } from '../../templates.js';
+import { playAppBeep, showAppToast } from '../../ui.js';
+import { computeItemFinancials } from './calculo.js';
+import { recalcularPrecosCarrinhoPorMercado } from './lista.js';
+import { obterPrecoProdutoMarcaMercado } from '../catalogo/precos.js';
+import { renderCatalogUI } from '../catalogo/layout.js';
 
 // Estado local da condição comercial do formulário
 let currentCartPromoMode = 'none';
@@ -422,5 +427,3 @@ if (typeof setCartPromoMode === 'function') {
   setCartPromoMode('none');
 }
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
-Object.assign(window, { inputBuscaCarrinho, inputProdName, dropdownProd, btnClearProd });

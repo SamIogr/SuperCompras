@@ -31,7 +31,3 @@ export function variavelGlobal(nome, valorInicial) {
   });
 }
 
-// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
-// Os arquivos que ainda não são módulos usam estes nomes como globais.
-// Quando todos eles passarem a usar import, esta linha sai.
-Object.assign(window, { variavelGlobal });
