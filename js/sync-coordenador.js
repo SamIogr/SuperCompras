@@ -6,7 +6,7 @@
  * Papéis:
  *  - PLANILHA (só o administrador, quem tem a chave salva): catálogo da nuvem (produtos PROD-... e mercados).
  *  - DRIVE (todos): histórico, produtos e mercados criados no aparelho.
- * As duas passam por uma fila única: nunca rodam ao mesmo tempo, e a planilha vai primeiro.
+ * As duas passam por uma fila única: nunca rodam ao mesmo tempo (vale a ordem em que foram pedidas).
  *
  * Antes este arquivo trocava as funções globais (window.x = versão envolvida) e só funcionava
  * se fosse carregado por último. Agora cada função pública chama scRodar() explicitamente,
@@ -41,14 +41,7 @@ function scRodar(soAdmin, silencioso, fn) {
   return scExclusivo(fn);
 }
 
-// ===== 3. SINCRONIZAR TUDO (planilha primeiro, se for administrador; depois o Drive) =====
-async function sincronizarTudo(interativo) {
-  if (scEhAdmin() && typeof sincronizarComPlanilha === 'function') await sincronizarComPlanilha();
-  if (interativo || localStorage.getItem('sc_drive_conectado')) await driveSincronizar(!!interativo);
-}
-window.sincronizarTudo = sincronizarTudo;
-
-// ===== 4. TELA: esconde os controles da planilha de quem não é administrador =====
+// ===== 3. TELA: esconde os controles da planilha de quem não é administrador =====
 function scAplicarModoAdmin() {
   const admin = scEhAdmin();
   const ids = ['btnSyncPlanilha', 'btnPromoverProduto', 'btnPromoverMercado'];

@@ -269,13 +269,6 @@ function fecharSheetAdicionarItem() {
 }
 window.fecharSheetAdicionarItem = fecharSheetAdicionarItem;
 
-function executarAcaoFabContextual() {
-  if (currentTab === 'compras') abrirSheetAdicionarItem();
-  else if (currentTab === 'produtos' && typeof openProductEditModal === 'function') openProductEditModal();
-  else if ((currentTab === 'supermercados' || currentTab === 'mercados') && typeof openMarketEditModal === 'function') openMarketEditModal();
-}
-window.executarAcaoFabContextual = executarAcaoFabContextual;
-
 function atualizarEstadoFabMobile(tabName) {
   const fab = document.getElementById('fabOpenAddItem');
   if (!fab) return;
@@ -299,11 +292,6 @@ function abrirModalBackup() {
   }
 }
 window.abrirModalBackup = abrirModalBackup;
-
-function fecharModalBackup() {
-  document.getElementById('modalBackup')?.classList.add('hidden');
-}
-window.fecharModalBackup = fecharModalBackup;
 
 // CONTROLE DE MODO ESCURO/CLARO (TEMA)
 function aplicarTemaInicial() {
@@ -344,23 +332,6 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 
 // Aplica imediatamente ao carregar o ficheiro
 aplicarTemaInicial();
-
-function abrirModalHistorico() {
-  const m = document.getElementById('modalHistory') || document.getElementById('modalHistorico');
-  if (m) {
-    if (typeof renderPurchaseHistoryUI === 'function') renderPurchaseHistoryUI();
-    m.classList.remove('hidden');
-  }
-}
-window.abrirModalHistorico = abrirModalHistorico;
-
-function fecharModalHistorico() {
-  const m = document.getElementById('modalHistory') || document.getElementById('modalHistorico');
-  if (m) m.classList.add('hidden');
-}
-window.fecharModalHistorico = fecharModalHistorico;
-
-
 
 // 2. Leitura da Hash da URL com diálogo de Substituir vs. Somar
 async function verificarImportacaoUrlHash() {

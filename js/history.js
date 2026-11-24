@@ -180,17 +180,6 @@ window.toggleSelectHistoryItem = function(id, isChecked) {
   window.renderHistoricoUI();
 };
 
-window.toggleSelectAllHistorico = function(isChecked) {
-  const historico = obterHistoricoLocal();
-  if (isChecked) {
-    historico.forEach((c, i) => selectedHistoryIds.add(obterIdCompra(c, i)));
-  } else {
-    selectedHistoryIds.clear();
-  }
-  atualizarBarraSelecaoHistorico();
-  window.renderHistoricoUI();
-};
-
 function atualizarBarraSelecaoHistorico() {
   const total = obterHistoricoLocal().length;
   const selecionadas = selectedHistoryIds.size;
