@@ -6,19 +6,19 @@
         <h3 class="font-extrabold text-slate-800 text-base">Sincronização Seletiva</h3>
         <p class="text-xs text-slate-500">Escolha exatamente o que deseja importar da planilha.</p>
       </div>
-      <button type="button" onclick="closeSelectiveSyncModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      <button type="button" data-acao="sincronizacao-fechar" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
     </div>
     <div class="flex items-center space-x-2 border-b border-slate-200 pb-2">
-      <button type="button" id="tabSyncProdBtn" onclick="switchSyncTab('produtos')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm">
+      <button type="button" id="tabSyncProdBtn" data-acao="sincronizacao-aba" data-aba="produtos" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm">
         Produtos (<span id="syncProdCount">0</span>)
       </button>
-      <button type="button" id="tabSyncMarketBtn" onclick="switchSyncTab('mercados')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100">
+      <button type="button" id="tabSyncMarketBtn" data-acao="sincronizacao-aba" data-aba="mercados" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100">
         Supermercados (<span id="syncMarketCount">0</span>)
       </button>
     </div>
     <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700">
       <label class="flex items-center space-x-2 cursor-pointer">
-        <input type="checkbox" id="checkSyncSelectAll" onchange="toggleSelectAllSync(this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" />
+        <input type="checkbox" id="checkSyncSelectAll" data-acao="sincronizacao-todos" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500" />
         <span id="labelSelectAllSync">Marcar Todos</span>
       </label>
       <span class="text-[11px] text-slate-500" id="labelSyncSelectedCounter">0 selecionados</span>
@@ -28,8 +28,8 @@
       <div id="syncMarketsList" class="hidden space-y-1.5"></div>
     </div>
     <div class="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-      <button type="button" onclick="closeSelectiveSyncModal()" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
-      <button type="button" onclick="applySelectiveSync()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all">Sincronizar Selecionados</button>
+      <button type="button" data-acao="sincronizacao-fechar" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
+      <button type="button" data-acao="sincronizacao-aplicar" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl shadow-md transition-all">Sincronizar Selecionados</button>
     </div>
   </div>
 </div>
@@ -39,27 +39,27 @@
   <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-5 space-y-4">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
       <h3 class="font-extrabold text-slate-800 text-base">Backup & Restauração</h3>
-      <button onclick="document.getElementById('modalBackup').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      <button data-acao="backup-fechar" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
     </div>
     <p class="text-xs text-slate-600">Exporte cópia de segurança dos dados locais ou restaure quando desejar.</p>
     <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
       <label for="inputSecurityToken" class="block text-xs font-bold text-slate-700">Chave de Acesso da Planilha</label>
       <div class="flex items-center space-x-2">
         <input type="password" id="inputSecurityToken" placeholder="Cole aqui o token definido no Apps Script..." class="flex-1 text-xs py-2 px-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-        <button type="button" onclick="salvarChaveSeguranca()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all">Salvar</button>
+        <button type="button" data-acao="backup-salvar-chave" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-all">Salvar</button>
       </div>
     </div>
     <div class="space-y-2.5 pt-1">
-      <button type="button" onclick="exportBackupJSON()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
+      <button type="button" data-acao="backup-exportar" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-2 shadow-sm transition-all">
         <span>Exportar Dados (Arquivo JSON)</span>
       </button>
       <label class="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center space-x-2 cursor-pointer transition-all border border-slate-300">
         <span>Restaurar Backup (Carregar JSON)</span>
-        <input type="file" id="inputRestoreJSON" accept=".json" class="hidden" onchange="handleRestoreJSON(event)" />
+        <input type="file" id="inputRestoreJSON" accept=".json" class="hidden" data-acao="backup-restaurar" />
       </label>
     </div>
     <div class="pt-2 text-right">
-      <button onclick="document.getElementById('modalBackup').classList.add('hidden')" class="px-4 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl">Concluir</button>
+      <button data-acao="backup-fechar" class="px-4 py-2 bg-slate-800 text-white font-bold text-xs rounded-xl">Concluir</button>
     </div>
   </div>
 </div>
@@ -67,7 +67,7 @@
 <!-- MODAL: COMPARTILHAR & IMPORTAR LISTA -->
 <div id="modalExportOptions" 
      class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs"
-     onclick="if(event.target === this) closeExportOptionsModal();">
+     data-acao="exportar-fundo">
   <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col space-y-3 max-h-[85vh] overflow-y-auto">
     
     <!-- Cabeçalho -->
@@ -77,7 +77,7 @@
         <h3 class="font-black text-slate-800 dark:text-slate-100 text-sm sm:text-base">Compartilhar & Importar</h3>
       </div>
       <button type="button" 
-              onclick="closeExportOptionsModal()" 
+              data-acao="exportar-fechar" 
               class="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg text-lg font-bold cursor-pointer">✕</button>
     </div>
 
@@ -87,7 +87,7 @@
       
       <!-- WhatsApp com Link Dinâmico -->
       <button type="button" 
-              onclick="compartilharCarrinhoWhatsApp(); closeExportOptionsModal();" 
+              data-acao="exportar-whatsapp" 
               class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl flex items-center space-x-2.5 shadow-xs transition-all cursor-pointer">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
@@ -97,7 +97,7 @@
 
       <!-- Exibir QR Code na Tela -->
       <button type="button" 
-              onclick="closeExportOptionsModal(); abrirModalQRCode('gerar');" 
+              data-acao="exportar-qr-gerar" 
               class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
         <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
@@ -107,7 +107,7 @@
 
       <!-- Copiar Texto Formatado -->
       <button type="button" 
-              onclick="copyCartToWhatsApp(); closeExportOptionsModal();" 
+              data-acao="exportar-copiar" 
               class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
         <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -117,7 +117,7 @@
 
       <!-- Baixar Planilha CSV -->
       <button type="button" 
-              onclick="exportCartCSV(); closeExportOptionsModal();" 
+              data-acao="exportar-csv" 
               class="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
         <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -132,7 +132,7 @@
 
       <!-- Escanear QR Code com a Câmera -->
       <button type="button" 
-              onclick="closeExportOptionsModal(); abrirModalQRCode('ler');" 
+              data-acao="exportar-qr-ler" 
               class="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 active:scale-95 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
         <svg class="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
@@ -143,7 +143,7 @@
 
       <!-- Colar Link ou Código de Importação -->
       <button type="button" 
-              onclick="closeExportOptionsModal(); colarTextoImportacao();" 
+              data-acao="exportar-colar" 
               class="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/60 dark:hover:bg-slate-700 active:scale-95 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 font-bold text-xs rounded-xl flex items-center space-x-2.5 transition-all cursor-pointer">
         <svg class="w-4 h-4 shrink-0 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>

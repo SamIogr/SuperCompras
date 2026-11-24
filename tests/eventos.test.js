@@ -36,7 +36,7 @@ test('um ouvinte com erro não impede os outros', () => {
 });
 
 // ------------------------------------------------------------ quem avisa
-const SCRIPTS = ['js/eventos.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js',
+const SCRIPTS = ['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js',
   'js/origem.js', ...ARQUIVOS_HISTORICO.filter(f => !f.endsWith('acoes.js')), 'js/drive-sync.js'];
 
 function appComTimersFalsos() {

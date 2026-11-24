@@ -250,13 +250,13 @@ function renderSyncLists() {
         return `
           <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
             <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
-              <input type="checkbox" ${isChecked ? 'checked' : ''} data-name="${esc(p.name)}" onchange="toggleSingleProductSync(this.dataset.name, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} data-name="${esc(p.name)}" data-acao="sincronizacao-produto" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
               <div class="truncate">
                 <span class="font-bold text-slate-800">${esc(p.name)}</span>
                 <span class="text-[10px] text-slate-500 ml-1">(${esc(p.unit || 'un')} - ${esc(p.category || 'Geral')})</span>
               </div>
             </label>
-            <button type="button" data-name="${esc(p.name)}" onclick="syncSingleItemNow('produto', this.dataset.name)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+            <button type="button" data-name="${esc(p.name)}" data-acao="sincronizacao-produto-agora" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
               Sincar Só Este
             </button>
           </div>
@@ -277,13 +277,13 @@ function renderSyncLists() {
         return `
           <div class="flex items-center justify-between p-2 rounded-xl border ${isChecked ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200'} text-xs">
             <label class="flex items-center space-x-2.5 flex-1 cursor-pointer min-w-0">
-              <input type="checkbox" ${isChecked ? 'checked' : ''} data-id="${esc(m.id)}" onchange="toggleSingleMarketSync(this.dataset.id, this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} data-id="${esc(m.id)}" data-acao="sincronizacao-mercado" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
               <div class="truncate">
                 <span class="font-bold text-slate-800">${esc(m.name)}</span>
                 <span class="text-[10px] text-slate-500 ml-1">(${esc(m.branch || 'SJP')})</span>
               </div>
             </label>
-            <button type="button" data-id="${esc(m.id)}" onclick="syncSingleItemNow('mercado', this.dataset.id)" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
+            <button type="button" data-id="${esc(m.id)}" data-acao="sincronizacao-mercado-agora" class="px-2 py-1 bg-white border border-slate-200 hover:bg-emerald-600 hover:text-white rounded-lg text-[10px] font-bold text-slate-700 transition-colors shrink-0">
               Sincar Só Este
             </button>
           </div>
@@ -661,3 +661,18 @@ window.sincronizarComPlanilha = sincronizarComPlanilha;
 window.abrirModalSincronizacaoSeletiva = abrirModalSincronizacaoSeletiva;
 window.promoverProdutoEmEdicaoParaPlanilha = promoverProdutoEmEdicaoParaPlanilha;
 window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
+
+// ===== AÇÕES DA JANELA "SINCRONIZAÇÃO SELETIVA" (delegação, ver js/ui/acoes.js) =====
+Acoes.registrarClique({
+  'sincronizacao-abrir':          () => abrirModalSincronizacaoSeletiva(),
+  'sincronizacao-fechar':         () => closeSelectiveSyncModal(),
+  'sincronizacao-aba':            el => switchSyncTab(el.dataset.aba),
+  'sincronizacao-aplicar':        () => applySelectiveSync(),
+  'sincronizacao-produto-agora':  el => syncSingleItemNow('produto', el.dataset.name),
+  'sincronizacao-mercado-agora':  el => syncSingleItemNow('mercado', el.dataset.id),
+});
+Acoes.registrarMudanca({
+  'sincronizacao-todos':          el => toggleSelectAllSync(el.checked),
+  'sincronizacao-produto':        el => toggleSingleProductSync(el.dataset.name, el.checked),
+  'sincronizacao-mercado':        el => toggleSingleMarketSync(el.dataset.id, el.checked),
+});

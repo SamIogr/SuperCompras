@@ -309,3 +309,24 @@ async function colarTextoImportacao() {
   }
 }
 window.colarTextoImportacao = colarTextoImportacao;
+
+// ===== AÇÕES DAS JANELAS "BACKUP" E "EXPORTAR / COMPARTILHAR" (delegação, ver js/ui/acoes.js) =====
+const _fecharExportarE = fn => () => { closeExportOptionsModal(); fn(); };
+Acoes.registrarClique({
+  'backup-abrir':         () => abrirModalBackup(),
+  'backup-fechar':        () => document.getElementById('modalBackup')?.classList.add('hidden'),
+  'backup-salvar-chave':  () => salvarChaveSeguranca(),
+  'backup-exportar':      () => exportBackupJSON(),
+  'exportar-fundo':       noProprioElemento(() => closeExportOptionsModal()),
+  'exportar-fechar':      () => closeExportOptionsModal(),
+  // mesma ordem de antes: compartilhar/copiar/CSV agem e depois fecham; QR e colar fecham antes
+  'exportar-whatsapp':    () => { compartilharCarrinhoWhatsApp(); closeExportOptionsModal(); },
+  'exportar-copiar':      () => { copyCartToWhatsApp(); closeExportOptionsModal(); },
+  'exportar-csv':         () => { exportCartCSV(); closeExportOptionsModal(); },
+  'exportar-qr-gerar':    _fecharExportarE(() => abrirModalQRCode('gerar')),
+  'exportar-qr-ler':      _fecharExportarE(() => abrirModalQRCode('ler')),
+  'exportar-colar':       _fecharExportarE(() => colarTextoImportacao()),
+});
+Acoes.registrarMudanca({
+  'backup-restaurar':     (el, e) => handleRestoreJSON(e),
+});

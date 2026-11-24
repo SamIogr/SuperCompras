@@ -655,3 +655,14 @@ function closeDriveSyncModal() {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDriveSyncModal(); });
 window.openDriveSyncModal = openDriveSyncModal;
 window.closeDriveSyncModal = closeDriveSyncModal;
+
+// ===== AÇÕES DA JANELA DO GOOGLE DRIVE (delegação, ver js/ui/acoes.js) =====
+Acoes.registrarClique({
+  'drive-abrir':         () => openDriveSyncModal(),
+  'drive-fundo':         noProprioElemento(() => closeDriveSyncModal()),
+  'drive-fechar':        () => closeDriveSyncModal(),
+  'drive-sincronizar':   () => driveSincronizar(true),
+  'drive-desconectar':   () => driveDesconectar(),
+  'drive-ver-backup':    () => driveVerBackup(),
+  'drive-baixar-backup': () => driveBaixarBackup(),
+});

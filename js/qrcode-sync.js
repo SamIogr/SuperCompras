@@ -576,3 +576,12 @@ async function lerQRCodeDeArquivo(inputElement) {
   }
 }
 window.lerQRCodeDeArquivo = lerQRCodeDeArquivo;
+
+// ===== AÇÕES DA JANELA DO QR CODE (delegação, ver js/ui/acoes.js) =====
+Acoes.registrarClique({
+  'qr-fechar':  () => fecharModalQRCode(),
+  'qr-aba':     el => alternarAbaModalQR(el.dataset.aba),
+});
+Acoes.registrarMudanca({
+  'qr-arquivo': el => lerQRCodeDeArquivo(el),
+});

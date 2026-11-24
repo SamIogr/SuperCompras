@@ -439,3 +439,20 @@ document.addEventListener('click', (e) => {
     painel.classList.add('hidden');
   }
 });
+
+// ===== AÇÕES DO CABEÇALHO, TEMA, ZOOM E ABAS (delegação, ver js/ui/acoes.js) =====
+Acoes.registrarClique({
+  'tema-alternar':   () => alternarTemaApp(),
+  'zoom-painel':     () => toggleBarraZoomGlobal(),
+  'zoom-passo':      el => alterarZoomGlobal(Number(el.dataset.passo)),
+  'zoom-restaurar':  () => aplicarZoomGlobal(100),
+  // troca de aba; ao entrar no Histórico redesenha a lista (antes um ouvinte no index.html
+  // procurava "Histórico" no texto ou no onclick de qualquer botão)
+  'aba':             el => {
+    switchActiveTab(el.dataset.aba);
+    if (el.dataset.aba === 'historico' && typeof renderHistoricoUI === 'function') setTimeout(renderHistoricoUI, 50);
+  },
+});
+Acoes.registrarDigitacao({
+  'zoom-valor':      el => aplicarZoomGlobal(el.value),
+});

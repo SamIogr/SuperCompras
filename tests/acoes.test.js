@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { carregarApp, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ } = require('./carregar-app');
+const { carregarApp, scriptsDoIndex, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ } = require('./carregar-app');
 
 const ler = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 
@@ -41,8 +41,7 @@ test('noProprioElemento: só age quando o toque é no próprio fundo do modal', 
 
 // ------------------------------------------------------------ todo data-acao tem dono
 test('toda data-acao usada no app tem uma ação registrada', () => {
-  const app = carregarApp(['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js',
-    'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', ...ARQUIVOS_CATALOGO, 'js/api.js', ...ARQUIVOS_CARRINHO, ...ARQUIVOS_HISTORICO]);
+  const app = carregarApp(scriptsDoIndex());   // tudo o que o navegador carrega
   const fontes = ['index.html', ...fs.readdirSync(path.join(RAIZ, 'components')).map(f => 'components/' + f), ...listarArquivosJs()];
   const semDono = [];
   for (const f of fontes) {
@@ -125,4 +124,42 @@ test('lista do histórico gera botões com data-acao (sem onclick) e escapa o id
   assert.match(html, /data-acao="historico-detalhes" data-idx="0"/);
   assert.match(html, /data-acao="historico-marcar" data-id="pur-&quot;1&quot;"/);
   assert.doesNotMatch(html, /\son(click|change)="/);
+});
+
+// ------------------------------------------------------------ fim da etapa 3: nenhum handler embutido
+test('nenhum HTML do app chama funções direto (onclick, oninput, onchange, onkeydown, onsubmit...)', () => {
+  const fontes = ['index.html', ...fs.readdirSync(path.join(RAIZ, 'components')).map(f => 'components/' + f), ...listarArquivosJs()];
+  const achados = [];
+  for (const f of fontes) {
+    ler(f).split('\n').forEach((linha, i) => {
+      if (/^\s*(\*|\/\/)/.test(linha)) return;                 // comentários explicando o padrão
+      const m = linha.match(/\son[a-z]+="[^"]*"/);
+      if (m) achados.push(`${f}:${i + 1} ${m[0].trim()}`);
+    });
+  }
+  assert.deepEqual(achados, [], 'use data-acao + Acoes.registrar... (js/ui/acoes.js)');
+});
+
+test('trocar para a aba Histórico redesenha a lista; outras abas não', async () => {
+  const app = carregarApp(scriptsDoIndex());
+  const abas = [];
+  let redesenhos = 0;
+  app.switchActiveTab = aba => abas.push(aba);
+  app.renderHistoricoUI = () => redesenhos++;
+  app.Acoes.despachar('click', { target: elemento({ acao: 'aba', aba: 'dados' }) });
+  app.Acoes.despachar('click', { target: elemento({ acao: 'aba', aba: 'historico' }) });
+  await new Promise(r => setTimeout(r, 80));
+  assert.deepEqual(abas, ['dados', 'historico']);
+  assert.equal(redesenhos, 1);
+});
+
+test('exportar: compartilhar age antes de fechar; QR fecha antes de abrir (mesma ordem de antes)', () => {
+  const app = carregarApp(scriptsDoIndex());
+  const ordem = [];
+  app.closeExportOptionsModal = () => ordem.push('fechar');
+  app.compartilharCarrinhoWhatsApp = () => ordem.push('whatsapp');
+  app.abrirModalQRCode = aba => ordem.push('qr ' + aba);
+  app.Acoes.despachar('click', { target: elemento({ acao: 'exportar-whatsapp' }) });
+  app.Acoes.despachar('click', { target: elemento({ acao: 'exportar-qr-ler' }) });
+  assert.deepEqual(ordem, ['whatsapp', 'fechar', 'fechar', 'qr ler']);
 });

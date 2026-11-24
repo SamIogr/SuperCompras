@@ -83,6 +83,12 @@ const ARQUIVOS_CARRINHO = ['calculo', 'lista', 'formulario', 'edicao', 'finaliza
 const ARQUIVOS_HISTORICO = ['dados', 'lista', 'exclusao', 'detalhes', 'comparador', 'acoes']
   .map(n => `js/telas/historico/${n}.js`);
 
+/** Scripts locais do index.html, na ordem em que o navegador carrega (inclui js/vendor). */
+function scriptsDoIndex() {
+  const html = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
+  return [...html.matchAll(/<script src="(js\/[^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]);
+}
+
 /** Todos os .js do app (inclui subpastas como js/telas e js/ui; ignora js/vendor). Caminhos 'js/...'. */
 function listarArquivosJs(pasta = 'js') {
   const saida = [];
@@ -94,4 +100,4 @@ function listarArquivosJs(pasta = 'js') {
   return saida;
 }
 
-module.exports = { carregarApp, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };
+module.exports = { carregarApp, scriptsDoIndex, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

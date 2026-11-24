@@ -1,5 +1,5 @@
 /**
- * SUPERCOMPRAS PRO - CALCULADORA COMPARATIVA MODULAR
+ * SUPERCOMPRAS PRO - CALCULADORA: CÁLCULO DO PREÇO POR KG/L/UNIDADE (js/telas/calculadora/calculadora.js)
  * Código autossuficiente e blindado (sem dependências cruzadas)
  */
 
