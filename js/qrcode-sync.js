@@ -89,7 +89,7 @@ function desserializarQRLegado(payloadTexto) {
     }
 
     const itensCarrinho = dados.items.map((it, idx) => ({
-      id: 'c-qr-' + Date.now() + '-' + idx,
+      id: novoId('c-qr-'),
       name: it.n,
       quantity: Number(it.q) || 1,
       unit: it.u || 'un',
@@ -144,7 +144,7 @@ async function desserializarQRParaCarrinho(payloadTexto) {
       const nome = txt(n).trim();
       if (!nome) return null;
       return {
-        id: 'c-qr-' + Date.now() + '-' + idx,
+        id: novoId('c-qr-'),
         name: nome,
         quantity: num(q) > 0 ? num(q) : 1,
         unit: txt(u, 10) || 'un',
@@ -430,7 +430,7 @@ function garantirProdutosNoCatalogo(itens) {
       });
     }
     Object.assign(novo, {
-      id: 'p-custom-' + Date.now() + '-' + criados,
+      id: novoId('p-custom-'),
       name: nome,
       unit: it.unit || 'un',
       category: 'Geral'

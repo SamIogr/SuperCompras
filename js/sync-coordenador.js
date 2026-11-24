@@ -1,12 +1,18 @@
 /**
  * SUPERCOMPRAS PRO (Coordenação das sincronizações: Planilha do administrador x Google Drive)
- * Arquivo: js/sync-coordenador.js  (ARQUIVO NOVO)
- * Carregue DEPOIS de state.js, api.js e drive-sync.js.
+ * Arquivo: js/sync-coordenador.js
+ * Carregue LOGO DEPOIS de state.js: api.js e drive-sync.js chamam scRodar() diretamente.
  *
  * Papéis:
  *  - PLANILHA (só o administrador, quem tem a chave salva): catálogo da nuvem (produtos PROD-... e mercados).
  *  - DRIVE (todos): histórico, produtos e mercados criados no aparelho.
  * As duas passam por uma fila única: nunca rodam ao mesmo tempo, e a planilha vai primeiro.
+ *
+ * Antes este arquivo trocava as funções globais (window.x = versão envolvida) e só funcionava
+ * se fosse carregado por último. Agora cada função pública chama scRodar() explicitamente,
+ * então a ordem dos <script> não quebra mais a fila em silêncio.
+ * Atenção: uma função que roda dentro da fila não deve chamar e esperar (await) outra que
+ * também passe por scRodar(): as duas ficariam esperando uma pela outra.
  */
 
 // ===== 1. FILA ÚNICA =====
@@ -23,33 +29,22 @@ function scEhAdmin() {
   return typeof getSecurityToken === 'function' && !!getSecurityToken();
 }
 
-function scEnvolver(nome, soAdmin, silencioso) {
-  const orig = window[nome];
-  if (typeof orig !== 'function' || orig.__scEnvolvida) return;
-  const nova = function () {
-    const args = arguments, self = this;
-    if (soAdmin && !scEhAdmin()) {                       // sem chave: nem pergunta, nem chama a planilha
-      if (!silencioso && typeof showAppToast === 'function') showAppToast('Recurso restrito ao administrador.', 'info');
-      return Promise.resolve();
-    }
-    return scExclusivo(() => orig.apply(self, args));
-  };
-  nova.__scEnvolvida = true;
-  window[nome] = nova;
+/**
+ * Roda fn na fila única.
+ * soAdmin: sem chave salva, não chama a planilha (e avisa, a menos que silencioso).
+ */
+function scRodar(soAdmin, silencioso, fn) {
+  if (soAdmin && !scEhAdmin()) {
+    if (!silencioso && typeof showAppToast === 'function') showAppToast('Recurso restrito ao administrador.', 'info');
+    return Promise.resolve();
+  }
+  return scExclusivo(fn);
 }
-
-// precisa rodar já na carga do script, antes de qualquer sincronização automática do app
-scEnvolver('sincronizarComPlanilha', true, true);
-scEnvolver('abrirModalSincronizacaoSeletiva', true, false);
-scEnvolver('sincronizarCatalogoDireto', true, false);
-scEnvolver('promoverProdutoEmEdicaoParaPlanilha', true, false);
-scEnvolver('promoverMercadoEmEdicaoParaPlanilha', true, false);
-scEnvolver('driveSincronizar', false, false);
 
 // ===== 3. SINCRONIZAR TUDO (planilha primeiro, se for administrador; depois o Drive) =====
 async function sincronizarTudo(interativo) {
-  if (scEhAdmin() && typeof window.sincronizarComPlanilha === 'function') await window.sincronizarComPlanilha();
-  if (interativo || localStorage.getItem('sc_drive_conectado')) await window.driveSincronizar(!!interativo);
+  if (scEhAdmin() && typeof sincronizarComPlanilha === 'function') await sincronizarComPlanilha();
+  if (interativo || localStorage.getItem('sc_drive_conectado')) await driveSincronizar(!!interativo);
 }
 window.sincronizarTudo = sincronizarTudo;
 
@@ -67,14 +62,14 @@ function scAplicarModoAdmin() {
 let _scTimerAdmin = null;
 function scIniciarTela() {
   scAplicarModoAdmin();
-  const orig = window.salvarChaveSeguranca;
-  if (typeof orig === 'function' && !orig.__scEnvolvida) {
-    const nova = function () { const r = orig.apply(this, arguments); scAplicarModoAdmin(); return r; };
-    nova.__scEnvolvida = true;
-    window.salvarChaveSeguranca = nova;
-  }
-  // os modais de edição são redesenhados ao abrir: reaplica quando a tela mudar
-  new MutationObserver(() => {
+  // Os modais de edição são redesenhados ao abrir: reaplica só quando entra na tela algum
+  // controle de administrador (antes rodava a cada mudança de qualquer lista).
+  const SELETOR_ADMIN = '#btnSyncPlanilha, #btnPromoverProduto, #btnPromoverMercado, #iconSyncCatalogo, [data-admin-only]';
+  new MutationObserver((mudancas) => {
+    const relevante = mudancas.some(m => Array.from(m.addedNodes).some(n =>
+      n.nodeType === 1 && (n.matches(SELETOR_ADMIN) || n.querySelector(SELETOR_ADMIN))
+    ));
+    if (!relevante) return;
     clearTimeout(_scTimerAdmin);
     _scTimerAdmin = setTimeout(scAplicarModoAdmin, 150);
   }).observe(document.body, { childList: true, subtree: true });

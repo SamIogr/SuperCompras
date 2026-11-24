@@ -12,11 +12,20 @@ function obterHistoricoLocal() {
       return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(normalizarCompra) : [];
   } catch (e) {
     console.warn('[Historico] Dados corrompidos encontrados, reiniciando lista vazia:', e);
     return [];
   }
+}
+
+// Lista usada pelo comparador. Normaliza porque o purchaseHistory também chega pelo Drive,
+// às vezes com registros de versões antigas (itens/nome/quantidade...).
+function obterListaHistoricoComparador() {
+  const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
+    ? purchaseHistory
+    : JSON.parse(localStorage.getItem('supercompras_history') || localStorage.getItem('compras') || '[]');
+  return lista.map(normalizarCompra);
 }
 
 function salvarHistoricoLocal(lista) {
@@ -67,7 +76,7 @@ window.renderHistoricoUI = function() {
   const anoAtual = agora.getFullYear();
 
   const comprasMes = historico.filter(h => {
-    const rawData = h.date || h.dataISO || h.data;
+    const rawData = h.date;
     if (!rawData) return false;
     const d = new Date(rawData);
     return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
@@ -106,14 +115,14 @@ window.renderHistoricoUI = function() {
     const compraId = obterIdCompra(compra, idx);
     const isChecked = selectedHistoryIds.has(compraId);
 
-    const rawData = compra.date || compra.dataISO || compra.data;
+    const rawData = compra.date;
     const dataFormatada = rawData ? new Date(rawData).toLocaleDateString('pt-BR', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }) : 'Data recente';
 
     const mercadoNome = resolverNomeMercado(compra);
     const valorTotal = fmt(compra.total || 0);
-    const itens = compra.items || compra.itens || [];
+    const itens = compra.items || [];
     const qtdItens = itens.length || compra.itemCount || 1;
     const economia = Number(compra.savings) || 0;
 
@@ -140,6 +149,9 @@ window.renderHistoricoUI = function() {
           <div class="flex items-center space-x-1.5">
             <button type="button" onclick="abrirDetalhesCompraHistorico(${idx})" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer">
               Ver Itens
+            </button>
+            <button type="button" onclick="abrirModalComparadorHistorico(${idx})" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer" title="Comparar preço desta compra com os preços atuais e a lista ativa">
+              Comparar
             </button>
             <button type="button" onclick="restaurarCompraParaCarrinho(${idx})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-[11px] transition-colors cursor-pointer">
               Repetir
@@ -362,13 +374,13 @@ window.abrirDetalhesCompraHistorico = function(idx) {
 
   document.querySelectorAll('#modalDetalhesHistorico').forEach(el => el.remove());
 
-  const rawData = compra.date || compra.dataISO || compra.data;
+  const rawData = compra.date;
   const dataFormatada = rawData ? new Date(rawData).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
   }) : 'Data recente';
 
   const mercadoNome = resolverNomeMercado(compra);
-  const itens = compra.items || compra.itens || [];
+  const itens = compra.items || [];
   const fmt = (typeof formatBRL === 'function') ? formatBRL : (v) => Number(v || 0).toFixed(2);
   const totalFormatado = fmt(compra.total || 0);
 
@@ -380,10 +392,10 @@ window.abrirDetalhesCompraHistorico = function(idx) {
       </div>`;
   } else {
     itensHtml = itens.map(it => {
-      const nome = it.name || it.nome || 'Produto';
-      const marca = it.selectedBrandId || it.brand || it.marca || 'Padrão';
-      const precoUnit = Number(it.unitPrice || it.price || it.precoUnitario || 0);
-      const qtd = Number(it.quantity || it.quantidade || 1);
+      const nome = it.name || 'Produto';
+      const marca = it.selectedBrandId || 'Padrão';
+      const precoUnit = Number(it.unitPrice || 0);
+      const qtd = Number(it.quantity || 1);
       const subtotal = Number(it.subtotal) || (precoUnit * qtd);
       const unidade = it.unit || it.unidade || 'un';
 
@@ -472,7 +484,7 @@ document.addEventListener('keydown', (e) => {
 window.restaurarCompraParaCarrinho = function(idx) {
   const historico = obterHistoricoLocal();
   const compra = historico[idx];
-  const itens = compra?.items || compra?.itens;
+  const itens = compra?.items;
 
   if (!compra || !Array.isArray(itens) || itens.length === 0) {
     if (typeof showAppToast === 'function') showAppToast('Esta compra não possui itens para restaurar.', 'warning');
@@ -485,9 +497,9 @@ window.restaurarCompraParaCarrinho = function(idx) {
     : (Array.isArray(window.products) ? window.products : []);
 
   cart = itens.map(it => {
-    const nomeItem = (it.name || it.nome || '').trim();
-    const marcaItem = (it.selectedBrandId || it.brand || it.marca || 'Padrão').trim();
-    const qtdItem = Number(it.quantity || it.quantidade || 1);
+    const nomeItem = (it.name || '').trim();
+    const marcaItem = (it.selectedBrandId || 'Padrão').trim();
+    const qtdItem = Number(it.quantity || 1);
     const unidadeItem = it.unit || it.unidade || 'un';
 
     const prodBanco = listaProdutos.find(p => 
@@ -517,7 +529,7 @@ window.restaurarCompraParaCarrinho = function(idx) {
     }
 
     return {
-      id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      id: novoId('c-item-'),
       productId: prodBanco ? prodBanco.id : (it.productId || null),
       name: prodBanco ? prodBanco.name : nomeItem,
       selectedBrandId: marcaItem,
@@ -569,9 +581,7 @@ window.abrirModalComparadorHistorico = function(indiceOpcional) {
   const selectMercado = document.getElementById('histSelectMercadoAlvo');
   if (!modal || !selectCompra || !selectMercado) return;
 
-  const listaHistorico = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
-    ? purchaseHistory
-    : JSON.parse(localStorage.getItem('supercompras_history') || localStorage.getItem('compras') || '[]');
+  const listaHistorico = obterListaHistoricoComparador();
 
   if (listaHistorico.length === 0) {
     if (typeof showAppToast === 'function') showAppToast('Nenhuma compra registrada para comparar.', 'info');
@@ -580,8 +590,8 @@ window.abrirModalComparadorHistorico = function(indiceOpcional) {
 
   // Preenche a lista de compras
   selectCompra.innerHTML = listaHistorico.map((compra, i) => {
-    const dataFormatada = formatarDataHistoricoLegivel(compra.date || compra.data);
-    const totalFormatado = (Number(compra.total) || 0).toFixed(2).replace('.', ',');
+    const dataFormatada = formatarDataHistoricoLegivel(compra.date);
+    const totalFormatado = formatBRL((Number(compra.total) || 0));
     return `<option value="${i}">${esc(compra.marketName || 'Supermercado')} • ${dataFormatada} (R$ ${totalFormatado})</option>`;
   }).join('');
 
@@ -621,9 +631,7 @@ window.atualizarMercadoPadraoDaCompra = function() {
   const selectMercado = document.getElementById('histSelectMercadoAlvo');
   if (!selectCompra || !selectMercado) return;
 
-  const listaHistorico = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
-    ? purchaseHistory
-    : JSON.parse(localStorage.getItem('supercompras_history') || localStorage.getItem('compras') || '[]');
+  const listaHistorico = obterListaHistoricoComparador();
 
   const compra = listaHistorico[Number(selectCompra.value || 0)];
   if (compra && compra.marketId && selectMercado.querySelector(`option[value="${compra.marketId}"]`)) {
@@ -674,9 +682,7 @@ window.renderizarComparacaoHistoricaAtual = function() {
 
   if (!selectCompra || !selectMercado || !cardsResumo || !listaContainer) return;
 
-  const listaHistorico = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
-    ? purchaseHistory
-    : JSON.parse(localStorage.getItem('supercompras_history') || localStorage.getItem('compras') || '[]');
+  const listaHistorico = obterListaHistoricoComparador();
 
   const compra = listaHistorico[Number(selectCompra.value || 0)];
   if (!compra || !Array.isArray(compra.items) || compra.items.length === 0) {
@@ -719,7 +725,7 @@ window.renderizarComparacaoHistoricaAtual = function() {
   const carrinhoAtual = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : [];
 
   const buscarCotacaoMercado = (item, idMercado) => {
-    const nomeItem = (item.name || item.nome || '').trim().toLowerCase();
+    const nomeItem = (item.name || '').trim().toLowerCase();
     const idItem = item.productId || item.id;
 
     const prod = (typeof products !== 'undefined' && Array.isArray(products))
@@ -728,7 +734,7 @@ window.renderizarComparacaoHistoricaAtual = function() {
 
     if (!prod) return { preco: null, temCotacao: false };
 
-    const marcaNome = (item.selectedBrandId || item.brand || item.marca || 'Padrão').trim().toLowerCase();
+    const marcaNome = (item.selectedBrandId || 'Padrão').trim().toLowerCase();
 
     if (Array.isArray(prod.brands)) {
       const bObj = prod.brands.find(b => (b.name || b.id || '').trim().toLowerCase() === marcaNome);
@@ -750,7 +756,7 @@ window.renderizarComparacaoHistoricaAtual = function() {
   let itensPresentesNoCarrinho = 0;
 
   const itens = compra.items.map((item, idxItem) => {
-    const qtd = Number(item.quantity || item.quantidade || 1);
+    const qtd = Number(item.quantity || 1);
     const precoTabelaUnit = Number(item.price || item.unitPrice || item.basePrice || 0);
 
     let totalPagoItem = 0;
@@ -768,18 +774,18 @@ window.renderizarComparacaoHistoricaAtual = function() {
 
     const precoEfetivoUnit = qtd > 0 ? (totalPagoItem / qtd) : precoTabelaUnit;
 
-    const nomeItem = (item.name || item.nome || '').trim().toLowerCase();
+    const nomeItem = (item.name || '').trim().toLowerCase();
     const idItem = item.productId || item.id;
-    const marcaItem = (item.selectedBrandId || item.brand || item.marca || 'Padrão').trim().toLowerCase();
+    const marcaItem = (item.selectedBrandId || 'Padrão').trim().toLowerCase();
 
     const cotacao = buscarCotacaoMercado(item, mercadoAlvoId);
     const temCotacao = cotacao.temCotacao;
     const precoCatalogoUnit = temCotacao ? cotacao.preco : null;
 
     const itemNoCarrinho = carrinhoAtual.find(c => {
-      const cNome = (c.name || c.nome || '').trim().toLowerCase();
+      const cNome = (c.name || '').trim().toLowerCase();
       const cId = c.productId || c.id;
-      const cMarca = (c.selectedBrandId || c.brand || c.marca || 'Padrão').trim().toLowerCase();
+      const cMarca = (c.selectedBrandId || 'Padrão').trim().toLowerCase();
       return (idItem && cId && idItem === cId) || (nomeItem === cNome && marcaItem === cMarca);
     });
 
@@ -815,8 +821,8 @@ window.renderizarComparacaoHistoricaAtual = function() {
 
     return {
       idxItem,
-      name: item.name || item.nome || 'Produto',
-      brand: item.selectedBrandId || item.brand || item.marca || 'Padrão',
+      name: item.name || 'Produto',
+      brand: item.selectedBrandId || 'Padrão',
       unit: item.unit || 'un',
       qtd,
       precoTabelaUnit,
@@ -869,20 +875,20 @@ window.renderizarComparacaoHistoricaAtual = function() {
   cardsResumo.innerHTML = `
     <div class="flex flex-col justify-center items-center text-center px-1">
       <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Pago</span>
-      <strong class="text-xs font-black text-slate-800 dark:text-white">R$ ${totalPagoFinal.toFixed(2).replace('.', ',')}</strong>
+      <strong class="text-xs font-black text-slate-800 dark:text-white">R$ ${formatBRL(totalPagoFinal)}</strong>
     </div>
 
     <div class="flex flex-col justify-center items-center text-center border-x border-slate-200 dark:border-slate-700/60 px-1">
       <span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-tight truncate max-w-full" title="${rotuloCentral}">
         ${rotuloCentral}
       </span>
-      <strong class="text-xs font-black text-amber-600 dark:text-amber-400">R$ ${totalComparado.toFixed(2).replace('.', ',')}</strong>
+      <strong class="text-xs font-black text-amber-600 dark:text-amber-400">R$ ${formatBRL(totalComparado)}</strong>
     </div>
 
     <div class="flex flex-col justify-center items-center text-center px-1">
       <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Variação</span>
       <strong class="text-xs font-black ${corDiferenca} leading-tight">
-        ${sinalDiferenca}R$ ${diffGeral.toFixed(2).replace('.', ',')}
+        ${sinalDiferenca}R$ ${formatBRL(diffGeral)}
         <span class="text-[9px] font-bold opacity-90">(${sinalDiferenca}${percGeral.toFixed(1)}%)</span>
       </strong>
     </div>
@@ -900,10 +906,10 @@ window.renderizarComparacaoHistoricaAtual = function() {
     let bordaCard = 'border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-slate-800/40';
     let linhaValores = '';
 
-    const strPago = `R$ ${it.totalPagoItem.toFixed(2).replace('.', ',')}`;
+    const strPago = `R$ ${formatBRL(it.totalPagoItem)}`;
 
     if (modoComparacaoHistoricoAtual === 'catalogo') {
-      const strAtual = it.subtotalComparado !== null ? `R$ ${it.subtotalComparado.toFixed(2).replace('.', ',')}` : null;
+      const strAtual = it.subtotalComparado !== null ? `R$ ${formatBRL(it.subtotalComparado)}` : null;
 
       if (it.itemSemPreco) {
         bordaCard = 'border border-dashed border-amber-400/80 bg-amber-500/5';
@@ -912,12 +918,12 @@ window.renderizarComparacaoHistoricaAtual = function() {
 
       } else if (it.diffTotal > 0.05) {
         bordaCard = 'border border-rose-500/50 bg-rose-500/5';
-        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-rose-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▲ +R$ ${it.diffTotal.toFixed(2).replace('.', ',')}</span>`;
+        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-rose-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▲ +R$ ${formatBRL(it.diffTotal)}</span>`;
         linhaValores = `<span class="text-slate-500 dark:text-slate-400">Pago:</span> <span class="text-slate-700 dark:text-slate-300">${strPago}</span> → <span class="text-slate-500 dark:text-slate-400">Atual:</span> <strong class="text-rose-600 dark:text-rose-400 font-bold">${strAtual}</strong>`;
 
       } else if (it.diffTotal < -0.05) {
         bordaCard = 'border border-emerald-500/50 bg-emerald-500/5';
-        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-emerald-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▼ -R$ ${Math.abs(it.diffTotal).toFixed(2).replace('.', ',')}</span>`;
+        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-emerald-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▼ -R$ ${formatBRL(Math.abs(it.diffTotal))}</span>`;
         linhaValores = `<span class="text-slate-500 dark:text-slate-400">Pago:</span> <span class="text-slate-700 dark:text-slate-300">${strPago}</span> → <span class="text-slate-500 dark:text-slate-400">Atual:</span> <strong class="text-emerald-600 dark:text-emerald-400 font-bold">${strAtual}</strong>`;
 
       } else {
@@ -926,7 +932,7 @@ window.renderizarComparacaoHistoricaAtual = function() {
       }
 
     } else {
-      const strCarrinho = it.subtotalComparado !== null ? `R$ ${it.subtotalComparado.toFixed(2).replace('.', ',')}` : null;
+      const strCarrinho = it.subtotalComparado !== null ? `R$ ${formatBRL(it.subtotalComparado)}` : null;
 
       if (!it.estaNoCarrinho) {
         tagBadge = `<span class="inline-flex items-center text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md whitespace-nowrap">Fora da lista</span>`;
@@ -934,12 +940,12 @@ window.renderizarComparacaoHistoricaAtual = function() {
 
       } else if (it.diffTotal > 0.05) {
         bordaCard = 'border border-rose-500/50 bg-rose-500/5';
-        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-rose-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▲ +R$ ${it.diffTotal.toFixed(2).replace('.', ',')}</span>`;
+        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-rose-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▲ +R$ ${formatBRL(it.diffTotal)}</span>`;
         linhaValores = `<span class="text-slate-500 dark:text-slate-400">Pago:</span> <span class="text-slate-700 dark:text-slate-300">${strPago}</span> → <span class="text-slate-500 dark:text-slate-400">Na lista:</span> <strong class="text-rose-600 dark:text-rose-400 font-bold">${strCarrinho}</strong>`;
 
       } else if (it.diffTotal < -0.05) {
         bordaCard = 'border border-emerald-500/50 bg-emerald-500/5';
-        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-emerald-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▼ -R$ ${Math.abs(it.diffTotal).toFixed(2).replace('.', ',')}</span>`;
+        tagBadge = `<span class="inline-flex items-center gap-1 text-[10px] font-black text-white bg-emerald-600 px-2 py-0.5 rounded-md whitespace-nowrap shadow-2xs">▼ -R$ ${formatBRL(Math.abs(it.diffTotal))}</span>`;
         linhaValores = `<span class="text-slate-500 dark:text-slate-400">Pago:</span> <span class="text-slate-700 dark:text-slate-300">${strPago}</span> → <span class="text-slate-500 dark:text-slate-400">Na lista:</span> <strong class="text-emerald-600 dark:text-emerald-400 font-bold">${strCarrinho}</strong>`;
 
       } else {
@@ -994,19 +1000,19 @@ ${it.estaNoCarrinho && modoComparacaoHistoricoAtual === 'catalogo' ? `<span styl
             <div class="flex justify-between text-slate-700 dark:text-slate-300">
               <span>Preço unitário pago:</span>
               <span>
-                ${it.descontoItem > 0 ? `<span class="line-through text-slate-400 mr-1">R$ ${it.precoTabelaUnit.toFixed(2).replace('.', ',')}</span>` : ''}
-                <strong class="text-slate-900 dark:text-white font-bold">R$ ${it.precoEfetivoUnit.toFixed(2).replace('.', ',')}</strong> / ${esc(it.unit)}
+                ${it.descontoItem > 0 ? `<span class="line-through text-slate-400 mr-1">R$ ${formatBRL(it.precoTabelaUnit)}</span>` : ''}
+                <strong class="text-slate-900 dark:text-white font-bold">R$ ${formatBRL(it.precoEfetivoUnit)}</strong> / ${esc(it.unit)}
               </span>
             </div>
             ${it.descontoItem > 0 ? `
               <div class="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
                 <span>Desconto deduzido:</span>
-                <strong>-R$ ${it.descontoItem.toFixed(2).replace('.', ',')}</strong>
+                <strong>-R$ ${formatBRL(it.descontoItem)}</strong>
               </div>
             ` : ''}
             <div class="flex justify-between text-slate-800 dark:text-slate-200 pt-1 border-t border-slate-100 dark:border-slate-700/50">
               <span>Subtotal faturado:</span>
-              <span>${it.qtd} × R$ ${it.precoEfetivoUnit.toFixed(2).replace('.', ',')} = <strong class="text-slate-900 dark:text-white font-black">R$ ${it.totalPagoItem.toFixed(2).replace('.', ',')}</strong></span>
+              <span>${it.qtd} × R$ ${formatBRL(it.precoEfetivoUnit)} = <strong class="text-slate-900 dark:text-white font-black">R$ ${formatBRL(it.totalPagoItem)}</strong></span>
             </div>
           </div>
 
@@ -1019,18 +1025,18 @@ ${it.estaNoCarrinho && modoComparacaoHistoricoAtual === 'catalogo' ? `<span styl
               </div>
               <div class="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>Preço unitário hoje:</span>
-                <strong class="text-slate-900 dark:text-white font-bold">R$ ${it.precoComparadoUnit.toFixed(2).replace('.', ',')}</strong> / ${esc(it.unit)}
+                <strong class="text-slate-900 dark:text-white font-bold">R$ ${formatBRL(it.precoComparadoUnit)}</strong> / ${esc(it.unit)}
               </div>
               <div class="flex justify-between text-slate-800 dark:text-slate-200 pt-1 border-t border-slate-100 dark:border-slate-700/50">
                 <span>Subtotal hoje:</span>
-                <span>${it.qtd} × R$ ${it.precoComparadoUnit.toFixed(2).replace('.', ',')} = <strong class="text-slate-900 dark:text-white font-black">R$ ${it.subtotalComparado.toFixed(2).replace('.', ',')}</strong></span>
+                <span>${it.qtd} × R$ ${formatBRL(it.precoComparadoUnit)} = <strong class="text-slate-900 dark:text-white font-black">R$ ${formatBRL(it.subtotalComparado)}</strong></span>
               </div>
             </div>
 
             <!-- BLOCO 3: RESUMO DE IMPACTO -->
             <div class="flex items-center justify-between px-1 text-slate-500 dark:text-slate-400 text-[9.5px]">
-              <span>Variação por ${it.unit}: <strong class="${corDiffUnit}">${sinalDiffUnit}R$ ${it.diffUnitario !== null ? Math.abs(it.diffUnitario).toFixed(2).replace('.', ',') : '0,00'}</strong></span>
-              <span>Impacto total: <strong class="${corDiffUnit}">${it.diffTotal > 0 ? '+' : ''}R$ ${it.diffTotal.toFixed(2).replace('.', ',')}</strong></span>
+              <span>Variação por ${esc(it.unit)}: <strong class="${corDiffUnit}">${sinalDiffUnit}R$ ${it.diffUnitario !== null ? formatBRL(Math.abs(it.diffUnitario)) : '0,00'}</strong></span>
+              <span>Impacto total: <strong class="${corDiffUnit}">${it.diffTotal > 0 ? '+' : ''}R$ ${formatBRL(it.diffTotal)}</strong></span>
             </div>
           ` : `
             <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[9.5px]">

@@ -701,7 +701,7 @@ function executeFinishPurchase(clearAfter) {
   });
 
   const novaCompra = {
-    id: 'pur-' + Date.now(),
+    id: novoId('pur-'),
     date: new Date().toISOString(),
     marketId: activeMarketId,
     marketName: getSelectedMarketName(),
@@ -826,7 +826,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
 
   if (!masterProd) {
     masterProd = {
-      id: 'p-custom-' + Date.now(),
+      id: novoId('p-custom-'),
       name: name,
       category: 'Geral',
       unit: unit,
@@ -841,7 +841,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
   }
 
   cart.unshift({
-    id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    id: novoId('c-item-'),
     productId: masterProd.id,
     selectedBrandId: selectedBrandId || 'Padrão',
     name: masterProd.name,
@@ -921,7 +921,7 @@ window.compartilharCarrinhoWhatsApp = compartilharCarrinhoWhatsApp;
 
 // 1. FUNÇÃO AUXILIAR: CALCULA O PREÇO REAL DO PRODUTO POR SUPERMERCADO
 function obterPrecoItemMercado(itemCarrinho, mercadoId) {
-  const nomeItem = (itemCarrinho.name || itemCarrinho.nome || '').trim().toLowerCase();
+  const nomeItem = (itemCarrinho.name || '').trim().toLowerCase();
   const idItem = itemCarrinho.productId || itemCarrinho.id;
 
   const prod = (typeof products !== 'undefined' && Array.isArray(products))
@@ -930,7 +930,7 @@ function obterPrecoItemMercado(itemCarrinho, mercadoId) {
 
   if (!prod) return Number(itemCarrinho.unitPrice || itemCarrinho.price || itemCarrinho.basePrice || 0);
 
-  const marcaNome = (itemCarrinho.selectedBrandId || itemCarrinho.brand || itemCarrinho.marca || 'Padrão').trim().toLowerCase();
+  const marcaNome = (itemCarrinho.selectedBrandId || 'Padrão').trim().toLowerCase();
 
   if (Array.isArray(prod.brands)) {
     const bObj = prod.brands.find(b => (b.name || b.id || '').trim().toLowerCase() === marcaNome);
@@ -973,7 +973,7 @@ function analisarMelhorMercado() {
 
   let totalAtual = 0;
   cart.forEach(item => {
-    totalAtual += obterPrecoItemMercado(item, activeMarketId) * Number(item.quantity || item.quantidade || 1);
+    totalAtual += obterPrecoItemMercado(item, activeMarketId) * Number(item.quantity || 1);
   });
 
   let melhorMercado = null;
@@ -984,7 +984,7 @@ function analisarMelhorMercado() {
 
     let somaMercado = 0;
     cart.forEach(item => {
-      somaMercado += obterPrecoItemMercado(item, mercado.id) * Number(item.quantity || item.quantidade || 1);
+      somaMercado += obterPrecoItemMercado(item, mercado.id) * Number(item.quantity || 1);
     });
 
     if (somaMercado > 0 && (totalAtual - somaMercado) >= 0.20 && somaMercado < menorTotal) {
@@ -997,7 +997,7 @@ function analisarMelhorMercado() {
   btn.className = "w-8 h-8 rounded-xl border transition-all active:scale-95 flex items-center justify-center shrink-0 cursor-pointer shadow-2xs";
 
   if (melhorMercado) {
-    const diff = (totalAtual - menorTotal).toFixed(2).replace('.', ',');
+    const diff = formatBRL((totalAtual - menorTotal));
     btn.classList.add('bg-amber-500/15', 'border-amber-500/40', 'hover:bg-amber-500/25');
     btn.setAttribute('title', `Economia de R$ ${diff} noutro supermercado. Toque para comparar.`);
     btn.innerHTML = `
@@ -1031,13 +1031,13 @@ window.abrirGuiaComparativoMercados = function() {
 
   let totalAtual = 0;
   cart.forEach(item => {
-    totalAtual += obterPrecoItemMercado(item, activeMarketId) * Number(item.quantity || item.quantidade || 1);
+    totalAtual += obterPrecoItemMercado(item, activeMarketId) * Number(item.quantity || 1);
   });
 
   const comparativos = listaMercados.map(mercado => {
     let totalMercado = 0;
     cart.forEach(item => {
-      totalMercado += obterPrecoItemMercado(item, mercado.id) * Number(item.quantity || item.quantidade || 1);
+      totalMercado += obterPrecoItemMercado(item, mercado.id) * Number(item.quantity || 1);
     });
     return {
       id: mercado.id,
@@ -1057,9 +1057,9 @@ window.abrirGuiaComparativoMercados = function() {
       diffBadge = `<span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded">Ativo</span>`;
     } else if (comp.diff < -0.10) {
       statusClass = "border-amber-400/80 bg-amber-50/40 dark:bg-amber-950/20";
-      diffBadge = `<span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">- R$ ${Math.abs(comp.diff).toFixed(2).replace('.', ',')}</span>`;
+      diffBadge = `<span class="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">- R$ ${formatBRL(Math.abs(comp.diff))}</span>`;
     } else if (comp.diff > 0.10) {
-      diffBadge = `<span class="text-[9px] font-medium text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-1.5 py-0.5 rounded">+ R$ ${comp.diff.toFixed(2).replace('.', ',')}</span>`;
+      diffBadge = `<span class="text-[9px] font-medium text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-1.5 py-0.5 rounded">+ R$ ${formatBRL(comp.diff)}</span>`;
     }
 
     return `
@@ -1069,7 +1069,7 @@ window.abrirGuiaComparativoMercados = function() {
             <span class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${esc(comp.name)}</span>
             ${diffBadge}
           </div>
-          <p class="text-[11px] font-black text-slate-700 dark:text-slate-300 mt-0.5">Total: R$ ${comp.total.toFixed(2).replace('.', ',')}</p>
+          <p class="text-[11px] font-black text-slate-700 dark:text-slate-300 mt-0.5">Total: R$ ${formatBRL(comp.total)}</p>
         </div>
         ${!comp.isAtivo ? `
           <button type="button" 

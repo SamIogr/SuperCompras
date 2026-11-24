@@ -39,7 +39,10 @@ function playAppBeep(kind = 'click') {
       osc.start(t);
       osc.stop(t + 0.25);
     }
-  } catch (err) {}
+  } catch (err) {
+    // som é opcional: navegador sem Web Audio ou bloqueado até o primeiro toque
+    console.debug('[beep] sem áudio:', err && err.message);
+  }
 }
 window.playAppBeep = playAppBeep;
 
@@ -357,33 +360,7 @@ function fecharModalHistorico() {
 }
 window.fecharModalHistorico = fecharModalHistorico;
 
-// 1. Função auxiliar para mesclar itens sem duplicar produtos de mesma marca
-function mesclarItensNoCarrinho(novosItens) {
-  if (!Array.isArray(cart)) cart = [];
 
-  novosItens.forEach(novo => {
-    const nomeNovo = (novo.name || '').trim().toLowerCase();
-    const marcaNova = (novo.selectedBrandId || 'Padrão').trim().toLowerCase();
-
-    // Localiza se o item já existe no carrinho com a mesma marca
-    const existente = cart.find(c => {
-      const nomeExistente = (c.name || '').trim().toLowerCase();
-      const marcaExistente = (c.selectedBrandId || 'Padrão').trim().toLowerCase();
-      const mesmoId = c.productId && novo.productId && c.productId === novo.productId;
-      return (mesmoId || nomeExistente === nomeNovo) && marcaExistente === marcaNova;
-    });
-
-    if (existente) {
-      existente.quantity = Number((Number(existente.quantity || 0) + Number(novo.quantity || 1)).toFixed(3));
-    } else {
-      cart.push({
-        ...novo,
-        id: 'c-import-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)
-      });
-    }
-  });
-}
-window.mesclarItensNoCarrinho = mesclarItensNoCarrinho;
 
 // 2. Leitura da Hash da URL com diálogo de Substituir vs. Somar
 async function verificarImportacaoUrlHash() {

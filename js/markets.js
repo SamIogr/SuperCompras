@@ -66,7 +66,7 @@ function salvarSupermercadoSubmit(e) {
     }
   } else {
     supermarkets.push({
-      id: 'm-custom-' + Date.now(),
+      id: novoId('m-custom-'),
       name: name,
       branch: branch || 'São José dos Pinhais',
       address: address,

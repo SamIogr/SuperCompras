@@ -99,7 +99,7 @@ function handleRestoreJSON(e) {
 
               mapaProdutos.set(chave, {
                 ...item,
-                id: item.id || ('p-custom-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)),
+                id: item.id || (novoId('p-custom-')),
                 name: item.name.trim(),
                 category: item.category || 'Geral',
                 unit: item.unit || 'un',
@@ -134,6 +134,7 @@ function handleRestoreJSON(e) {
         activeMarketId = 'm-padrao';
       }
 
+      normalizarDados();
       saveAllLocalData();
       refreshActiveMarketUI();
       renderCartUI();
@@ -221,19 +222,6 @@ async function gerarTextoFormatadoCarrinho() {
   return text;
 }
 window.gerarTextoFormatadoCarrinho = gerarTextoFormatadoCarrinho;
-
-// 1. Enviar diretamente para o WhatsApp
-async function compartilharCarrinhoWhatsApp() {
-  const texto = await gerarTextoFormatadoCarrinho();
-  if (!texto) {
-    if (typeof showAppToast === 'function') showAppToast('O carrinho está vazio!', 'warning');
-    return;
-  }
-  const urlWhatsapp = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
-  window.open(urlWhatsapp, '_blank');
-  if (typeof closeExportOptionsModal === 'function') closeExportOptionsModal();
-}
-window.compartilharCarrinhoWhatsApp = compartilharCarrinhoWhatsApp;
 
 // 2. Copiar exatamente o mesmo texto detalhado para a área de transferência
 async function copyCartToWhatsApp() {

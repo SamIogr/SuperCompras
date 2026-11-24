@@ -289,7 +289,7 @@ window.AppTemplates = {
 
     return `
       <div class="bg-white rounded-2xl p-3.5 border ${isCurrent ? 'border-emerald-500 ring-2 ring-emerald-500/15 bg-emerald-50/10' : 'border-slate-200 hover:border-slate-300'} shadow-2xs transition-all my-2 flex items-center justify-between gap-3">
-        <div class="flex-1 min-w-0 cursor-pointer" onclick="selecionarMercado(${jsArg(market.id)})">
+        <div class="flex-1 min-w-0 cursor-pointer" data-acao="mercado-selecionar" data-id="${esc(market.id)}">
           <div class="flex items-center space-x-2 flex-wrap">
             <strong class="font-extrabold text-sm text-slate-800 truncate">${esc(market.name)}</strong>
             ${isCurrent ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Ativo</span>` : ''}
@@ -301,10 +301,10 @@ window.AppTemplates = {
 
         <div class="flex items-center space-x-1.5 shrink-0">
           ${market.address ? `
-            <button type="button" onclick="abrirSupermercadoNoMaps(${jsArg(market.id)}, true)" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-xl transition-colors cursor-pointer" title="Traçar rota no Maps">${this.icons.route}</button>` : ''}
-          <button type="button" onclick="openMarketEditModal(${jsArg(market.id)})" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar rede">${this.icons.edit}</button>
+            <button type="button" data-acao="mercado-rota" data-id="${esc(market.id)}" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-xl transition-colors cursor-pointer" title="Traçar rota no Maps">${this.icons.route}</button>` : ''}
+          <button type="button" data-acao="mercado-editar" data-id="${esc(market.id)}" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar rede">${this.icons.edit}</button>
           ${market.id !== 'm-padrao' ? `
-            <button type="button" onclick="excluirMercadoCatalogo(${jsArg(market.id)})" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir rede">${this.icons.delete}</button>` : ''}
+            <button type="button" data-acao="mercado-excluir" data-id="${esc(market.id)}" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir rede">${this.icons.delete}</button>` : ''}
         </div>
       </div>`;
   },
@@ -348,7 +348,7 @@ window.AppTemplates = {
         <div class="flex items-center space-x-3 flex-1 min-w-0">
           <input type="checkbox" 
                  ${isChecked ? 'checked' : ''} 
-                 onchange="toggleSelectCatalogProduct(${jsArg(prod.id)}, this.checked)" 
+                 data-acao="produto-marcar" data-id="${esc(prod.id)}" 
                  class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0" />
           <div class="min-w-0 flex-1">
             <div class="flex items-center space-x-2 flex-wrap">
@@ -366,9 +366,9 @@ window.AppTemplates = {
         </div>
 
         <div class="flex items-center space-x-1.5 shrink-0">
-          <button type="button" onclick="openProductEditModal(${jsArg(prod.id)})" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar produto">${this.icons.edit}</button>
-          <button type="button" onclick="askDeleteSingleProduct(${jsArg(prod.id)})" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir produto">${this.icons.delete}</button>
-          <button type="button" onclick="quickAddToCartFromCatalog(${jsArg(prod.id)})" class="p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer" title="Adicionar ao carrinho">${this.icons.add}</button>
+          <button type="button" data-acao="produto-editar" data-id="${esc(prod.id)}" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar produto">${this.icons.edit}</button>
+          <button type="button" data-acao="produto-excluir" data-id="${esc(prod.id)}" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir produto">${this.icons.delete}</button>
+          <button type="button" data-acao="produto-adicionar" data-id="${esc(prod.id)}" class="p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer" title="Adicionar ao carrinho">${this.icons.add}</button>
         </div>
       </div>`;
   },
@@ -438,7 +438,7 @@ window.AppTemplates = {
       <div class="bg-white rounded-2xl p-3.5 border ${isChecked ? 'border-emerald-200 bg-emerald-50/40 opacity-75' : 'border-slate-200 shadow-2xs hover:border-slate-300'} transition-all my-2">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <button type="button" onclick="toggleCartItemCheck(${jsArg(item.id)})" class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-300'}">
+            <button type="button" data-acao="carrinho-marcar" data-id="${esc(item.id)}" class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-300'}">
               <span class="${isChecked ? 'block' : 'hidden'}">${this.icons.check}</span>
             </button>
             <div class="min-w-0 flex-1">
@@ -460,11 +460,11 @@ window.AppTemplates = {
               ${calc.savings > 0 ? `<div class="text-[10px] font-bold text-emerald-600">-R$ ${formatBRL(calc.savings)}</div>` : ''}
             </div>
             <div class="flex items-center bg-slate-100 rounded-xl p-0.5">
-              <button type="button" onclick="stepCartQty(${jsArg(item.id)}, -1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">-</button>
-              <button type="button" onclick="stepCartQty(${jsArg(item.id)}, 1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">+</button>
+              <button type="button" data-acao="carrinho-qtd" data-passo="-1" data-id="${esc(item.id)}" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">-</button>
+              <button type="button" data-acao="carrinho-qtd" data-passo="1" data-id="${esc(item.id)}" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">+</button>
             </div>
-            <button type="button" onclick="openEditCartItemModal(${jsArg(item.id)})" class="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" title="Editar item">${this.icons.edit}</button>
-            <button type="button" onclick="removeCartItem(${jsArg(item.id)})" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Remover item">${this.icons.delete}</button>
+            <button type="button" data-acao="carrinho-editar" data-id="${esc(item.id)}" class="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" title="Editar item">${this.icons.edit}</button>
+            <button type="button" data-acao="carrinho-remover" data-id="${esc(item.id)}" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Remover item">${this.icons.delete}</button>
           </div>
         </div>
       </div>`;
@@ -534,7 +534,7 @@ window.AppTemplates = {
     ` + matches.map(p => {
       const pPrice = obterPrecoProdutoMarcaMercado(p, 'Padrão', activeMarketId) || p.basePrice;
       return `
-        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart(${jsArg(p.id)})">
+        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" data-acao="sugestao-escolher" data-id="${esc(p.id)}">
           <div class="min-w-0 pr-2">
             <span class="font-bold text-slate-800 block truncate">${esc(p.name)}</span>
             <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${esc(p.category || 'Geral')}</span>
@@ -546,137 +546,6 @@ window.AppTemplates = {
         </div>`;
     }).join('');
     dropdownProd.classList.remove('hidden');
-  },
-
-  // 5. HISTÓRICO DE COMPRAS
-  renderHistory() {
-    const container = document.getElementById('historicoListaContainer');
-    const emptyState = document.getElementById('historicoVazioContainer');
-    const barraSelecao = document.getElementById('barraSelecaoHistorico');
-    if (!container) return;
-
-    const historico = typeof obterHistoricoLocal === 'function' ? obterHistoricoLocal() : [];
-    const agora = new Date();
-    const mesAtual = agora.getMonth();
-    const anoAtual = agora.getFullYear();
-
-    const comprasMes = historico.filter(h => {
-      const rawData = h.date || h.dataISO || h.data;
-      if (!rawData) return false;
-      const d = new Date(rawData);
-      return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
-    });
-
-    const totalMes = comprasMes.reduce((acc, cur) => acc + (Number(cur.total) || 0), 0);
-    const totalGeral = historico.reduce((acc, cur) => acc + (Number(cur.total) || 0), 0);
-    const mediaCompra = historico.length > 0 ? (totalGeral / historico.length) : 0;
-
-    const elTotalMes = document.getElementById('histMetricaGastoMes');
-    const elMedia = document.getElementById('histMetricaMediaCompra');
-    const elQtd = document.getElementById('histMetricaQtdCompras');
-
-    if (elTotalMes) elTotalMes.innerText = 'R$ ' + formatBRL(totalMes);
-    if (elMedia) elMedia.innerText = 'R$ ' + formatBRL(mediaCompra);
-    if (elQtd) elQtd.innerText = `${historico.length} compra${historico.length === 1 ? '' : 's'}`;
-
-    const idsValidos = new Set(historico.map((c, i) => obterIdCompra(c, i)));
-    selectedHistoryIds.forEach(id => {
-      if (!idsValidos.has(id)) selectedHistoryIds.delete(id);
-    });
-
-    if (historico.length === 0) {
-      container.innerHTML = '';
-      emptyState?.classList.remove('hidden');
-      barraSelecao?.classList.add('hidden');
-      if (typeof atualizarBarraSelecaoHistorico === 'function') atualizarBarraSelecaoHistorico();
-      return;
-    }
-
-    emptyState?.classList.add('hidden');
-    barraSelecao?.classList.remove('hidden');
-
-    container.innerHTML = historico.map((compra, idx) => {
-      const compraId = obterIdCompra(compra, idx);
-      const isChecked = selectedHistoryIds.has(compraId);
-      const rawData = compra.date || compra.dataISO || compra.data;
-      const dataFormatada = rawData ? new Date(rawData).toLocaleDateString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      }) : 'Data recente';
-
-      const mercadoNome = resolverNomeMercado(compra);
-      const valorTotal = formatBRL(compra.total || 0);
-      const itens = compra.items || compra.itens || [];
-      const qtdItens = itens.length || compra.itemCount || 1;
-      const economia = Number(compra.savings) || 0;
-
-      return `
-    <div class="p-3.5 rounded-2xl border transition-all ${isChecked ? "border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10 dark:bg-emerald-950/20" : "border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 shadow-2xs space-y-2.5"}">
-      
-      <!-- LINHA SUPERIOR: CHECKBOX, MERCADO, DATA E TOTAL -->
-      <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700/60 gap-2">
-        <div class="flex items-center space-x-2.5 min-w-0 flex-1">
-          <input type="checkbox" 
-                 ${isChecked ? "checked" : ""} 
-                 onchange="toggleSelectHistoryItem(${jsArg(compraId)}, this.checked)" 
-                 class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer">
-          <div class="min-w-0 truncate cursor-pointer" onclick="abrirDetalhesCompraHistorico(${idx})">
-            <strong class="text-xs font-black text-slate-800 dark:text-slate-100 block truncate">${esc(mercadoNome)}</strong>
-            <span class="text-[10px] text-slate-400 block">${esc(dataFormatada)}</span>
-          </div>
-        </div>
-        <div class="text-right shrink-0">
-          <span class="text-sm font-black text-emerald-600 dark:text-emerald-400 block leading-tight">R$ ${valorTotal}</span>
-          ${economia > 0 ? `<span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 block">Econ. R$ ${formatBRL(economia)}</span>` : ""}
-        </div>
-      </div>
-
-      <!-- LINHA INFERIOR: QUANTIDADE DE ITENS E BOTÕES DE AÇÃO -->
-      <div class="flex items-center justify-between pt-1 text-xs">
-        <span class="text-slate-500 dark:text-slate-400 text-[11px] font-semibold">${qtdItens} produto${qtdItens === 1 ? '' : 's'}</span>
-        
-        <div class="flex items-center space-x-1.5">
-          <!-- VER ITENS -->
-          <button type="button" 
-                  onclick="abrirDetalhesCompraHistorico(${idx})" 
-                  class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg transition-all cursor-pointer">
-            Ver Itens
-          </button>
-
-          <!-- REPETIR -->
-          <button type="button" 
-                  onclick="restaurarCompraParaCarrinho(${idx})" 
-                  class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800 text-xs font-bold rounded-lg transition-all cursor-pointer">
-            Repetir
-          </button>
-
-          <!-- COMPARADOR -->
-          <button type="button" 
-                  onclick="abrirModalComparadorHistorico(${idx})" 
-                  class="px-2.5 py-1 text-xs font-bold text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg flex items-center space-x-1 active:scale-95 transition-all cursor-pointer" 
-                  title="Comparar preço desta compra com os preços atuais e lista ativa">
-            <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
-            </svg>
-            <span>Comparar</span>
-          </button>
-
-          <!-- APAGAR -->
-          <button type="button" 
-                  onclick="excluirCompraHistorico(${idx})" 
-                  class="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer" 
-                  title="Excluir Registro">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-    </div>
-    `;
-    }).join('');
-
-    if (typeof atualizarBarraSelecaoHistorico === 'function') atualizarBarraSelecaoHistorico();
   },
 
   // 6. MODAL DINÂMICO DE PRODUTO
@@ -823,32 +692,33 @@ window.renderCartUI = () => {
     analisarMelhorMercado();
   }
 };
-window.renderHistoricoUI = () => window.AppTemplates.renderHistory();
-window.renderHistoryUI = function() {
-  const container = document.getElementById('historyListContainer') || document.querySelector('[id*="histList"]') || document.querySelector('#history-list');
-  if (!container || !window.AppTemplates || typeof window.AppTemplates.renderHistory !== 'function') return;
 
-  const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
-    ? purchaseHistory
-    : JSON.parse(localStorage.getItem('supercompras_history') || '[]');
-
-  const html = window.AppTemplates.renderHistory(lista);
-  if (typeof html === 'string') {
-    container.innerHTML = html;
-  }
+// ===== DELEGAÇÃO DE EVENTOS =====
+// Os cards gerados acima não têm onclick embutido: levam data-acao + data-id, e estes dois
+// ouvintes decidem o que fazer. O id é lido de dataset (texto puro), então um id malicioso
+// nunca vira código, e só as ações desta lista podem ser disparadas.
+const ACOES_CLIQUE = {
+  'mercado-selecionar': el => selecionarMercado(el.dataset.id),
+  'mercado-rota':       el => abrirSupermercadoNoMaps(el.dataset.id, true),
+  'mercado-editar':     el => openMarketEditModal(el.dataset.id),
+  'mercado-excluir':    el => excluirMercadoCatalogo(el.dataset.id),
+  'produto-editar':     el => openProductEditModal(el.dataset.id),
+  'produto-excluir':    el => askDeleteSingleProduct(el.dataset.id),
+  'produto-adicionar':  el => quickAddToCartFromCatalog(el.dataset.id),
+  'carrinho-marcar':    el => toggleCartItemCheck(el.dataset.id),
+  'carrinho-qtd':       el => stepCartQty(el.dataset.id, Number(el.dataset.passo)),
+  'carrinho-editar':    el => openEditCartItemModal(el.dataset.id),
+  'carrinho-remover':   el => removeCartItem(el.dataset.id),
+  'sugestao-escolher':  el => selectProductForCart(el.dataset.id),
 };
-window.renderHistoricoUI = function() {
-  const container = document.getElementById('historyListContainer') || document.querySelector('[id*="histList"]');
-  if (!container || !window.AppTemplates || typeof window.AppTemplates.renderHistory !== 'function') return;
-
-  const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
-    ? purchaseHistory
-    : JSON.parse(localStorage.getItem('supercompras_history') || '[]');
-
-  const html = window.AppTemplates.renderHistory(lista);
-  if (typeof html === 'string') {
-    container.innerHTML = html;
-  }
+const ACOES_MUDANCA = {
+  'produto-marcar':     el => toggleSelectCatalogProduct(el.dataset.id, el.checked),
 };
-// Compatibilidade caso algum ponto chame sem o 'o'
-window.renderHistoryUI = window.renderHistoricoUI;
+function _despacharAcao(mapa, evento) {
+  const el = evento.target.closest('[data-acao]');
+  if (!el) return;
+  const acao = mapa[el.dataset.acao];
+  if (acao) acao(el, evento);
+}
+document.addEventListener('click', e => _despacharAcao(ACOES_CLIQUE, e));
+document.addEventListener('change', e => _despacharAcao(ACOES_MUDANCA, e));

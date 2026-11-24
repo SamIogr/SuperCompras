@@ -417,7 +417,7 @@ function salvarPrecoDiretoModal(mercadoId, valorStr) {
       return;
     }
     prod = {
-      id: 'p-custom-' + Date.now(),
+      id: novoId('p-custom-'),
       name: nomeProv,
       category: (document.getElementById('prodModalInputCat')?.value || 'Geral').trim(),
       unit: document.getElementById('prodModalInputUnit')?.value || 'un',
@@ -471,7 +471,7 @@ function salvarEdicaoProdutoForm(e) {
   let prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
   if (!prod) {
     prod = {
-      id: 'p-custom-' + Date.now(),
+      id: novoId('p-custom-'),
       name: nome,
       category: categoria,
       unit: unidade,
@@ -525,7 +525,7 @@ function quickAddToCartFromCatalog(id) {
 
   const preco = obterPrecoProdutoMarcaMercado(prod, 'Padrão', activeMarketId);
   cart.unshift({
-    id: 'c-item-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    id: novoId('c-item-'),
     productId: prod.id,
     selectedBrandId: 'Padrão',
     name: prod.name,
@@ -678,7 +678,7 @@ window.adicionarItensSugeridosSelecionados = function() {
     if (nomesExistentes.has(nomeNormalizado)) return;
 
     products.push({
-      id: 'p-custom-' + Date.now() + '-' + i,
+      id: novoId('p-custom-'),
       name: itemData.name,
       category: itemData.category,
       unit: itemData.unit,
@@ -828,8 +828,7 @@ async function executarRemocaoItensCatalogo(idsParaRemover, excluirDaNuvem = fal
         for (const p of itensParaExcluir) {
           const isLocal = String(p.id).startsWith('p-custom-') || String(p.id).startsWith('p-local-');
           if (!isLocal) {
-            const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=excluir_produto&name=${encodeURIComponent(p.name)}&productId=${encodeURIComponent(p.id)}`;
-            await fetch(url).catch(() => {});
+            await apiChamar(token, { action: 'excluir_produto', name: p.name, productId: p.id }).catch(() => {});
           }
         }
       } catch (e) {

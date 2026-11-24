@@ -2,6 +2,25 @@
  * SUPERCOMPRAS PRO - SERVIÇOS DE REDE E SINCRONIZAÇÃO GOOGLE SHEETS
  */
 
+/**
+ * Ponto único de chamada à planilha (Apps Script).
+ * Com API_TOKEN_VIA_POST = true a chave vai no corpo do POST e não aparece em URLs
+ * (histórico do navegador, logs de servidor e proxies). text/plain evita o preflight de CORS.
+ */
+function apiChamar(token, params = {}) {
+  if (API_TOKEN_VIA_POST) {
+    return fetch(API_GOOGLE_SHEETS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ token, ...params })
+    });
+  }
+  const qs = Object.entries({ token, ...params })
+    .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v ?? ''))
+    .join('&');
+  return fetch(`${API_GOOGLE_SHEETS_URL}?${qs}`);
+}
+
 function salvarChaveSeguranca() {
   const input = document.getElementById('inputSecurityToken');
   const val = (input.value || '').trim();
@@ -11,10 +30,11 @@ function salvarChaveSeguranca() {
   }
   localStorage.setItem('sc_security_token', val);
   showAppToast('Chave de segurança salva neste aparelho!', 'success');
+  if (typeof scAplicarModoAdmin === 'function') scAplicarModoAdmin();
   document.getElementById('modalBackup')?.classList.add('hidden');
 }
 
-async function sincronizarComPlanilha() {
+async function _sincronizarComPlanilha() {
   let token = typeof getSecurityToken === 'function' ? getSecurityToken() : '';
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
@@ -33,7 +53,7 @@ async function sincronizarComPlanilha() {
   if (typeof showAppToast === 'function') showAppToast('Sincronizando com a planilha...', 'info');
 
   try {
-    const res = await fetch(`${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}`);
+    const res = await apiChamar(token);
     const json = await res.json();
 
     if (json.status === 'success') {
@@ -135,7 +155,7 @@ async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = '
 }
 
 // SINCRONIZAÇÃO SELETIVA (BLINDADA CONTRA ELEMENTOS NULOS)
-async function abrirModalSincronizacaoSeletiva() {
+async function _abrirModalSincronizacaoSeletiva() {
   let token = typeof getSecurityToken === 'function' ? getSecurityToken() : '';
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
@@ -149,7 +169,7 @@ async function abrirModalSincronizacaoSeletiva() {
   if (typeof showAppToast === 'function') showAppToast('Baixando dados da planilha...', 'info');
 
   try {
-    const res = await fetch(`${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}`);
+    const res = await apiChamar(token);
     const json = await res.json();
     if (json.status !== 'success') throw new Error(json.message || 'Falha na resposta da API');
 
@@ -381,7 +401,7 @@ function applySelectiveSync() {
 }
 
 // PROMOVER PRODUTO LOCAL PARA A PLANILHA
-async function promoverProdutoEmEdicaoParaPlanilha() {
+async function _promoverProdutoEmEdicaoParaPlanilha() {
   let token = getSecurityToken();
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
@@ -403,8 +423,7 @@ async function promoverProdutoEmEdicaoParaPlanilha() {
   if (btn) { btn.disabled = true; btn.innerText = 'Enviando para a planilha...'; }
 
   try {
-    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_produto&name=${encodeURIComponent(nome)}&category=${encodeURIComponent(categoria)}&unit=${encodeURIComponent(unidade)}&price=${encodeURIComponent(preco)}`;
-    const res = await fetch(url);
+    const res = await apiChamar(token, { action: 'criar_produto', name: nome, category: categoria, unit: unidade, price: preco });
     const json = await res.json();
 
     if (json.status === 'success' && json.action === 'created_product') {
@@ -427,7 +446,7 @@ async function promoverProdutoEmEdicaoParaPlanilha() {
 }
 
 // PROMOVER MERCADO LOCAL PARA A PLANILHA
-async function promoverMercadoEmEdicaoParaPlanilha() {
+async function _promoverMercadoEmEdicaoParaPlanilha() {
   let token = getSecurityToken();
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
@@ -449,8 +468,7 @@ async function promoverMercadoEmEdicaoParaPlanilha() {
   if (btn) { btn.disabled = true; btn.innerText = 'Sincronizando...'; }
 
   try {
-    const url = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_mercado&name=${encodeURIComponent(nome)}&branch=${encodeURIComponent(bairro)}&address=${encodeURIComponent(endereco)}&urlEncarte=${encodeURIComponent(encarte)}`;
-    const res = await fetch(url);
+    const res = await apiChamar(token, { action: 'criar_mercado', name: nome, branch: bairro, address: endereco, urlEncarte: encarte });
     const json = await res.json();
 
     if (json.status === 'success') {
@@ -483,7 +501,7 @@ async function promoverMercadoEmEdicaoParaPlanilha() {
  * - Produtos locais: cadastrados na planilha Google e convertidos em Nuvem.
  * - Produtos de nuvem: valores e cotações locais enviados para a planilha.
  */
-async function sincronizarCatalogoDireto() {
+async function _sincronizarCatalogoDireto() {
   let token = typeof getSecurityToken === 'function' ? getSecurityToken() : '';
   if (!token) {
     const chave = window.prompt("Introduza a Chave de Acesso da Planilha Google:");
@@ -526,14 +544,12 @@ async function sincronizarCatalogoDireto() {
 
       if (isLocal) {
         // 1. PRODUTO LOCAL -> ENVIA PARA A NUVEM (CRIAR NA PLANILHA)
-        const urlCriar = `${API_GOOGLE_SHEETS_URL}?token=${encodeURIComponent(token)}&action=criar_produto&name=${encodeURIComponent(p.name)}&category=${encodeURIComponent(p.category || 'Geral')}&unit=${encodeURIComponent(p.unit || 'un')}&price=${encodeURIComponent(p.basePrice || 0)}`;
-        
-        const res = await fetch(urlCriar);
+        const res = await apiChamar(token, { action: 'criar_produto', name: p.name, category: p.category || 'Geral', unit: p.unit || 'un', price: p.basePrice || 0 });
         const json = await res.json();
 
         if (json.status === 'success') {
           // Converte o ID local para o ID oficial gerado pela planilha
-          p.id = json.id || ('p-cloud-' + Date.now());
+          p.id = json.id || (novoId('p-cloud-'));
           if (json.colIndex) p.colIndex = json.colIndex;
 
           // Se tiver cotações por mercado registradas no card, envia cada uma delas
@@ -602,4 +618,17 @@ async function sincronizarCatalogoDireto() {
   }
 }
 
+window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
+
+// ===== FUNÇÕES PÚBLICAS: passam pela fila única do sync-coordenador.js =====
+// (a planilha e o Drive nunca rodam ao mesmo tempo; sem chave de administrador, a planilha nem é chamada)
+function sincronizarComPlanilha() { return scRodar(true, true, () => _sincronizarComPlanilha()); }
+function abrirModalSincronizacaoSeletiva() { return scRodar(true, false, () => _abrirModalSincronizacaoSeletiva()); }
+function promoverProdutoEmEdicaoParaPlanilha() { return scRodar(true, false, () => _promoverProdutoEmEdicaoParaPlanilha()); }
+function promoverMercadoEmEdicaoParaPlanilha() { return scRodar(true, false, () => _promoverMercadoEmEdicaoParaPlanilha()); }
+function sincronizarCatalogoDireto() { return scRodar(true, false, () => _sincronizarCatalogoDireto()); }
+window.sincronizarComPlanilha = sincronizarComPlanilha;
+window.abrirModalSincronizacaoSeletiva = abrirModalSincronizacaoSeletiva;
+window.promoverProdutoEmEdicaoParaPlanilha = promoverProdutoEmEdicaoParaPlanilha;
+window.promoverMercadoEmEdicaoParaPlanilha = promoverMercadoEmEdicaoParaPlanilha;
 window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;

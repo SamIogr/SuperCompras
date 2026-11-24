@@ -2,6 +2,10 @@
  * SUPERCOMPRAS PRO - ESTADO GLOBAL E PERSISTÊNCIA (js/state.js)
  */
 const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
+// false = chave vai na URL (?token=), como sempre foi.
+// true  = chave vai no corpo de um POST (não fica em histórico nem em logs de URL).
+//         Exige o Apps Script com doPost que também devolve o catálogo (sem "action").
+const API_TOKEN_VIA_POST = true;
 
 const MERCADO_PADRAO_GENERICO = {
   id: 'm-padrao',
@@ -106,6 +110,16 @@ function formatQty(num) {
   return n % 1 === 0 ? n.toString() : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 }
 
+// ID único para itens criados no aparelho. Mantém o prefixo ('p-custom-', 'm-custom-'...)
+// porque o app usa ele para saber a origem do item. randomUUID evita colisão entre aparelhos
+// sincronizando pelo Drive (Date.now() sozinho pode repetir); o fallback cobre http sem HTTPS.
+function novoId(prefixo) {
+  const aleatorio = (window.crypto && typeof crypto.randomUUID === 'function')
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+  return (prefixo || '') + aleatorio;
+}
+
 function getSecurityToken() {
   return localStorage.getItem('sc_security_token') || '';
 }
@@ -113,6 +127,56 @@ function getSecurityToken() {
 function getSelectedMarketName() {
   const m = supermarkets.find(x => x.id === activeMarketId);
   return m ? m.name : 'Mercado';
+}
+
+// ===== NORMALIZAÇÃO DE DADOS =====
+// Versões antigas, backups e outros aparelhos gravaram os mesmos campos com nomes diferentes
+// (nome/name, quantidade/quantity, itens/items...). Estas funções garantem o nome PADRÃO
+// (em inglês, como o resto do app) logo na entrada, para o código não precisar de
+// "it.name || it.nome || ..." em todo lugar.
+// Regras: só preenchem o campo padrão quando ele está vazio; nunca apagam os campos antigos
+// (backups antigos e o Drive continuam entendendo os registros); não criam id de compra,
+// porque o Drive identifica compras por id || date || dataISO.
+function _vazio(v) { return v === undefined || v === null || v === ''; }
+function _num(v) { return typeof v === 'number' ? (isFinite(v) ? v : 0) : parseNumberInput(v); }
+
+function normalizarItem(it) {
+  if (!it || typeof it !== 'object') return it;
+  if (_vazio(it.name)) it.name = it.nome || '';
+  if (_vazio(it.quantity)) it.quantity = !_vazio(it.quantidade) ? it.quantidade : 1;
+  it.quantity = _num(it.quantity);
+  if (_vazio(it.unitPrice)) it.unitPrice = !_vazio(it.price) ? it.price : (it.precoUnitario || 0);
+  it.unitPrice = _num(it.unitPrice);
+  if (_vazio(it.selectedBrandId)) it.selectedBrandId = it.brand || it.marca || 'Padrão';
+  if (_vazio(it.unit)) it.unit = it.unidade || 'un';
+  return it;
+}
+
+function normalizarCompra(c) {
+  if (!c || typeof c !== 'object') return c;
+  if (!Array.isArray(c.items)) c.items = Array.isArray(c.itens) ? c.itens : [];
+  c.items.forEach(normalizarItem);
+  if (_vazio(c.date)) c.date = c.dataISO || c.data || '';
+  if (_vazio(c.marketName) && c.mercadoNome) c.marketName = c.mercadoNome;
+  return c;
+}
+
+function normalizarProduto(p) {
+  if (!p || typeof p !== 'object') return p;
+  if (_vazio(p.name)) p.name = p.nome || '';
+  p.name = String(p.name).trim();
+  if (_vazio(p.category)) p.category = p.categoria || 'Geral';
+  if (_vazio(p.unit)) p.unit = p.unidade || 'un';
+  p.basePrice = _num(p.basePrice);
+  if (!p.marketPrices || typeof p.marketPrices !== 'object') p.marketPrices = {};
+  if (!Array.isArray(p.brands)) p.brands = [];
+  return p;
+}
+
+function normalizarDados() {
+  if (Array.isArray(products)) products.forEach(normalizarProduto);
+  if (Array.isArray(cart)) cart.forEach(normalizarItem);
+  if (Array.isArray(purchaseHistory)) purchaseHistory.forEach(normalizarCompra);
 }
 
 function loadApplicationData() {
@@ -155,7 +219,7 @@ function loadApplicationData() {
   // INSERÇÃO AUTOMÁTICA SE A BASE ESTIVER TOTALMENTE VAZIA
   if (!Array.isArray(products) || products.length === 0) {
     products = window.ITENS_BASICOS_SUGERIDOS.map((it, idx) => ({
-      id: "p-custom-" + Date.now() + "-" + idx,
+      id: novoId('p-custom-'),
       name: it.name,
       category: it.category,
       unit: it.unit,
@@ -186,6 +250,7 @@ function loadApplicationData() {
     activeMarketId = "m-padrao";
   }
 
+  normalizarDados();
   saveAllLocalData();
 }
 
