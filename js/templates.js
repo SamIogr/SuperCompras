@@ -698,11 +698,9 @@ window.renderCartUI = () => {
   }
 };
 
-// ===== DELEGAÇÃO DE EVENTOS =====
-// Os cards gerados acima não têm onclick embutido: levam data-acao + data-id, e estes dois
-// ouvintes decidem o que fazer. O id é lido de dataset (texto puro), então um id malicioso
-// nunca vira código, e só as ações desta lista podem ser disparadas.
-const ACOES_CLIQUE = {
+// ===== AÇÕES DOS CARDS (delegação: ver js/ui/acoes.js) =====
+// Os cards gerados acima não têm onclick embutido: levam data-acao + data-id.
+Acoes.registrarClique({
   'mercado-selecionar': el => selecionarMercado(el.dataset.id),
   'mercado-rota':       el => abrirSupermercadoNoMaps(el.dataset.id, true),
   'mercado-editar':     el => openMarketEditModal(el.dataset.id),
@@ -719,15 +717,7 @@ const ACOES_CLIQUE = {
   'carrinho-editar':    el => openEditCartItemModal(el.dataset.id),
   'carrinho-remover':   el => removeCartItem(el.dataset.id),
   'sugestao-escolher':  el => selectProductForCart(el.dataset.id),
-};
-const ACOES_MUDANCA = {
+});
+Acoes.registrarMudanca({
   'produto-marcar':     el => toggleSelectCatalogProduct(el.dataset.id, el.checked),
-};
-function _despacharAcao(mapa, evento) {
-  const el = evento.target.closest('[data-acao]');
-  if (!el) return;
-  const acao = mapa[el.dataset.acao];
-  if (acao) acao(el, evento);
-}
-document.addEventListener('click', e => _despacharAcao(ACOES_CLIQUE, e));
-document.addEventListener('change', e => _despacharAcao(ACOES_MUDANCA, e));
+});

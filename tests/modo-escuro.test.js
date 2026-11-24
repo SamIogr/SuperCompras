@@ -13,7 +13,7 @@ const ler = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 function arquivosDoApp() {
   return ['index.html',
     ...fs.readdirSync(path.join(RAIZ, 'components')).filter(f => f.endsWith('.html')).map(f => 'components/' + f),
-    ...fs.readdirSync(path.join(RAIZ, 'js')).filter(f => f.endsWith('.js')).map(f => 'js/' + f)];
+    ...require('./carregar-app').listarArquivosJs()];
 }
 
 function classesComRegraEscura() {

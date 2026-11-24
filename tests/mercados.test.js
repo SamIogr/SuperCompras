@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { carregarApp } = require('./carregar-app');
 
-const SCRIPTS = ['js/eventos.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js',
+const SCRIPTS = ['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js',
   'js/markets.js', 'js/api.js', 'js/drive-sync.js'];
 const puro = v => JSON.parse(JSON.stringify(v));
 

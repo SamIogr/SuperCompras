@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { carregarApp } = require('./carregar-app');
+const { carregarApp, listarArquivosJs, RAIZ } = require('./carregar-app');
 
 const puro = v => JSON.parse(JSON.stringify(v));
 
@@ -15,10 +15,9 @@ function comDados(dados, arquivos = ['js/eventos.js', 'js/armazenamento.js']) {
 }
 
 test('nenhum arquivo do app acessa localStorage diretamente, exceto armazenamento.js', () => {
-  const pasta = path.join(__dirname, '..', 'js');
-  const culpados = fs.readdirSync(pasta)
-    .filter(f => f.endsWith('.js') && f !== 'armazenamento.js')
-    .filter(f => fs.readFileSync(path.join(pasta, f), 'utf8')
+  const culpados = listarArquivosJs()
+    .filter(f => f !== 'js/armazenamento.js')
+    .filter(f => fs.readFileSync(path.join(RAIZ, f), 'utf8')
       .split('\n').some(l => /localStorage\s*[.[]|in localStorage/.test(l) && !/^\s*(\*|\/\/)/.test(l)));
   assert.deepEqual(culpados, []);
 });

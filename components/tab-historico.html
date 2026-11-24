@@ -9,7 +9,7 @@
       <!-- Botão Excluir Selecionadas (aparece quando há compras marcadas) -->
       <button type="button" 
               id="btnExcluirSelecionadosHistorico" 
-              onclick="excluirHistoricosSelecionados()" 
+              data-acao="historico-excluir-selecionados" 
               class="hidden px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1 cursor-pointer">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -19,7 +19,7 @@
 
       <!-- Botão Limpar Tudo com Dupla Confirmação -->
       <button type="button" 
-              onclick="limparTodoHistorico()" 
+              data-acao="historico-limpar-tudo" 
               class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl text-xs font-bold transition-all border border-slate-200 shadow-2xs flex items-center space-x-1 cursor-pointer">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -61,53 +61,10 @@
   <div id="historicoListaContainer" class="space-y-2.5 pt-1"></div>
 </div>
 
-<!-- MODAL DE DETALHES DA COMPRA (CUPOM NÃO EDITÁVEL) -->
-<div id="modalDetalhesHistorico" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs" onclick="if(event.target === this) fecharModalDetalhesHistorico();">
-  <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-4 sm:p-5 border border-slate-200 relative" style="display: flex; flex-direction: column; min-height: 380px; max-height: 85vh;">
-    
-    <!-- Topo do Cupom -->
-    <div class="flex items-start justify-between border-b border-slate-100 pb-3 shrink-0">
-      <div class="min-w-0 pr-3">
-        <div class="flex items-center space-x-1.5 flex-wrap">
-          <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md uppercase">Supermercado</span>
-          <h3 id="modalHistTitulo" class="font-black text-slate-800 text-base truncate">Supermercado</h3>
-        </div>
-        <p id="modalHistSubtitulo" class="text-xs text-slate-500 mt-1">Data e hora do fechamento</p>
-      </div>
-      <button type="button" onclick="fecharModalDetalhesHistorico()" class="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="Fechar">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Lista de Itens Não Editáveis (Imutável) -->
-    <div id="modalHistItensLista" class="py-3 space-y-2 flex-1 overflow-y-auto min-h-[160px]"></div>
-
-    <!-- Rodapé: Total e Ações -->
-    <div class="border-t border-slate-100 pt-3 flex items-center justify-between bg-white shrink-0">
-      <div>
-        <span class="text-[10px] font-bold text-slate-400 block uppercase">Total da Compra</span>
-        <strong id="modalHistValorTotal" class="text-base sm:text-lg font-black text-emerald-600 block leading-tight">R$ 0,00</strong>
-      </div>
-      <div class="flex items-center space-x-2">
-        <button type="button" onclick="fecharModalDetalhesHistorico()" class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
-          ← Voltar
-        </button>
-        <button type="button" id="btnRepetirCompraCarrinho" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-          <span>Repetir Lista</span>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 <!-- MODAL: ENQUADRAMENTO BLINDADO CONTRA ZOOM MÁXIMO -->
 <div id="modalHistoricoComparativo" 
      class="hidden fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4 bg-slate-950/80 backdrop-blur-xs flex items-start justify-center"
-     onclick="if(event.target === this) fecharModalComparadorHistorico();">
+     data-acao="historico-comparador-fundo">
   
   <!-- CARTÃO INTERNO COM ALTURA MÁXIMA CONTROLADA (NUNCA VAZA DA TELA) -->
   <div style="max-height: 86vh;" 
@@ -123,7 +80,7 @@
         </div>
         <h3 class="font-extrabold text-sm text-slate-900 dark:text-white truncate">Comparativo de Compra</h3>
       </div>
-      <button type="button" onclick="fecharModalComparadorHistorico()" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-sm font-bold shrink-0">✕</button>
+      <button type="button" data-acao="historico-comparador-fechar" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-sm font-bold shrink-0">✕</button>
     </div>
 
     <!-- SELETORES (shrink-0) -->
@@ -131,13 +88,13 @@
       <div class="min-w-0">
         <label class="block text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 truncate">Compra Realizada</label>
         <select id="histSelectCompraComparar" 
-                onchange="atualizarMercadoPadraoDaCompra(); renderizarComparacaoHistoricaAtual();" 
+                data-acao="historico-comparador-compra" 
                 class="w-full text-xs font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer truncate"></select>
       </div>
       <div class="min-w-0">
         <label class="block text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1 truncate">Comparar Contra</label>
         <select id="histSelectMercadoAlvo" 
-                onchange="renderizarComparacaoHistoricaAtual()" 
+                data-acao="historico-comparador-mercado" 
                 class="w-full text-xs font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer truncate"></select>
       </div>
     </div>
@@ -146,13 +103,13 @@
     <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl text-xs font-bold gap-1 border border-slate-200 dark:border-slate-800 shrink-0">
       <button type="button" 
               id="btnModoCompCatalogo" 
-              onclick="alternarModoComparacaoHistorico('catalogo')" 
+              data-acao="historico-comparador-modo" data-modo="catalogo" 
               class="flex-1 py-1 px-2 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs transition-all cursor-pointer text-center truncate">
         Catálogo
       </button>
       <button type="button" 
               id="btnModoCompCarrinho" 
-              onclick="alternarModoComparacaoHistorico('carrinho')" 
+              data-acao="historico-comparador-modo" data-modo="carrinho" 
               class="flex-1 py-1 px-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-all cursor-pointer text-center truncate">
         Lista Ativa (<span id="histCompQtdNoCarrinho">0</span>)
       </button>
@@ -176,11 +133,10 @@
     <!-- RODAPÉ FIXO (shrink-0) -->
     <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs shrink-0">
       <span id="histCompInfoRodape" class="text-slate-400 truncate pr-2"></span>
-      <button type="button" onclick="fecharModalComparadorHistorico()" class="px-3.5 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold rounded-lg transition-all cursor-pointer shrink-0">
+      <button type="button" data-acao="historico-comparador-fechar" class="px-3.5 py-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold rounded-lg transition-all cursor-pointer shrink-0">
         Fechar
       </button>
     </div>
 
   </div>
 </div>
-</body>

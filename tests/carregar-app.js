@@ -71,4 +71,19 @@ function carregarApp(arquivos) {
   return ctx;
 }
 
-module.exports = { carregarApp };
+// Arquivos da tela do histórico, na ordem do index.html
+const ARQUIVOS_HISTORICO = ['dados', 'lista', 'exclusao', 'detalhes', 'comparador', 'acoes']
+  .map(n => `js/telas/historico/${n}.js`);
+
+/** Todos os .js do app (inclui subpastas como js/telas e js/ui; ignora js/vendor). Caminhos 'js/...'. */
+function listarArquivosJs(pasta = 'js') {
+  const saida = [];
+  for (const item of fs.readdirSync(path.join(RAIZ, pasta), { withFileTypes: true })) {
+    const rel = `${pasta}/${item.name}`;
+    if (item.isDirectory()) { if (item.name !== 'vendor') saida.push(...listarArquivosJs(rel)); }
+    else if (item.name.endsWith('.js')) saida.push(rel);
+  }
+  return saida;
+}
+
+module.exports = { carregarApp, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { carregarApp } = require('./carregar-app');
+const { carregarApp, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ } = require('./carregar-app');
 
 // ------------------------------------------------------------ Eventos
 test('ouvir recebe o aviso com as informações', () => {
@@ -37,7 +37,7 @@ test('um ouvinte com erro não impede os outros', () => {
 
 // ------------------------------------------------------------ quem avisa
 const SCRIPTS = ['js/eventos.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js',
-  'js/origem.js', 'js/history.js', 'js/drive-sync.js'];
+  'js/origem.js', ...ARQUIVOS_HISTORICO.filter(f => !f.endsWith('acoes.js')), 'js/drive-sync.js'];
 
 function appComTimersFalsos() {
   const app = carregarApp(SCRIPTS);
@@ -99,7 +99,6 @@ test('ninguém mais substitui saveAllLocalData / salvarHistoricoLocal', () => {
   app.driveIniciar();
   assert.equal(app.saveAllLocalData, antes[0]);
   assert.equal(app.salvarHistoricoLocal, antes[1]);
-  const codigo = fs.readdirSync(path.join(__dirname, '..', 'js')).filter(f => f.endsWith('.js'))
-    .map(f => fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8')).join('\n');
+  const codigo = listarArquivosJs().map(f => fs.readFileSync(path.join(RAIZ, f), 'utf8')).join('\n');
   assert.doesNotMatch(codigo, /window\[[^\]]+\]\s*=(?!=)/, 'nenhum arquivo troca funções globais por window[nome] = ...');
 });
