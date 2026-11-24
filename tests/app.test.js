@@ -1,9 +1,9 @@
 // Rode com:  npm test   (ou: node --test tests/)
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { carregarApp, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO } = require('./carregar-app');
+const { carregarApp, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO } = require('./carregar-app');
 
-const SCRIPTS = ['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', 'js/markets.js', 'js/api.js', ...ARQUIVOS_CARRINHO, 'js/drive-sync.js', ...ARQUIVOS_HISTORICO];
+const SCRIPTS = ['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js', 'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', ...ARQUIVOS_CATALOGO, 'js/api.js', ...ARQUIVOS_CARRINHO, 'js/drive-sync.js', ...ARQUIVOS_HISTORICO];
 const novoApp = () => carregarApp(SCRIPTS);
 // objetos criados dentro do contexto do app têm outro "Object" — copiar para comparar com deepEqual
 const puro = v => JSON.parse(JSON.stringify(v));

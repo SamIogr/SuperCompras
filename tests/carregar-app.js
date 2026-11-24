@@ -71,6 +71,10 @@ function carregarApp(arquivos) {
   return ctx;
 }
 
+// Arquivos da tela do catálogo (produtos e mercados), na ordem do index.html
+const ARQUIVOS_CATALOGO = ['precos', 'layout', 'filtros', 'modal-produto', 'produtos', 'sugeridos', 'mercados', 'acoes']
+  .map(n => `js/telas/catalogo/${n}.js`);
+
 // Arquivos da tela do carrinho, na ordem do index.html
 const ARQUIVOS_CARRINHO = ['calculo', 'lista', 'formulario', 'edicao', 'finalizacao', 'comparativo', 'acoes']
   .map(n => `js/telas/carrinho/${n}.js`);
@@ -90,4 +94,4 @@ function listarArquivosJs(pasta = 'js') {
   return saida;
 }
 
-module.exports = { carregarApp, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };
+module.exports = { carregarApp, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

@@ -171,36 +171,6 @@ function switchActiveTab(tabName) {
 }
 window.switchActiveTab = switchActiveTab;
 
-function setSubTabDados(subTab = 'produtos') {
-  const targetTab = subTab || 'produtos';
-  window.currentSubTabDados = targetTab;
-
-  // Busca compatível tanto com 'secao-catalogo-*' quanto com 'subtab-*'
-  const tabProdutos = document.getElementById('secao-catalogo-produtos') || document.getElementById('subtab-produtos');
-  const tabMercados = document.getElementById('secao-catalogo-mercados') || document.getElementById('subtab-mercados');
-  const btnProdutos = document.getElementById('btn-subtab-produtos');
-  const btnMercados = document.getElementById('btn-subtab-mercados');
-
-  const classeBase = 'flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer';
-  const classeAtiva = `${classeBase} bg-white text-emerald-800 shadow-xs`;
-  const classeInativa = `${classeBase} text-slate-500 hover:text-slate-700 hover:bg-white/40`;
-
-  if (targetTab === 'produtos') {
-    if (tabProdutos) tabProdutos.classList.remove('hidden');
-    if (tabMercados) tabMercados.classList.add('hidden');
-    if (btnProdutos) btnProdutos.className = classeAtiva;
-    if (btnMercados) btnMercados.className = classeInativa;
-    if (typeof renderCatalogUI === 'function') renderCatalogUI();
-  } else {
-    if (tabProdutos) tabProdutos.classList.add('hidden');
-    if (tabMercados) tabMercados.classList.remove('hidden');
-    if (btnMercados) btnMercados.className = classeAtiva;
-    if (btnProdutos) btnProdutos.className = classeInativa;
-    if (typeof renderMarketsUI === 'function') renderMarketsUI();
-  }
-}
-window.setSubTabDados = setSubTabDados;
-
 function refreshActiveMarketUI() {
   const sel = document.getElementById('selectActiveMarket');
   const lista = (typeof supermarkets !== 'undefined' && Array.isArray(supermarkets) && supermarkets.length > 0)

@@ -15,8 +15,8 @@
  */
 
 const Acoes = (() => {
-  // click: toques | change: select/checkbox | input: cada tecla digitada | submit: envio de formulário
-  const mapas = { click: Object.create(null), change: Object.create(null), input: Object.create(null), submit: Object.create(null) };
+  // click: toques | change: select/checkbox | input: cada tecla digitada | keydown: tecla pressionada (ex.: Enter) | submit: envio de formulário
+  const mapas = { click: Object.create(null), change: Object.create(null), input: Object.create(null), keydown: Object.create(null), submit: Object.create(null) };
 
   function registrar(tipo, novas) {
     for (const [nome, fn] of Object.entries(novas)) {
@@ -43,6 +43,7 @@ const Acoes = (() => {
     registrarMudanca: mapa => registrar('change', mapa),
     registrarDigitacao: mapa => registrar('input', mapa),
     registrarEnvio: mapa => registrar('submit', mapa),
+    registrarTecla: mapa => registrar('keydown', mapa),
     // para testes e depuração
     existe: (tipo, nome) => Boolean(mapas[tipo] && mapas[tipo][nome]),
     despachar,
