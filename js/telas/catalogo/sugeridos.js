@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: IMPORTAR ITENS BÁSICOS SUGERIDOS (js/telas/catalogo/sugeridos.js)
  */
 
@@ -160,3 +161,5 @@ window.adicionarItensSugeridosSelecionados = function() {
   window.fecharModalCatalogoSugerido();
 };
 window.selectedCatalogProductIds = window.selectedCatalogProductIds || new Set();
+
+export {};

@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: AÇÕES DOS BOTÕES E CAMPOS (delegação, ver js/ui/acoes.js) (js/telas/catalogo/acoes.js)
  */
 
@@ -60,3 +61,5 @@ Acoes.registrarEnvio({
   'produto-modal-salvar':             (el, e) => salvarEdicaoProdutoForm(e),
   'mercado-modal-salvar':             (el, e) => salvarSupermercadoSubmit(e),
 });
+
+export {};

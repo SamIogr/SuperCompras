@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CALCULADORA: JANELA DO COMPARADOR DE PREÇO E ATACADO (js/telas/calculadora/modal.js)
  */
 
@@ -134,3 +135,5 @@ Object.assign(window.AppTemplates, {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
   },
 });
+
+export {};

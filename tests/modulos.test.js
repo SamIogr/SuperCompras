@@ -34,9 +34,9 @@ test('ponte da transição: cada módulo publica no window exatamente o que expo
   for (const m of modulos) {
     const codigo = ler(m);
     const exportados = [...exportsDoModulo(codigo)].sort();
-    const ponte = codigo.match(/Object\.assign\(window,\s*\{([^}]*)\}\);/);
-    assert.ok(ponte, `${m} sem a linha da ponte Object.assign(window, {...})`);
-    const publicados = ponte[1].split(',').map(s => s.trim()).filter(Boolean).sort();
+    // pode haver duas pontes: funções no começo do arquivo e constantes no fim
+    const publicados = [...codigo.matchAll(/Object\.assign\(window,\s*\{([^}]*)\}\);/g)]
+      .flatMap(p => p[1].split(',').map(s => s.trim()).filter(Boolean)).sort();
     assert.deepEqual(publicados, exportados, m);
   }
 });
@@ -162,4 +162,43 @@ test('drive-sync.js e o que ele importa carregam como ES modules de verdade (nom
   } finally {
     for (const k of Object.keys(globalThis)) if (!nomesAntes.has(k)) delete globalThis[k];
   }
+});
+
+// ------------------------------------------------------------ modo estrito e variáveis compartilhadas
+test('nenhuma atribuição a variável nunca declarada (em módulo isso quebra a tela)', () => {
+  const { atribuicoesSoltas } = require('./modo-estrito');
+  const arquivos = tags.map(t => t.arq).filter(a => !a.startsWith('js/vendor/'));
+  assert.deepEqual(atribuicoesSoltas(RAIZ, arquivos), []);
+});
+
+test('todos os arquivos do app são módulos (só js/vendor continua como script comum)', () => {
+  for (const t of tags) {
+    const esperado = t.arq.startsWith('js/vendor/') ? /\bdefer\b/ : /type="module"/;
+    assert.match(t.attrs, esperado, t.arq);
+  }
+});
+
+test('variáveis compartilhadas: cada uma criada uma única vez, por um dono conhecido', () => {
+  const ESPERADAS = {
+    'js/state.js': ['supermarkets', 'products', 'cart', 'activeMarketId', 'purchaseHistory', 'currentTab', 'cartFilterMode',
+      'isSoundOn', 'pendingSyncPayload', 'selectedSyncProducts', 'selectedSyncMarkets', 'activeSyncTab'],
+    'js/telas/historico/lista.js': ['selectedHistoryIds'],
+    'js/telas/catalogo/modal-produto.js': ['textoNovaMarcaEmEdicao'],
+    'js/telas/catalogo/mercados.js': ['mercadosOrigemFiltro'],
+  };
+  const achadas = {};
+  for (const f of listarArquivosJs()) {
+    const nomes = [...ler(f).matchAll(/^variavelGlobal\('([^']+)'/gm)].map(m => m[1]);
+    if (nomes.length) achadas[f] = nomes;
+  }
+  assert.deepEqual(achadas, ESPERADAS);
+});
+
+test('variavelGlobal: ler e alterar de qualquer arquivo; criar o mesmo nome duas vezes é erro', () => {
+  const { carregarApp } = require('./carregar-app');
+  const app = carregarApp([]);
+  app.variavelGlobal('teste_compartilhado', 1);
+  app.$('teste_compartilhado = teste_compartilhado + 41');
+  assert.equal(app.$('teste_compartilhado'), 42);
+  assert.throws(() => app.variavelGlobal('teste_compartilhado', 0), /já foi criada/);
 });

@@ -1,11 +1,17 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: MODAL DE CADASTRO/EDIÇÃO DE PRODUTO, MARCAS E PREÇOS POR REDE (js/telas/catalogo/modal-produto.js)
  */
+
+import { variavelGlobal } from '../../compartilhado.js';
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { openProductEditModal, closeProductEditModal, alternarMinimizarRedesModal, renderizarSelectMarcasModal, aoMudarSelectMarcaModal, adicionarMarcaInlineModal, excluirMarcaModalEdicao, renderizarComparativoPrecosModal, salvarPrecoDiretoModal, salvarEdicaoProdutoForm });
 
 let currentCompareBrand = 'Padrão';
 let activeCatalogProductId = null;
 let redesComparativoMinimizado = true;
-let textoNovaMarcaEmEdicao = '';
+variavelGlobal('textoNovaMarcaEmEdicao', '');
 
 Object.assign(window.AppTemplates, {
   // 6. MODAL DINÂMICO DE PRODUTO
@@ -101,7 +107,7 @@ Object.assign(window.AppTemplates, {
   },
 });
 
-function openProductEditModal(id = null) {
+export function openProductEditModal(id = null) {
   const prod = id ? (products || []).find(p => String(p.id) === String(id)) : null;
   activeCatalogProductId = prod ? prod.id : null;
   currentCompareBrand = 'Padrão';
@@ -111,17 +117,15 @@ function openProductEditModal(id = null) {
   renderizarSelectMarcasModal(prod);
   renderizarComparativoPrecosModal(prod);
 }
-window.openProductEditModal = openProductEditModal;
 
-function closeProductEditModal() {
+export function closeProductEditModal() {
   document.querySelectorAll('#modalProductEditDynamic').forEach(el => el.remove());
   activeCatalogProductId = null;
   currentCompareBrand = 'Padrão';
   textoNovaMarcaEmEdicao = '';
 }
-window.closeProductEditModal = closeProductEditModal;
 
-function alternarMinimizarRedesModal() {
+export function alternarMinimizarRedesModal() {
   redesComparativoMinimizado = !redesComparativoMinimizado;
   const label = document.getElementById('labelToggleMinimizarRedes');
   if (label) {
@@ -131,7 +135,7 @@ function alternarMinimizarRedesModal() {
   renderizarComparativoPrecosModal(prod);
 }
 
-function renderizarSelectMarcasModal(prod) {
+export function renderizarSelectMarcasModal(prod) {
   const containerMarcas = document.getElementById('prodModalBrandsContainer');
   if (!containerMarcas) return;
 
@@ -168,7 +172,7 @@ function renderizarSelectMarcasModal(prod) {
   }
 }
 
-function aoMudarSelectMarcaModal(valor) {
+export function aoMudarSelectMarcaModal(valor) {
   const prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
   if (valor === '__NOVA_MARCA__') {
     currentCompareBrand = '__NOVA_MARCA__';
@@ -187,7 +191,7 @@ function aoMudarSelectMarcaModal(valor) {
   renderizarComparativoPrecosModal(prod);
 }
 
-function adicionarMarcaInlineModal() {
+export function adicionarMarcaInlineModal() {
   const input = document.getElementById('inputNovaMarcaCatalogo');
   const nomeMarca = (textoNovaMarcaEmEdicao || input?.value || '').trim();
   if (!nomeMarca) return;
@@ -213,7 +217,7 @@ function adicionarMarcaInlineModal() {
   showAppToast(`Marca "${nomeMarca}" cadastrada!`, 'success');
 }
 
-function excluirMarcaModalEdicao(marca) {
+export function excluirMarcaModalEdicao(marca) {
   if (!marca || marca.toLowerCase() === 'padrão') return;
   const prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
   if (prod && Array.isArray(prod.brands)) {
@@ -225,7 +229,7 @@ function excluirMarcaModalEdicao(marca) {
   renderizarComparativoPrecosModal(prod);
 }
 
-function renderizarComparativoPrecosModal(prod) {
+export function renderizarComparativoPrecosModal(prod) {
   const container = document.getElementById('prodModalPriceList');
   if (!container) return;
 
@@ -264,7 +268,7 @@ function renderizarComparativoPrecosModal(prod) {
   }).join('');
 }
 
-function salvarPrecoDiretoModal(mercadoId, valorStr) {
+export function salvarPrecoDiretoModal(mercadoId, valorStr) {
   const preco = parseNumberInput(valorStr);
   let prod = (products || []).find(p => String(p.id) === String(activeCatalogProductId));
 
@@ -298,7 +302,7 @@ function salvarPrecoDiretoModal(mercadoId, valorStr) {
   showAppToast(`Preço de "${marcaAlvo}" salvo!`, 'success');
 }
 
-function salvarEdicaoProdutoForm(e) {
+export function salvarEdicaoProdutoForm(e) {
   if (e && e.preventDefault) e.preventDefault();
 
   const modal = document.getElementById('modalProductEditDynamic');

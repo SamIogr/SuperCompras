@@ -1,11 +1,15 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - HISTÓRICO: EXCLUSÃO COM DUPLA CONFIRMAÇÃO (js/telas/historico/exclusao.js)
  */
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { abrirModalConfirmacaoDuplaHistorico, fecharModalConfirmacaoDupla });
 
 /**
  * MODAL FLUTUANTE DE DUPLA CONFIRMAÇÃO (SEM POP-UP NATIVO)
  */
-function abrirModalConfirmacaoDuplaHistorico(config) {
+export function abrirModalConfirmacaoDuplaHistorico(config) {
   fecharModalConfirmacaoDupla();
 
   const modalEl = document.createElement('div');
@@ -75,7 +79,7 @@ function abrirModalConfirmacaoDuplaHistorico(config) {
   };
 }
 
-function fecharModalConfirmacaoDupla() {
+export function fecharModalConfirmacaoDupla() {
   document.querySelectorAll('#modalConfirmacaoDuplaHistorico').forEach(el => el.remove());
 }
 

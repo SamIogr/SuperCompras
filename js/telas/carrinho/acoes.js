@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: AÇÕES DOS BOTÕES E CAMPOS (delegação, ver js/ui/acoes.js) (js/telas/carrinho/acoes.js)
  */
 
@@ -52,3 +53,5 @@ Acoes.registrarDigitacao({
 Acoes.registrarEnvio({
   'carrinho-edicao-salvar':         () => salvarEdicaoItemCarrinho(),
 });
+
+export {};

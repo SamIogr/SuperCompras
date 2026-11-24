@@ -1,8 +1,12 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: LIMPAR, FINALIZAR A COMPRA E ENVIAR PELO WHATSAPP (js/telas/carrinho/finalizacao.js)
  */
 
-function askClearCart() {
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { askClearCart, askFinishPurchase, executeFinishPurchase, compartilharCarrinhoWhatsApp });
+
+export function askClearCart() {
   if ((cart || []).length === 0) return;
   if (typeof openCustomDialog === 'function') {
     openCustomDialog(
@@ -22,9 +26,8 @@ function askClearCart() {
     }
   }
 }
-window.askClearCart = askClearCart;
 
-function askFinishPurchase() {
+export function askFinishPurchase() {
   if ((cart || []).length === 0) return;
   let total = 0;
   cart.forEach(i => total += computeItemFinancials(i.quantity, i.unitPrice, i.promo).finalSubtotal);
@@ -37,10 +40,9 @@ function askFinishPurchase() {
     () => executeFinishPurchase(false)
   );
 }
-window.askFinishPurchase = askFinishPurchase;
 
 // 7. FINALIZAÇÃO DA COMPRA
-function executeFinishPurchase(clearAfter) {
+export function executeFinishPurchase(clearAfter) {
   let gT = 0;
   let tS = 0;
 
@@ -119,9 +121,8 @@ function executeFinishPurchase(clearAfter) {
   if (typeof playAppBeep === 'function') playAppBeep('finish');
   showAppToast('Compra finalizada! Preços e marcas consolidados no catálogo.', 'success');
 }
-window.executeFinishPurchase = executeFinishPurchase;
 
-async function compartilharCarrinhoWhatsApp() {
+export async function compartilharCarrinhoWhatsApp() {
   if (!cart || cart.length === 0) {
     if (typeof showAppToast === 'function') showAppToast('O carrinho está vazio!', 'warning');
     return;
@@ -150,4 +151,3 @@ async function compartilharCarrinhoWhatsApp() {
   const urlWhatsapp = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
   window.open(urlWhatsapp, '_blank');
 }
-window.compartilharCarrinhoWhatsApp = compartilharCarrinhoWhatsApp;

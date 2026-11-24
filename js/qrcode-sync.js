@@ -1,54 +1,58 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO (Módulo de Compartilhamento e Leitura via QR Code)
  * Arquivo: js/qrcode-sync.js
  * 100% offline: usa js/vendor/qrcode.js (gerar) e js/vendor/jsQR.js (ler).
  */
 
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { qrDeflate, qrInflate, bytesParaB64Url, b64UrlParaBytes, normalizarNome, qrStatus, serializarCarrinhoParaQR, desserializarQRLegado, desserializarQRParaCarrinho, dividirPayloadQR, qrReiniciarPartes, qrReceberParte, abrirModalQRCode, fecharModalQRCode, alternarAbaModalQR, desenharQRNoCanvas, pararRotacaoQR, gerarVisualizacaoQRCode, lerQRComJsQR, iniciarScannerCamera, pararScannerCamera, garantirProdutosNoCatalogo, mesclarItensNoCarrinho, processarResultadoLeitura, concluirImportacaoQR, lerQRCodeDeArquivo });
+
 // ===== CONFIGURAÇÕES =====
-const QR_STORAGE_PREFIX = 'SC_QR_V1:';      // formato antigo (só leitura)
-const QR_PREFIXO_COMPACTO = 'SC2:';         // novo, compactado com deflate
-const QR_PREFIXO_SEM_COMPRESSAO = 'SC1:';   // novo, sem deflate (navegador antigo)
-const QR_TAMANHO_PARTE = 600;               // caracteres por QR; menor = leitura mais fácil
-const QR_SE_JA_NO_CARRINHO = 'somar';       // 'somar' = soma a quantidade | 'manter' = ignora o repetido
+export const QR_STORAGE_PREFIX = 'SC_QR_V1:';      // formato antigo (só leitura)
+export const QR_PREFIXO_COMPACTO = 'SC2:';         // novo, compactado com deflate
+export const QR_PREFIXO_SEM_COMPRESSAO = 'SC1:';   // novo, sem deflate (navegador antigo)
+export const QR_TAMANHO_PARTE = 600;               // caracteres por QR; menor = leitura mais fácil
+export const QR_SE_JA_NO_CARRINHO = 'somar';       // 'somar' = soma a quantidade | 'manter' = ignora o repetido
 
 // ===== 0. UTILITÁRIOS =====
-async function qrDeflate(texto) {
+export async function qrDeflate(texto) {
   const stream = new Blob([new TextEncoder().encode(texto)]).stream()
     .pipeThrough(new CompressionStream('deflate-raw'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-async function qrInflate(bytes) {
+export async function qrInflate(bytes) {
   const stream = new Blob([bytes]).stream()
     .pipeThrough(new DecompressionStream('deflate-raw'));
   return new TextDecoder().decode(await new Response(stream).arrayBuffer());
 }
 
-function bytesParaB64Url(bytes) {
+export function bytesParaB64Url(bytes) {
   let bin = '';
   bytes.forEach(b => { bin += String.fromCharCode(b); });
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-function b64UrlParaBytes(str) {
+export function b64UrlParaBytes(str) {
   const b64 = str.replace(/-/g, '+').replace(/_/g, '/');
   const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
   return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
 
-function normalizarNome(s) {
+export function normalizarNome(s) {
   return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-function qrStatus(texto) {
+export function qrStatus(texto) {
   const el = document.getElementById('qrScannerStatus');
   if (el) el.innerText = texto;
 }
 
 // ===== 1. SERIALIZAÇÃO COMPACTA =====
 // Formato: [mercadoId, [ [nome, qtd, unidade, preço, marca, marcado, promo], ... ]]
-async function serializarCarrinhoParaQR() {
+export async function serializarCarrinhoParaQR() {
   if (!Array.isArray(cart) || cart.length === 0) return null;
 
   const itens = cart.map(item => {
@@ -75,7 +79,7 @@ async function serializarCarrinhoParaQR() {
 
 // ===== 2. DESSERIALIZAÇÃO E VALIDAÇÃO =====
 // QR gerado pela versão antiga do app (mantido sem alterações)
-function desserializarQRLegado(payloadTexto) {
+export function desserializarQRLegado(payloadTexto) {
   try {
     let raw = (payloadTexto || '').trim();
     if (raw.startsWith(QR_STORAGE_PREFIX)) {
@@ -111,7 +115,7 @@ function desserializarQRLegado(payloadTexto) {
   }
 }
 
-async function desserializarQRParaCarrinho(payloadTexto) {
+export async function desserializarQRParaCarrinho(payloadTexto) {
   try {
     const raw = (payloadTexto || '').trim();
     const comprimido = raw.startsWith(QR_PREFIXO_COMPACTO);
@@ -165,7 +169,7 @@ async function desserializarQRParaCarrinho(payloadTexto) {
 }
 
 // ===== 2.1 DIVISÃO EM VÁRIOS QR (listas grandes) =====
-function dividirPayloadQR(payload, max = QR_TAMANHO_PARTE) {
+export function dividirPayloadQR(payload, max = QR_TAMANHO_PARTE) {
   if (payload.length <= max) return [payload];
   const id = Math.random().toString(36).slice(2, 6).padEnd(4, '0');
   const tamanho = max - 16;                       // 16 = espaço do cabeçalho "SCP:id:1/3:"
@@ -176,9 +180,9 @@ function dividirPayloadQR(payload, max = QR_TAMANHO_PARTE) {
 }
 
 let _qrPartes = { id: null, total: 0, partes: {} };
-function qrReiniciarPartes() { _qrPartes = { id: null, total: 0, partes: {} }; }
+export function qrReiniciarPartes() { _qrPartes = { id: null, total: 0, partes: {} }; }
 
-function qrReceberParte(texto) {
+export function qrReceberParte(texto) {
   const m = /^SCP:([a-z0-9]{4}):(\d{1,2})\/(\d{1,2}):([\s\S]+)$/.exec((texto || '').trim());
   if (!m) return { pronto: true, payload: texto };          // QR único
   const idx = Number(m[2]), total = Number(m[3]);
@@ -194,7 +198,7 @@ function qrReceberParte(texto) {
 }
 
 // ===== 3. MODAL PRINCIPAL =====
-function abrirModalQRCode(abaInicial = 'gerar') {
+export function abrirModalQRCode(abaInicial = 'gerar') {
   const modal = document.getElementById('modalQRCodeSync');
   if (!modal) {
     if (typeof showAppToast === 'function') {
@@ -205,18 +209,16 @@ function abrirModalQRCode(abaInicial = 'gerar') {
   modal.classList.remove('hidden');
   alternarAbaModalQR(abaInicial);
 }
-window.abrirModalQRCode = abrirModalQRCode;
 
-function fecharModalQRCode() {
+export function fecharModalQRCode() {
   pararScannerCamera();
   pararRotacaoQR();
   qrReiniciarPartes();
   const modal = document.getElementById('modalQRCodeSync');
   if (modal) modal.classList.add('hidden');
 }
-window.fecharModalQRCode = fecharModalQRCode;
 
-function alternarAbaModalQR(modo) {
+export function alternarAbaModalQR(modo) {
   const painelGerar = document.getElementById('qrPainelGerar');
   const painelLer = document.getElementById('qrPainelLer');
   const btnTabGerar = document.getElementById('qrTabBtnGerar');
@@ -243,11 +245,10 @@ function alternarAbaModalQR(modo) {
     iniciarScannerCamera();
   }
 }
-window.alternarAbaModalQR = alternarAbaModalQR;
 
 // ===== 4. GERAÇÃO DO QR CODE (offline) =====
 /** Desenha o QR num <canvas>. Correção de erro 'L' = mais espaço para dados e módulos maiores. */
-function desenharQRNoCanvas(canvas, texto, tamanho = 480) {
+export function desenharQRNoCanvas(canvas, texto, tamanho = 480) {
   const qr = qrcode(0, 'L');                // 0 = escolhe o tamanho sozinho
   qr.addData(texto, 'Byte');
   qr.make();
@@ -265,11 +266,11 @@ function desenharQRNoCanvas(canvas, texto, tamanho = 480) {
 }
 
 let qrRotacaoTimer = null;
-function pararRotacaoQR() {
+export function pararRotacaoQR() {
   if (qrRotacaoTimer) { clearInterval(qrRotacaoTimer); qrRotacaoTimer = null; }
 }
 
-async function gerarVisualizacaoQRCode() {
+export async function gerarVisualizacaoQRCode() {
   const container = document.getElementById('qrCodeCanvasContainer');
   const aviso = document.getElementById('qrAvisoCarrinhoVazio');
   if (!container) return;
@@ -319,7 +320,6 @@ async function gerarVisualizacaoQRCode() {
     qrRotacaoTimer = setInterval(() => { i = (i + 1) % partes.length; mostrar(); }, 2500);
   }
 }
-window.gerarVisualizacaoQRCode = gerarVisualizacaoQRCode;
 
 // ===== 5. LEITOR VIA CÂMERA (BarcodeDetector quando existe, jsQR como alternativa) =====
 let qrMediaStream = null;
@@ -328,7 +328,7 @@ let _qrSessaoScan = 0;
 let _qrCanvasLeitura = null;
 
 /** Lê um QR de uma imagem/vídeo usando jsQR. Retorna o texto ou null. */
-function lerQRComJsQR(fonte, largura, altura, maxLargura = 960) {
+export function lerQRComJsQR(fonte, largura, altura, maxLargura = 960) {
   if (typeof jsQR === 'undefined' || !largura || !altura) return null;
   const escala = Math.min(1, maxLargura / largura);
   const w = Math.round(largura * escala), h = Math.round(altura * escala);
@@ -341,7 +341,7 @@ function lerQRComJsQR(fonte, largura, altura, maxLargura = 960) {
   return r && r.data ? r.data : null;
 }
 
-async function iniciarScannerCamera() {
+export async function iniciarScannerCamera() {
   const video = document.getElementById('qrScannerVideo');
   if (!video) return;
 
@@ -396,7 +396,7 @@ async function iniciarScannerCamera() {
   }
 }
 
-function pararScannerCamera() {
+export function pararScannerCamera() {
   _qrSessaoScan++;                       // cancela qualquer ciclo de leitura pendente
   if (qrScanTimer) { clearTimeout(qrScanTimer); qrScanTimer = null; }
   if (qrMediaStream) {
@@ -409,7 +409,7 @@ function pararScannerCamera() {
 
 // ===== 6. CATÁLOGO E CARRINHO NA IMPORTAÇÃO =====
 /** Cria no catálogo local os produtos que ainda não existem (compara por nome, sem acento/maiúscula). */
-function garantirProdutosNoCatalogo(itens) {
+export function garantirProdutosNoCatalogo(itens) {
   if (!Array.isArray(products)) return 0;
   // usa um produto criado à mão como molde, para o novo ter os mesmos campos
   const molde = products.find(p => String(p.id).startsWith('p-custom-')) || null;
@@ -447,7 +447,7 @@ function garantirProdutosNoCatalogo(itens) {
 }
 
 /** Junta os itens lidos ao carrinho atual sem duplicar (mesmo nome + mesma marca). */
-function mesclarItensNoCarrinho(novos) {
+export function mesclarItensNoCarrinho(novos) {
   let adicionados = 0, repetidos = 0;
   const chave = c => normalizarNome(c.name) + '|' + normalizarNome(c.selectedBrandId);
   novos.forEach(n => {
@@ -467,7 +467,7 @@ function mesclarItensNoCarrinho(novos) {
 let _qrProcessando = false;
 let _qrUltimoInvalido = { t: '', ms: 0 };
 
-async function processarResultadoLeitura(conteudoQR) {
+export async function processarResultadoLeitura(conteudoQR) {
   if (_qrProcessando) return;
   const texto = String(conteudoQR || '').trim();
   if (!texto) return;
@@ -528,7 +528,7 @@ async function processarResultadoLeitura(conteudoQR) {
   }
 }
 
-function concluirImportacaoQR(mensagem) {
+export function concluirImportacaoQR(mensagem) {
   saveCartData();
   refreshActiveMarketUI();
   if (typeof renderCartUI === 'function') renderCartUI();
@@ -539,7 +539,7 @@ function concluirImportacaoQR(mensagem) {
 }
 
 // ===== 8. LEITURA DE QR CODE A PARTIR DE FOTO/ARQUIVO =====
-async function lerQRCodeDeArquivo(inputElement) {
+export async function lerQRCodeDeArquivo(inputElement) {
   const file = inputElement.files?.[0];
   if (!file) return;
 
@@ -575,7 +575,6 @@ async function lerQRCodeDeArquivo(inputElement) {
     inputElement.value = '';
   }
 }
-window.lerQRCodeDeArquivo = lerQRCodeDeArquivo;
 
 // ===== AÇÕES DA JANELA DO QR CODE (delegação, ver js/ui/acoes.js) =====
 Acoes.registrarClique({
@@ -585,3 +584,6 @@ Acoes.registrarClique({
 Acoes.registrarMudanca({
   'qr-arquivo': el => lerQRCodeDeArquivo(el),
 });
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
+Object.assign(window, { QR_STORAGE_PREFIX, QR_PREFIXO_COMPACTO, QR_PREFIXO_SEM_COMPRESSAO, QR_TAMANHO_PARTE, QR_SE_JA_NO_CARRINHO });

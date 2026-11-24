@@ -1,8 +1,12 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - HISTÓRICO: LEITURA, GRAVAÇÃO E DADOS AUXILIARES DAS COMPRAS (js/telas/historico/dados.js)
  */
 
-function obterHistoricoLocal() {
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { obterHistoricoLocal, obterListaHistoricoComparador, salvarHistoricoLocal, resolverNomeMercado, obterIdCompra, formatarDataHistoricoLegivel });
+
+export function obterHistoricoLocal() {
   try {
     // chaves antigas (sc_purchase_history...) já foram migradas em armazenamento.js
     return Armazenamento.lerLista(CHAVES.HISTORICO).map(normalizarCompra);
@@ -14,21 +18,21 @@ function obterHistoricoLocal() {
 
 // Lista usada pelo comparador. Normaliza porque o purchaseHistory também chega pelo Drive,
 // às vezes com registros de versões antigas (itens/nome/quantidade...).
-function obterListaHistoricoComparador() {
+export function obterListaHistoricoComparador() {
   const lista = (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory))
     ? purchaseHistory
     : Armazenamento.lerLista(CHAVES.HISTORICO);
   return lista.map(normalizarCompra);
 }
 
-function salvarHistoricoLocal(lista) {
+export function salvarHistoricoLocal(lista) {
   window.purchaseHistory = lista;
   if (typeof purchaseHistory !== 'undefined') purchaseHistory = lista;
   Armazenamento.gravarJSON(CHAVES.HISTORICO, lista);
   Eventos.avisar(AVISOS.DADOS_SALVOS, { quais: 'historico' });
 }
 
-function resolverNomeMercado(compra) {
+export function resolverNomeMercado(compra) {
   if (compra.marketName && compra.marketName !== 'Mercado' && compra.marketName.trim().length > 0) {
     return compra.marketName;
   }
@@ -46,7 +50,7 @@ function resolverNomeMercado(compra) {
   return 'Supermercado (Referência Geral)';
 }
 
-function obterIdCompra(compra, idx) {
+export function obterIdCompra(compra, idx) {
   if (!compra.id) {
     compra.id = 'pur-' + (compra.date || compra.dataISO || Date.now()) + '-' + idx;
   }
@@ -54,7 +58,7 @@ function obterIdCompra(compra, idx) {
 }
 
 // Formatação legível de data (DD/MM/AAAA HH:mm)
-function formatarDataHistoricoLegivel(dataStr) {
+export function formatarDataHistoricoLegivel(dataStr) {
   if (!dataStr) return 'Data não informada';
   try {
     const d = new Date(dataStr);

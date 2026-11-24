@@ -1,12 +1,16 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CALCULADORA: CÁLCULO DO PREÇO POR KG/L/UNIDADE (js/telas/calculadora/calculadora.js)
  * Código autossuficiente e blindado (sem dependências cruzadas)
  */
 
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { limparValorCalc, formatarMoedaCalc, abrirCalculadoraComparativa, fecharCalculadoraComparativa, toggleWholesaleSection, setCompMode, calcularComparativoPrecos, limparCalculadoraComparativa });
+
 let compCurrentMode = 'weight';
 
 // Conversores numéricos puros locais (evita qualquer conflito de escopo)
-function limparValorCalc(val) {
+export function limparValorCalc(val) {
   if (val === null || val === undefined) return 0;
   let s = String(val).trim();
   if (s === '' || s.toLowerCase() === 'null') return 0;
@@ -20,11 +24,11 @@ function limparValorCalc(val) {
   return isNaN(n) ? 0 : n;
 }
 
-function formatarMoedaCalc(num) {
+export function formatarMoedaCalc(num) {
   return (Number(num) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function abrirCalculadoraComparativa() {
+export function abrirCalculadoraComparativa() {
   if (window.AppTemplates && typeof window.AppTemplates.renderPriceComparatorModal === 'function') {
     window.AppTemplates.renderPriceComparatorModal();
   }
@@ -36,15 +40,13 @@ function abrirCalculadoraComparativa() {
     }, 100);
   }
 }
-window.abrirCalculadoraComparativa = abrirCalculadoraComparativa;
 
-function fecharCalculadoraComparativa() {
+export function fecharCalculadoraComparativa() {
   const modal = document.getElementById('modalPriceComparator');
   if (modal) modal.classList.add('hidden');
 }
-window.fecharCalculadoraComparativa = fecharCalculadoraComparativa;
 
-function toggleWholesaleSection(op) {
+export function toggleWholesaleSection(op) {
   const check = document.getElementById(`compHasWholesale${op}`);
   const box = document.getElementById(`compWholesaleBox${op}`);
   if (check && box) {
@@ -52,9 +54,8 @@ function toggleWholesaleSection(op) {
   }
   calcularComparativoPrecos();
 }
-window.toggleWholesaleSection = toggleWholesaleSection;
 
-function setCompMode(mode) {
+export function setCompMode(mode) {
   compCurrentMode = mode;
   
   const btnW = document.getElementById('compModeWeight');
@@ -97,9 +98,8 @@ function setCompMode(mode) {
 
   calcularComparativoPrecos();
 }
-window.setCompMode = setCompMode;
 
-function calcularComparativoPrecos() {
+export function calcularComparativoPrecos() {
   const targetVal = limparValorCalc(document.getElementById('compTargetQty')?.value);
 
   const qtyA = limparValorCalc(document.getElementById('compQtyA')?.value);
@@ -342,9 +342,8 @@ function calcularComparativoPrecos() {
     `;
   }
 }
-window.calcularComparativoPrecos = calcularComparativoPrecos;
 
-function limparCalculadoraComparativa() {
+export function limparCalculadoraComparativa() {
   const idsInputs = [
     'compTargetQty',
     'compQtyA', 'compPriceA', 'compMinWholesaleA', 'compPriceWholesaleA',

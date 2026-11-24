@@ -63,6 +63,8 @@ function carregarApp(arquivos) {
   };
   ctx.window = ctx;
   vm.createContext(ctx);
+  // compartilhado.js é a base (variavelGlobal), sempre o primeiro, como no index.html
+  if (!arquivos.includes('js/compartilhado.js')) arquivos = ['js/compartilhado.js', ...arquivos];
   for (const arq of arquivos) {
     const codigo = fs.readFileSync(path.join(RAIZ, arq), 'utf8');
     vm.runInContext(ehModulo(codigo) ? comoScriptEstrito(codigo) : codigo, ctx, { filename: arq });
@@ -141,4 +143,4 @@ function listarArquivosJs(pasta = 'js') {
   return saida;
 }
 
-module.exports = { carregarApp, rodarArquivo, scriptsDoIndex, ehModulo, exportsDoModulo, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };
+module.exports = { carregarApp, rodarArquivo, criarDocumento, criarLocalStorage, scriptsDoIndex, ehModulo, exportsDoModulo, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

@@ -1,8 +1,14 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - HISTÓRICO: LISTA DE COMPRAS, MÉTRICAS DO MÊS E SELEÇÃO (js/telas/historico/lista.js)
  */
 
-let selectedHistoryIds = new Set();
+import { variavelGlobal } from '../../compartilhado.js';
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { atualizarBarraSelecaoHistorico });
+
+variavelGlobal('selectedHistoryIds', new Set());
 
 window.renderHistoricoUI = function() {
   const container = document.getElementById('historicoListaContainer');
@@ -121,7 +127,7 @@ window.toggleSelectHistoryItem = function(id, isChecked) {
   window.renderHistoricoUI();
 };
 
-function atualizarBarraSelecaoHistorico() {
+export function atualizarBarraSelecaoHistorico() {
   const total = obterHistoricoLocal().length;
   const selecionadas = selectedHistoryIds.size;
 

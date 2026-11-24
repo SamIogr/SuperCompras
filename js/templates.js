@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - MOTOR CENTRAL DE TEMPLATES (js/templates.js)
  * Renderização gráfica, modais dinâmicos e layout da aba Dados com proteção esc().
  */
@@ -114,3 +115,5 @@ window.renderCartUI = () => {
     analisarMelhorMercado();
   }
 };
+
+export {};

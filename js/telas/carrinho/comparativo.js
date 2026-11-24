@@ -1,9 +1,13 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: MELHOR MERCADO PARA A LISTA E GUIA COMPARATIVO (js/telas/carrinho/comparativo.js)
  */
 
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { obterPrecoItemMercado, analisarMelhorMercado });
+
 // 1. FUNÇÃO AUXILIAR: CALCULA O PREÇO REAL DO PRODUTO POR SUPERMERCADO
-function obterPrecoItemMercado(itemCarrinho, mercadoId) {
+export function obterPrecoItemMercado(itemCarrinho, mercadoId) {
   const nomeItem = (itemCarrinho.name || '').trim().toLowerCase();
   const idItem = itemCarrinho.productId || itemCarrinho.id;
 
@@ -28,10 +32,9 @@ function obterPrecoItemMercado(itemCarrinho, mercadoId) {
 
   return Number(prod.basePrice || itemCarrinho.basePrice || itemCarrinho.price || 0);
 }
-window.obterPrecoItemMercado = obterPrecoItemMercado;
 
 // 2. ATUALIZAÇÃO DO INDICADOR DISCRETO EM SVG NO CABEÇALHO
-function analisarMelhorMercado() {
+export function analisarMelhorMercado() {
   const btn = document.getElementById('btnComparativoMercadosRapido');
   const boxAntigo = document.getElementById('cartBestMarketRecommendation');
 
@@ -100,7 +103,6 @@ function analisarMelhorMercado() {
 
   btn.classList.remove('hidden');
 }
-window.analisarMelhorMercado = analisarMelhorMercado;
 
 // 3. GUIA FLUTUANTE COM O COMPARATIVO GERAL
 window.abrirGuiaComparativoMercados = function() {

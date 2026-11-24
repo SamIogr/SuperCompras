@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - Carregador Modular de Componentes UI
  *
  * Desenvolvimento (localhost / Live Server): sempre busca a versão mais nova (anti-cache),
@@ -8,10 +9,13 @@
  * no aparelho (localStorage). Assim os modais e a aba de histórico abrem mesmo offline.
  */
 
-const UI_LOADER_DEV = ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname) || location.protocol === 'file:';
-const UI_LOADER_CHAVE_COPIA = CHAVES.PREFIXO_COMPONENTE_UI;
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { carregarComponentesUI });
 
-function carregarComponentesUI() {
+export const UI_LOADER_DEV = ['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname) || location.protocol === 'file:';
+export const UI_LOADER_CHAVE_COPIA = CHAVES.PREFIXO_COMPONENTE_UI;
+
+export function carregarComponentesUI() {
   const componentes = [
     { containerId: 'tab-historico', url: 'components/tab-historico.html' },
     { containerId: 'modal-compras-container', url: 'components/modal-compras.html' },
@@ -63,4 +67,6 @@ function carregarComponentesUI() {
     })
   );
 }
-window.carregarComponentesUI = carregarComponentesUI;
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
+Object.assign(window, { UI_LOADER_DEV, UI_LOADER_CHAVE_COPIA });

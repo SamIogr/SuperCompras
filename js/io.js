@@ -1,8 +1,12 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - MÓDULO ÚNICO DE BACKUP E EXPORTAÇÃO (js/io.js)
  */
 
-function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { baixarArquivo, exportBackupJSON, handleRestoreJSON, exportCartCSV, gerarTextoFormatadoCarrinho, copyCartToWhatsApp, colarTextoImportacao });
+
+export function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
   const blob = new Blob([conteudo], { type: tipoMime });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -35,7 +39,7 @@ window.closeExportOptionsModal = function() {
 };
 
 // BACKUP COMPLETO UNIFICADO (JSON)
-function exportBackupJSON() {
+export function exportBackupJSON() {
   const fullBackup = {
     app: 'SuperComprasPro',
     version: 3,
@@ -61,7 +65,7 @@ function exportBackupJSON() {
   document.getElementById('modalBackup')?.classList.add('hidden');
 }
 
-function handleRestoreJSON(e) {
+export function handleRestoreJSON(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
 
@@ -155,7 +159,7 @@ function handleRestoreJSON(e) {
 }
 
 // EXPORTAÇÃO CSV COMPLETA (COM DESCONTO E ATACADO)
-function exportCartCSV() {
+export function exportCartCSV() {
   if (!Array.isArray(cart) || cart.length === 0) {
     showAppToast('O carrinho está vazio para exportar.', 'warning');
     return;
@@ -174,10 +178,9 @@ function exportCartCSV() {
   showAppToast('Planilha CSV gerada com sucesso!', 'success');
   closeExportOptionsModal();
 }
-window.exportCartCSV = exportCartCSV;
 
 // GERADOR ÚNICO: FORMATO DETALHADO COMPLETO COM LINK
-async function gerarTextoFormatadoCarrinho() {
+export async function gerarTextoFormatadoCarrinho() {
   if (!Array.isArray(cart) || cart.length === 0) return null;
 
   const marketName = typeof getSelectedMarketName === 'function' ? getSelectedMarketName() : 'Supermercado';
@@ -221,10 +224,9 @@ async function gerarTextoFormatadoCarrinho() {
 
   return text;
 }
-window.gerarTextoFormatadoCarrinho = gerarTextoFormatadoCarrinho;
 
 // 2. Copiar exatamente o mesmo texto detalhado para a área de transferência
-async function copyCartToWhatsApp() {
+export async function copyCartToWhatsApp() {
   const texto = await gerarTextoFormatadoCarrinho();
   if (!texto) {
     if (typeof showAppToast === 'function') showAppToast('O carrinho está vazio para exportar.', 'warning');
@@ -243,9 +245,8 @@ async function copyCartToWhatsApp() {
   if (typeof showAppToast === 'function') showAppToast('Lista copiada para o WhatsApp!', 'success');
   if (typeof closeExportOptionsModal === 'function') closeExportOptionsModal();
 }
-window.copyCartToWhatsApp = copyCartToWhatsApp;
 // IMPORTACAO DE LINK OU PAYLOAD COLADO DIRETAMENTE
-async function colarTextoImportacao() {
+export async function colarTextoImportacao() {
   let texto = prompt('Cole aqui o link ou o codigo recebido pelo WhatsApp:');
   if (!texto) return;
 
@@ -308,7 +309,6 @@ async function colarTextoImportacao() {
     aplicarImportacaoLocal(!somar);
   }
 }
-window.colarTextoImportacao = colarTextoImportacao;
 
 // ===== AÇÕES DAS JANELAS "BACKUP" E "EXPORTAR / COMPARTILHAR" (delegação, ver js/ui/acoes.js) =====
 const _fecharExportarE = fn => () => { closeExportOptionsModal(); fn(); };

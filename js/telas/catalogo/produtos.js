@@ -1,8 +1,12 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: EXCLUIR, ADICIONAR AO CARRINHO E AÇÕES EM LOTE (js/telas/catalogo/produtos.js)
  */
 
-function askDeleteSingleProduct(id) {
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { askDeleteSingleProduct, quickAddToCartFromCatalog, atualizarEstadoBarraLoteCatalogo, toggleSelectCatalogProduct, toggleSelectAllCatalogProducts, solicitarExclusaoLoteCatalogo, executarRemocaoItensCatalogo });
+
+export function askDeleteSingleProduct(id) {
   const prod = (products || []).find(p => String(p.id) === String(id));
   if (!prod) return;
 
@@ -22,7 +26,7 @@ function askDeleteSingleProduct(id) {
   );
 }
 
-function quickAddToCartFromCatalog(id) {
+export function quickAddToCartFromCatalog(id) {
   const prod = (products || []).find(p => String(p.id) === String(id));
   if (!prod) return;
 
@@ -46,7 +50,7 @@ function quickAddToCartFromCatalog(id) {
   showAppToast(`"${prod.name}" adicionado ao carrinho!`, 'success');
 }
 
-function atualizarEstadoBarraLoteCatalogo() {
+export function atualizarEstadoBarraLoteCatalogo() {
   const total = window.selectedCatalogProductIds.size;
   const contador = document.getElementById('contadorSelecaoCatalog');
   const btnExcluir = document.getElementById('btnExcluirLoteCatalogo');
@@ -70,7 +74,7 @@ function atualizarEstadoBarraLoteCatalogo() {
   }
 }
 
-function toggleSelectCatalogProduct(id, isChecked) {
+export function toggleSelectCatalogProduct(id, isChecked) {
   if (!window.selectedCatalogProductIds) window.selectedCatalogProductIds = new Set();
   const idStr = String(id);
 
@@ -93,9 +97,8 @@ function toggleSelectCatalogProduct(id, isChecked) {
 
   atualizarEstadoBarraLoteCatalogo();
 }
-window.toggleSelectCatalogProduct = toggleSelectCatalogProduct;
 
-function toggleSelectAllCatalogProducts(isChecked) {
+export function toggleSelectAllCatalogProducts(isChecked) {
   if (!window.selectedCatalogProductIds) window.selectedCatalogProductIds = new Set();
   const visiveis = typeof obterListaProdutosFiltrada === 'function' ? obterListaProdutosFiltrada() : (products || []);
 
@@ -123,13 +126,12 @@ function toggleSelectAllCatalogProducts(isChecked) {
 
   atualizarEstadoBarraLoteCatalogo();
 }
-window.toggleSelectAllCatalogProducts = toggleSelectAllCatalogProducts;
 /**
  * Diálogo inteligente de exclusão em lote:
  * - Se todos forem locais: pergunta se deseja excluir.
  * - Se houver produtos de nuvem: oferece as opções "Apenas do Aparelho" ou "Do Aparelho e da Nuvem".
  */
-function solicitarExclusaoLoteCatalogo() {
+export function solicitarExclusaoLoteCatalogo() {
   const ids = Array.from(window.selectedCatalogProductIds || []);
   if (ids.length === 0) return;
 
@@ -157,9 +159,8 @@ function solicitarExclusaoLoteCatalogo() {
     );
   }
 }
-window.solicitarExclusaoLoteCatalogo = solicitarExclusaoLoteCatalogo;
 
-async function executarRemocaoItensCatalogo(idsParaRemover, excluirDaNuvem = false) {
+export async function executarRemocaoItensCatalogo(idsParaRemover, excluirDaNuvem = false) {
   const setIds = new Set(idsParaRemover.map(String));
   const itensParaExcluir = (products || []).filter(p => setIds.has(String(p.id)));
 

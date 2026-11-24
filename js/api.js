@@ -1,13 +1,17 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - SERVIÇOS DE REDE E SINCRONIZAÇÃO GOOGLE SHEETS
  */
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { apiChamar, salvarChaveSeguranca, enviarProdutoParaPlanilha, closeSelectiveSyncModal, switchSyncTab, renderSyncLists, toggleSelectAllSync, toggleSingleProductSync, toggleSingleMarketSync, syncSingleItemNow, applySelectiveSync, enviarMercadoParaPlanilha, sincronizarComPlanilha, abrirModalSincronizacaoSeletiva, promoverProdutoEmEdicaoParaPlanilha, sincronizarCatalogoDireto });
 
 /**
  * Ponto único de chamada à planilha (Apps Script).
  * Com API_TOKEN_VIA_POST = true a chave vai no corpo do POST e não aparece em URLs
  * (histórico do navegador, logs de servidor e proxies). text/plain evita o preflight de CORS.
  */
-function apiChamar(token, params = {}) {
+export function apiChamar(token, params = {}) {
   if (API_TOKEN_VIA_POST) {
     return fetch(API_GOOGLE_SHEETS_URL, {
       method: 'POST',
@@ -21,7 +25,7 @@ function apiChamar(token, params = {}) {
   return fetch(`${API_GOOGLE_SHEETS_URL}?${qs}`);
 }
 
-function salvarChaveSeguranca() {
+export function salvarChaveSeguranca() {
   const input = document.getElementById('inputSecurityToken');
   const val = (input.value || '').trim();
   if (!val) {
@@ -120,7 +124,7 @@ async function _sincronizarComPlanilha() {
 }
 
 // Devolve true se a planilha confirmou. silencioso: não mostra um aviso por preço (envio em lote).
-async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = 'Padrão', silencioso = false) {
+export async function enviarProdutoParaPlanilha(produto, marketId, preco, brandName = 'Padrão', silencioso = false) {
   const token = getSecurityToken();
   if (!token || marketId === 'm-padrao') return false;
 
@@ -203,11 +207,11 @@ async function _abrirModalSincronizacaoSeletiva() {
   }
 }
 
-function closeSelectiveSyncModal() {
+export function closeSelectiveSyncModal() {
   document.getElementById('modalSelectiveSync')?.classList.add('hidden');
 }
 
-function switchSyncTab(tab) {
+export function switchSyncTab(tab) {
   activeSyncTab = tab;
   const isProd = tab === 'produtos';
 
@@ -231,7 +235,7 @@ function switchSyncTab(tab) {
   renderSyncLists();
 }
 
-function renderSyncLists() {
+export function renderSyncLists() {
   const isProd = activeSyncTab === 'produtos';
   const selectAllBox = document.getElementById('checkSyncSelectAll');
   const labelCounter = document.getElementById('labelSyncSelectedCounter');
@@ -293,7 +297,7 @@ function renderSyncLists() {
   }
 }
 
-function toggleSelectAllSync(checked) {
+export function toggleSelectAllSync(checked) {
   if (activeSyncTab === 'produtos') {
     selectedSyncProducts = checked ? new Set(pendingSyncPayload.produtos.map(p => p.name.toLowerCase())) : new Set();
   } else {
@@ -302,18 +306,18 @@ function toggleSelectAllSync(checked) {
   renderSyncLists();
 }
 
-function toggleSingleProductSync(name, checked) {
+export function toggleSingleProductSync(name, checked) {
   const key = name.toLowerCase();
   if (checked) selectedSyncProducts.add(key); else selectedSyncProducts.delete(key);
   renderSyncLists();
 }
 
-function toggleSingleMarketSync(id, checked) {
+export function toggleSingleMarketSync(id, checked) {
   if (checked) selectedSyncMarkets.add(id); else selectedSyncMarkets.delete(id);
   renderSyncLists();
 }
 
-function syncSingleItemNow(type, identifier) {
+export function syncSingleItemNow(type, identifier) {
   if (type === 'produto') {
     const sp = pendingSyncPayload.produtos.find(p => p.name.toLowerCase() === identifier.toLowerCase());
     if (!sp) return;
@@ -353,7 +357,7 @@ function syncSingleItemNow(type, identifier) {
   if (typeof renderCartUI === 'function') renderCartUI();
 }
 
-function applySelectiveSync() {
+export function applySelectiveSync() {
   let contadorProd = 0;
   let contadorMerc = 0;
 
@@ -511,7 +515,7 @@ async function _enviarMercadoParaPlanilha(id) {
 }
 
 /** Botão "Enviar para a planilha" (card ou modal do mercado): confirma e coloca na fila. */
-function enviarMercadoParaPlanilha(id) {
+export function enviarMercadoParaPlanilha(id) {
   if (!scEhAdmin()) { showAppToast('Recurso restrito ao administrador.', 'info'); return; }
   const m = (supermarkets || []).find(x => x && x.id === id);
   if (!m) return;
@@ -524,7 +528,6 @@ function enviarMercadoParaPlanilha(id) {
     () => {}
   );
 }
-window.enviarMercadoParaPlanilha = enviarMercadoParaPlanilha;
 
 
 /**
@@ -649,18 +652,13 @@ async function _sincronizarCatalogoDireto() {
   }
 }
 
-window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
 
 // ===== FUNÇÕES PÚBLICAS: passam pela fila única do sync-coordenador.js =====
 // (a planilha e o Drive nunca rodam ao mesmo tempo; sem chave de administrador, a planilha nem é chamada)
-function sincronizarComPlanilha() { return scRodar(true, true, () => _sincronizarComPlanilha()); }
-function abrirModalSincronizacaoSeletiva() { return scRodar(true, false, () => _abrirModalSincronizacaoSeletiva()); }
-function promoverProdutoEmEdicaoParaPlanilha() { return scRodar(true, false, () => _promoverProdutoEmEdicaoParaPlanilha()); }
-function sincronizarCatalogoDireto() { return scRodar(true, false, () => _sincronizarCatalogoDireto()); }
-window.sincronizarComPlanilha = sincronizarComPlanilha;
-window.abrirModalSincronizacaoSeletiva = abrirModalSincronizacaoSeletiva;
-window.promoverProdutoEmEdicaoParaPlanilha = promoverProdutoEmEdicaoParaPlanilha;
-window.sincronizarCatalogoDireto = sincronizarCatalogoDireto;
+export function sincronizarComPlanilha() { return scRodar(true, true, () => _sincronizarComPlanilha()); }
+export function abrirModalSincronizacaoSeletiva() { return scRodar(true, false, () => _abrirModalSincronizacaoSeletiva()); }
+export function promoverProdutoEmEdicaoParaPlanilha() { return scRodar(true, false, () => _promoverProdutoEmEdicaoParaPlanilha()); }
+export function sincronizarCatalogoDireto() { return scRodar(true, false, () => _sincronizarCatalogoDireto()); }
 
 // ===== AÇÕES DA JANELA "SINCRONIZAÇÃO SELETIVA" (delegação, ver js/ui/acoes.js) =====
 Acoes.registrarClique({

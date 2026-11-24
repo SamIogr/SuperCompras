@@ -1,12 +1,16 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: BUSCA, ORDEM, SETOR E ORIGEM DOS PRODUTOS (js/telas/catalogo/filtros.js)
  */
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { obterListaProdutosFiltrada, renderizarBotoesFiltroOrigem });
 
 let catalogSortMode = 'az';
 let catalogOrigemFiltro = 'todos';
 let catalogSetorFiltro = 'Todas';
 
-function obterListaProdutosFiltrada() {
+export function obterListaProdutosFiltrada() {
   const input = document.getElementById("input-busca-produtos");
   const query = (input?.value || "").toLowerCase().trim();
 
@@ -43,17 +47,15 @@ function obterListaProdutosFiltrada() {
 
   return lista;
 }
-window.obterListaProdutosFiltrada = obterListaProdutosFiltrada;
 
 // BOTÕES DO FILTRO DE ORIGEM DO CATÁLOGO (só aparecem origens com produtos; ver js/origem.js)
-function renderizarBotoesFiltroOrigem() {
+export function renderizarBotoesFiltroOrigem() {
   const container = document.getElementById('container-filtro-origem-dinamico');
   if (!container) return;
   const contagens = contarOrigens('produtos', Array.isArray(products) ? products : []);
   catalogOrigemFiltro = filtroOrigemValido(catalogOrigemFiltro, contagens);
   container.innerHTML = botoesFiltroOrigemHtml('produtos', contagens, catalogOrigemFiltro);
 }
-window.renderizarBotoesFiltroOrigem = renderizarBotoesFiltroOrigem;
 
 window.filtrarOrigemProdutos = function(origem) {
   catalogOrigemFiltro = origem;

@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - HISTÓRICO: CUPOM DA COMPRA E REPETIR NO CARRINHO (js/telas/historico/detalhes.js)
  */
 
@@ -187,3 +188,5 @@ window.restaurarCompraParaCarrinho = function(idx) {
     showAppToast('Itens e marcas inseridos no carrinho mantendo o mercado ativo!', 'success');
   }
 };
+
+export {};

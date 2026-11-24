@@ -1,12 +1,16 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: MODAL DE EDIÇÃO DE UM ITEM (js/telas/carrinho/edicao.js)
  */
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { openEditCartItemModal, atualizarAtalhosEdicao, closeEditCartItemModal, setEditPromoType, setEditQty, confirmarNovaMarcaModalEdicao, cancelarNovaMarcaModalEdicao, getEditFormPromoConfig, atualizarSubtotalModalEdicao, salvarEdicaoItemCarrinho });
 
 // 4. MODAL DE EDIÇÃO DE ITEM DO CARRINHO (COMPATIBILIZADO)
 let editingCartItemId = null;
 let currentEditPromoMode = 'none';
 
-function openEditCartItemModal(id) {
+export function openEditCartItemModal(id) {
   editingCartItemId = id;
   const item = (cart || []).find(x => x.id === id);
   if (!item) return;
@@ -77,18 +81,16 @@ function openEditCartItemModal(id) {
 
   atualizarSubtotalModalEdicao();
 }
-window.openEditCartItemModal = openEditCartItemModal;
 
 // Atalhos de quantidade do modal conforme a unidade: 250g/500g/1kg para peso, 1/2/3/6/12 para o resto.
-function atualizarAtalhosEdicao(unidade) {
+export function atualizarAtalhosEdicao(unidade) {
   const peso = ehUnidadeDePeso(unidade);
   document.querySelectorAll('#editCartItemAtalhos [data-atalho]').forEach(btn => {
     btn.classList.toggle('hidden', (btn.dataset.atalho === 'peso') !== peso);
   });
 }
-window.atualizarAtalhosEdicao = atualizarAtalhosEdicao;
 
-function closeEditCartItemModal() {
+export function closeEditCartItemModal() {
   const modal = document.getElementById('modalEditCartItem');
   if (modal) {
     modal.classList.add('hidden');
@@ -96,9 +98,8 @@ function closeEditCartItemModal() {
   }
   editingCartItemId = null;
 }
-window.closeEditCartItemModal = closeEditCartItemModal;
 
-function setEditPromoType(mode) {
+export function setEditPromoType(mode) {
   currentEditPromoMode = mode;
 
   const btnNone = document.getElementById('btnEditPromoNone') || document.getElementById('btnCondNone');
@@ -129,18 +130,16 @@ function setEditPromoType(mode) {
 
   atualizarSubtotalModalEdicao();
 }
-window.setEditPromoType = setEditPromoType;
 
-function setEditQty(val) {
+export function setEditQty(val) {
   const qInput = document.getElementById('editCartItemQty');
   if (qInput) {
     qInput.value = val;
     atualizarSubtotalModalEdicao();
   }
 }
-window.setEditQty = setEditQty;
 
-function confirmarNovaMarcaModalEdicao() {
+export function confirmarNovaMarcaModalEdicao() {
   const input = document.getElementById('inputEditNovaMarca');
   const novaMarca = (input?.value || '').trim();
 
@@ -162,9 +161,8 @@ function confirmarNovaMarcaModalEdicao() {
   document.getElementById('boxEditMarcaSelect')?.classList.remove('hidden');
   document.getElementById('editCartItemPrice')?.focus();
 }
-window.confirmarNovaMarcaModalEdicao = confirmarNovaMarcaModalEdicao;
 
-function cancelarNovaMarcaModalEdicao() {
+export function cancelarNovaMarcaModalEdicao() {
   document.getElementById('boxEditMarcaInline')?.classList.add('hidden');
   document.getElementById('boxEditMarcaSelect')?.classList.remove('hidden');
   const select = document.getElementById('editCartItemBrand');
@@ -172,9 +170,8 @@ function cancelarNovaMarcaModalEdicao() {
     select.value = 'Padrão';
   }
 }
-window.cancelarNovaMarcaModalEdicao = cancelarNovaMarcaModalEdicao;
 
-function getEditFormPromoConfig() {
+export function getEditFormPromoConfig() {
   if (currentEditPromoMode === 'discount') {
     const modeEl = document.getElementById('editPromoDiscountMode') || document.getElementById('editCartItemDiscountType');
     const valEl = document.getElementById('editPromoDiscountValue') || document.getElementById('editCartItemDiscountValue');
@@ -196,7 +193,7 @@ function getEditFormPromoConfig() {
   return { type: 'none' };
 }
 
-function atualizarSubtotalModalEdicao() {
+export function atualizarSubtotalModalEdicao() {
   const modal = document.getElementById('modalEditCartItem');
   if (!modal) return;
 
@@ -214,9 +211,8 @@ function atualizarSubtotalModalEdicao() {
     elSubtotal.innerText = `R$ ${formatBRL(calc.finalSubtotal)}`;
   }
 }
-window.atualizarSubtotalModalEdicao = atualizarSubtotalModalEdicao;
 
-function salvarEdicaoItemCarrinho() {
+export function salvarEdicaoItemCarrinho() {
   if (!editingCartItemId) {
     closeEditCartItemModal();
     return;
@@ -253,4 +249,3 @@ function salvarEdicaoItemCarrinho() {
   closeEditCartItemModal();
   showAppToast(`"${item.name}" atualizado!`, 'success');
 }
-window.salvarEdicaoItemCarrinho = salvarEdicaoItemCarrinho;

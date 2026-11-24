@@ -1,8 +1,12 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: PREÇO DE UM PRODUTO POR MARCA E MERCADO (js/telas/catalogo/precos.js)
  */
 
-function obterPrecoProdutoMarcaMercado(prod, marcaNome, mercadoId) {
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { obterPrecoProdutoMarcaMercado, atualizarPrecoUnificado });
+
+export function obterPrecoProdutoMarcaMercado(prod, marcaNome, mercadoId) {
   if (!prod) return 0;
   const mercado = mercadoId || activeMarketId || 'm-padrao';
   const marca = (marcaNome || 'Padrão').trim().toLowerCase();
@@ -25,9 +29,8 @@ function obterPrecoProdutoMarcaMercado(prod, marcaNome, mercadoId) {
   }
   return 0;
 }
-window.obterPrecoProdutoMarcaMercado = obterPrecoProdutoMarcaMercado;
 
-function atualizarPrecoUnificado(prodId, marcaNome, mercadoId, preco) {
+export function atualizarPrecoUnificado(prodId, marcaNome, mercadoId, preco) {
   const prod = (products || []).find(p => String(p.id) === String(prodId));
   if (!prod) return;
 
@@ -52,4 +55,3 @@ function atualizarPrecoUnificado(prodId, marcaNome, mercadoId, preco) {
   saveAllLocalData();
   renderCatalogUI();
 }
-window.atualizarPrecoUnificado = atualizarPrecoUnificado;

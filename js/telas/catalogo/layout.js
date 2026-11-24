@@ -1,6 +1,10 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: ESTRUTURA DA ABA, CARDS E LISTAS DE PRODUTOS E MERCADOS (js/telas/catalogo/layout.js)
  */
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { setSubTabDados });
 
 Object.assign(window.AppTemplates, {
   // 1. ESTRUTURA BASE DA ABA DADOS COM BARRA STICKY RETRÁTIL
@@ -280,7 +284,7 @@ Object.assign(window.AppTemplates, {
 window.renderCatalogUI = () => window.AppTemplates.renderCatalog();
 window.renderMarketsUI = () => window.AppTemplates.renderMarkets();
 
-function setSubTabDados(subTab = 'produtos') {
+export function setSubTabDados(subTab = 'produtos') {
   const targetTab = subTab || 'produtos';
   window.currentSubTabDados = targetTab;
 
@@ -308,4 +312,3 @@ function setSubTabDados(subTab = 'produtos') {
     if (typeof renderMarketsUI === 'function') renderMarketsUI();
   }
 }
-window.setSubTabDados = setSubTabDados;

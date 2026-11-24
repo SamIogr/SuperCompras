@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - HISTÓRICO: COMPARADOR DE UMA COMPRA COM OS PREÇOS ATUAIS (js/telas/historico/comparador.js)
  */
 
@@ -487,3 +488,5 @@ window.addEventListener('keydown', (e) => {
     fecharModalComparadorHistorico();
   }
 });
+
+export {};

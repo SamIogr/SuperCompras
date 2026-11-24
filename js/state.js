@@ -1,13 +1,19 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - ESTADO GLOBAL E PERSISTÊNCIA (js/state.js)
  */
-const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
+
+import { variavelGlobal } from './compartilhado.js';
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { parseNumberInput, formatBRL, formatQty, novoId, ehUnidadeDePeso, opcoesUnidadeHtml, getSecurityToken, getSelectedMarketName, normalizarItem, normalizarCompra, normalizarProduto, normalizarDados, loadApplicationData, saveAllLocalData, saveCartData, esc, jsArg });
+export const API_GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxRfZ-hImEkXNgJGd6seMhVULwnpkp3tR-Ll-uXeaWRe8ZhcX_jvImmUl-G0SBTHnnV/exec";
 // false = chave vai na URL (?token=), como sempre foi.
 // true  = chave vai no corpo de um POST (não fica em histórico nem em logs de URL).
 //         Exige o Apps Script com doPost que também devolve o catálogo (sem "action").
-const API_TOKEN_VIA_POST = true;
+export const API_TOKEN_VIA_POST = true;
 
-const MERCADO_PADRAO_GENERICO = {
+export const MERCADO_PADRAO_GENERICO = {
   id: 'm-padrao',
   name: 'Mercado',
   branch: 'Referência Geral',
@@ -68,28 +74,28 @@ window.ITENS_BASICOS_SUGERIDOS = [
   { name: 'Sabonete em Barra', category: 'Higiene e Limpeza', unit: 'un' }
 ];
 
-let supermarkets = [ MERCADO_PADRAO_GENERICO ];
-let products = [];
-let cart = [];
-let activeMarketId = 'm-padrao';
-let purchaseHistory = [];
-let currentTab = 'compras';
-let cartFilterMode = 'all';
+variavelGlobal('supermarkets', [ MERCADO_PADRAO_GENERICO ]);
+variavelGlobal('products', []);
+variavelGlobal('cart', []);
+variavelGlobal('activeMarketId', 'm-padrao');
+variavelGlobal('purchaseHistory', []);
+variavelGlobal('currentTab', 'compras');
+variavelGlobal('cartFilterMode', 'all');
 let selectedCatalogCategory = 'Todas';
-let isSoundOn = true;
-let pendingSyncPayload = { produtos: [], supermercados: [] };
-let selectedSyncProducts = new Set();
-let selectedSyncMarkets = new Set();
-let activeSyncTab = 'produtos';
+variavelGlobal('isSoundOn', true);
+variavelGlobal('pendingSyncPayload', { produtos: [], supermercados: [] });
+variavelGlobal('selectedSyncProducts', new Set());
+variavelGlobal('selectedSyncMarkets', new Set());
+variavelGlobal('activeSyncTab', 'produtos');
 let catalogSyncFilter = 'all';
 window.selectedCatalogProductIds = new Set();
 
-const CATEGORIES = [
+export const CATEGORIES = [
   'Todas', 'Açougue e Carnes', 'Laticínios e Frios', 
   'Mercearia e Básicos', 'Hortifrúti e Ovos', 'Higiene e Limpeza', 'Geral'
 ];
 
-function parseNumberInput(val) {
+export function parseNumberInput(val) {
   if (val === null || val === undefined || val === '') return 0;
   let s = String(val).trim().replace(/[^\d.,-]/g, '');
   if (s.includes(',')) {
@@ -101,11 +107,11 @@ function parseNumberInput(val) {
   return isNaN(n) ? 0 : n;
 }
 
-function formatBRL(num) {
+export function formatBRL(num) {
   return (Number(num) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatQty(num) {
+export function formatQty(num) {
   const n = Number(num) || 0;
   return n % 1 === 0 ? n.toString() : n.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 }
@@ -113,7 +119,7 @@ function formatQty(num) {
 // ID único para itens criados no aparelho. Mantém o prefixo ('p-custom-', 'm-custom-'...)
 // porque o app usa ele para saber a origem do item. randomUUID evita colisão entre aparelhos
 // sincronizando pelo Drive (Date.now() sozinho pode repetir); o fallback cobre http sem HTTPS.
-function novoId(prefixo) {
+export function novoId(prefixo) {
   const aleatorio = (window.crypto && typeof crypto.randomUUID === 'function')
     ? crypto.randomUUID()
     : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
@@ -122,29 +128,29 @@ function novoId(prefixo) {
 
 // ===== UNIDADES DOS ITENS DA LISTA DE COMPRAS =====
 // Mesma lista no formulário de adicionar (index.html) e no modal de edição do item.
-const UNIDADES = Object.freeze([
+export const UNIDADES = Object.freeze([
   ['kg', 'kg (Quilo)'], ['un', 'un (Unidade)'], ['pct', 'pct (Pacote)'], ['cx', 'cx (Caixa)'],
   ['pt', 'pt (Pote)'], ['lt', 'lt (Lata)'], ['gf', 'gf (Garrafa)'], ['dz', 'dz (Dúzia)'],
 ]);
 
-function ehUnidadeDePeso(unidade) {
+export function ehUnidadeDePeso(unidade) {
   const u = String(unidade || '').trim().toLowerCase();
   return u === 'kg' || u === 'g' || u === 'quilo';
 }
 
 /** <option>s de unidade; se o item usa uma unidade fora da lista (ex.: 'ml' do catálogo), ela entra também. */
-function opcoesUnidadeHtml(selecionada) {
+export function opcoesUnidadeHtml(selecionada) {
   const atual = String(selecionada || 'un').trim();
   const lista = UNIDADES.some(([v]) => v === atual) ? UNIDADES : [[atual, atual], ...UNIDADES];
   return lista.map(([v, rotulo]) =>
     `<option value="${esc(v)}"${v === atual ? ' selected' : ''}>${esc(rotulo)}</option>`).join('');
 }
 
-function getSecurityToken() {
+export function getSecurityToken() {
   return Armazenamento.lerTexto(CHAVES.TOKEN_PLANILHA, '') || '';
 }
 
-function getSelectedMarketName() {
+export function getSelectedMarketName() {
   const m = supermarkets.find(x => x.id === activeMarketId);
   return m ? m.name : 'Mercado';
 }
@@ -160,7 +166,7 @@ function getSelectedMarketName() {
 function _vazio(v) { return v === undefined || v === null || v === ''; }
 function _num(v) { return typeof v === 'number' ? (isFinite(v) ? v : 0) : parseNumberInput(v); }
 
-function normalizarItem(it) {
+export function normalizarItem(it) {
   if (!it || typeof it !== 'object') return it;
   if (_vazio(it.name)) it.name = it.nome || '';
   if (_vazio(it.quantity)) it.quantity = !_vazio(it.quantidade) ? it.quantidade : 1;
@@ -172,7 +178,7 @@ function normalizarItem(it) {
   return it;
 }
 
-function normalizarCompra(c) {
+export function normalizarCompra(c) {
   if (!c || typeof c !== 'object') return c;
   if (!Array.isArray(c.items)) c.items = Array.isArray(c.itens) ? c.itens : [];
   c.items.forEach(normalizarItem);
@@ -181,7 +187,7 @@ function normalizarCompra(c) {
   return c;
 }
 
-function normalizarProduto(p) {
+export function normalizarProduto(p) {
   if (!p || typeof p !== 'object') return p;
   if (_vazio(p.name)) p.name = p.nome || '';
   p.name = String(p.name).trim();
@@ -193,13 +199,13 @@ function normalizarProduto(p) {
   return p;
 }
 
-function normalizarDados() {
+export function normalizarDados() {
   if (Array.isArray(products)) products.forEach(normalizarProduto);
   if (Array.isArray(cart)) cart.forEach(normalizarItem);
   if (Array.isArray(purchaseHistory)) purchaseHistory.forEach(normalizarCompra);
 }
 
-function loadApplicationData() {
+export function loadApplicationData() {
   const savedM = Armazenamento.lerLista(CHAVES.MERCADOS);
   if (savedM.length > 0) {
     supermarkets = savedM;
@@ -253,7 +259,7 @@ function loadApplicationData() {
   saveAllLocalData();
 }
 
-function saveAllLocalData() {
+export function saveAllLocalData() {
   Armazenamento.gravarJSON(CHAVES.MERCADOS, supermarkets);
   Armazenamento.gravarJSON(CHAVES.PRODUTOS, products);
   Armazenamento.gravarTexto(CHAVES.MERCADO_ATIVO, activeMarketId);
@@ -262,13 +268,13 @@ function saveAllLocalData() {
   Eventos.avisar(AVISOS.DADOS_SALVOS, { quais: 'tudo' });
 }
 
-function saveCartData() {
+export function saveCartData() {
   Armazenamento.gravarJSON(CHAVES.CARRINHO, cart);
   Eventos.avisar(AVISOS.CARRINHO_SALVO);
   if (typeof renderCartUI === 'function') renderCartUI();
 }
 
-function esc(v) {
+export function esc(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
@@ -277,7 +283,10 @@ function esc(v) {
 // Argumento de texto para handlers inline (onclick="f(${jsArg(id)})").
 // esc() sozinho não basta ali: o navegador decodifica &#39; de volta para ' antes de rodar o JS.
 // JSON.stringify gera um literal JS seguro e esc() o protege dentro do atributo HTML.
-function jsArg(v) {
+export function jsArg(v) {
   return esc(JSON.stringify(String(v ?? '')));
 }
 window.esc = esc;
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
+Object.assign(window, { API_GOOGLE_SHEETS_URL, API_TOKEN_VIA_POST, MERCADO_PADRAO_GENERICO, CATEGORIES, UNIDADES });

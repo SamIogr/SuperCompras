@@ -1,12 +1,16 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: FORMULÁRIO DE ADICIONAR ITEM (GAVETA, MARCA, PROMOÇÃO, SUGESTÕES) (js/telas/carrinho/formulario.js)
  */
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { setCartPromoMode, getCartFormPromoConfig, updateCartItemPreview, setCartQuickQty, atualizarSelectMarcasInline, aoMudarSelectMarcaInline, confirmarNovaMarcaInline, cancelarNovaMarcaInline, sincronizarPrecoFormularioCarrinho, selectProductForCart, atualizarAtalhosQuantidade, abrirSheetAdicionarItem, fecharSheetAdicionarItem, higienizarInputsCarrinho });
 
 // Estado local da condição comercial do formulário
 let currentCartPromoMode = 'none';
 
 // 2. CONDIÇÃO COMERCIAL NO FORMULÁRIO PRINCIPAL
-function setCartPromoMode(mode) {
+export function setCartPromoMode(mode) {
   currentCartPromoMode = mode;
 
   const btnNone = document.getElementById('btnCartPromoNone');
@@ -37,9 +41,8 @@ function setCartPromoMode(mode) {
 
   updateCartItemPreview();
 }
-window.setCartPromoMode = setCartPromoMode;
 
-function getCartFormPromoConfig() {
+export function getCartFormPromoConfig() {
   if (currentCartPromoMode === 'discount') {
     return {
       type: 'discount',
@@ -57,7 +60,7 @@ function getCartFormPromoConfig() {
   return { type: 'none' };
 }
 
-function updateCartItemPreview() {
+export function updateCartItemPreview() {
   const qtyInput = document.getElementById('cartInputQuantity');
   const priceInput = document.getElementById('cartInputUnitPrice');
 
@@ -81,19 +84,17 @@ function updateCartItemPreview() {
     }
   }
 }
-window.updateCartItemPreview = updateCartItemPreview;
 
-function setCartQuickQty(val) {
+export function setCartQuickQty(val) {
   const qInput = document.getElementById('cartInputQuantity');
   if (qInput) {
     qInput.value = val;
     updateCartItemPreview();
   }
 }
-window.setCartQuickQty = setCartQuickQty;
 
 // 4. GESTÃO DE MARCAS INLINE
-function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') {
+export function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') {
   const container = document.getElementById('containerMarcaInline');
   const select = document.getElementById('cartSelectProductBrand');
   const inputHidden = document.getElementById('cartInputProductBrand');
@@ -128,7 +129,7 @@ function atualizarSelectMarcasInline(nomeProduto, marcaSelecionada = 'Padrão') 
 
 // Troca de marca no formulário (select #cartSelectProductBrand).
 // "+ Nova marca..." mostra o campo para digitar; outra marca atualiza o preço sugerido.
-function aoMudarSelectMarcaInline(valor) {
+export function aoMudarSelectMarcaInline(valor) {
   if (valor === '__NOVA__') {
     document.getElementById('boxSelectMarca')?.classList.add('hidden');
     const boxInput = document.getElementById('boxInputNovaMarcaInline');
@@ -141,9 +142,8 @@ function aoMudarSelectMarcaInline(valor) {
     sincronizarPrecoFormularioCarrinho();
   }
 }
-window.aoMudarSelectMarcaInline = aoMudarSelectMarcaInline;
 
-function confirmarNovaMarcaInline() {
+export function confirmarNovaMarcaInline() {
   const input = document.getElementById('inputNovaMarcaInline');
   const nomeMarca = (input?.value || '').trim();
 
@@ -160,17 +160,15 @@ function confirmarNovaMarcaInline() {
   document.getElementById('cartInputUnitPrice')?.focus();
   updateCartItemPreview();
 }
-window.confirmarNovaMarcaInline = confirmarNovaMarcaInline;
 
-function cancelarNovaMarcaInline() {
+export function cancelarNovaMarcaInline() {
   document.getElementById('boxInputNovaMarcaInline')?.classList.add('hidden');
   document.getElementById('boxSelectMarca')?.classList.remove('hidden');
   const nomeProd = document.getElementById('cartInputProductName')?.value || '';
   atualizarSelectMarcasInline(nomeProd, 'Padrão');
 }
-window.cancelarNovaMarcaInline = cancelarNovaMarcaInline;
 
-function sincronizarPrecoFormularioCarrinho() {
+export function sincronizarPrecoFormularioCarrinho() {
   const nomeProd = (document.getElementById('cartInputProductName')?.value || '').trim();
   const selectMarca = document.getElementById('cartSelectProductBrand');
   const inputPreco = document.getElementById('cartInputUnitPrice');
@@ -189,7 +187,7 @@ function sincronizarPrecoFormularioCarrinho() {
   updateCartItemPreview();
 }
 
-function selectProductForCart(productId) {
+export function selectProductForCart(productId) {
   const p = (products || []).find(it => it.id === productId);
   if (p) {
     document.getElementById('cartInputProductName').value = p.name;
@@ -214,10 +212,9 @@ function selectProductForCart(productId) {
     updateCartItemPreview();
   }
 }
-window.selectProductForCart = selectProductForCart;
 
 // ATALHOS DINÂMICOS CONFORME A UNIDADE (PESO VS QUANTIDADE UNITÁRIA)
-function atualizarAtalhosQuantidade() {
+export function atualizarAtalhosQuantidade() {
   const selUnit = document.getElementById('cartInputUnit');
   const box = document.getElementById('containerAtalhosQtd');
   if (!selUnit || !box) return;
@@ -242,9 +239,8 @@ function atualizarAtalhosQuantidade() {
     `;
   }
 }
-window.atualizarAtalhosQuantidade = atualizarAtalhosQuantidade;
 
-function abrirSheetAdicionarItem() {
+export function abrirSheetAdicionarItem() {
   const container = document.getElementById('cartFormContainer');
   const backdrop = document.getElementById('cartFormBackdrop');
   if (container && backdrop) {
@@ -254,9 +250,8 @@ function abrirSheetAdicionarItem() {
     setTimeout(() => document.getElementById('cartInputProductName')?.focus(), 100);
   }
 }
-window.abrirSheetAdicionarItem = abrirSheetAdicionarItem;
 
-function fecharSheetAdicionarItem() {
+export function fecharSheetAdicionarItem() {
   const container = document.getElementById('cartFormContainer');
   const backdrop = document.getElementById('cartFormBackdrop');
   const dropdown = document.getElementById('cartAutocompleteDropdown');
@@ -266,7 +261,6 @@ function fecharSheetAdicionarItem() {
     backdrop.classList.add('hidden');
   }
 }
-window.fecharSheetAdicionarItem = fecharSheetAdicionarItem;
 
 // 8. EVENTOS DE ENTRADA DO FORMULÁRIO PRINCIPAL
 document.addEventListener('change', (e) => {
@@ -275,14 +269,14 @@ document.addEventListener('change', (e) => {
   }
 });
 
-const inputBuscaCarrinho = document.getElementById('cartSearchFilter');
+export const inputBuscaCarrinho = document.getElementById('cartSearchFilter');
 inputBuscaCarrinho?.addEventListener('input', () => {
   renderCartUI();
 });
 
-const inputProdName = document.getElementById('cartInputProductName');
-const dropdownProd = document.getElementById('cartAutocompleteDropdown');
-const btnClearProd = document.getElementById('cartBtnClearProduct');
+export const inputProdName = document.getElementById('cartInputProductName');
+export const dropdownProd = document.getElementById('cartAutocompleteDropdown');
+export const btnClearProd = document.getElementById('cartBtnClearProduct');
 
 inputProdName?.addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase().trim();
@@ -410,7 +404,7 @@ document.getElementById('formAddCartItem')?.addEventListener('submit', (e) => {
 });
 
 // Inicialização
-function higienizarInputsCarrinho() {
+export function higienizarInputsCarrinho() {
   const pInput = document.getElementById('cartInputUnitPrice');
   if (pInput) {
     pInput.addEventListener('blur', (e) => {
@@ -427,3 +421,6 @@ if (typeof higienizarInputsCarrinho === 'function') {
 if (typeof setCartPromoMode === 'function') {
   setCartPromoMode('none');
 }
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
+Object.assign(window, { inputBuscaCarrinho, inputProdName, dropdownProd, btnClearProd });

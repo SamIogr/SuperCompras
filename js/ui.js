@@ -1,12 +1,16 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - INTERFACE, NAVEGAÇÃO, TOASTS E MODAIS (js/ui.js)
  */
 
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { playAppBeep, showAppToast, openCustomDialog, switchActiveTab, refreshActiveMarketUI, abrirSupermercadoNoMaps, atualizarEstadoFabMobile, abrirModalBackup, aplicarTemaInicial, alternarTemaApp, verificarImportacaoUrlHash, ativarTelaAcesa, desativarTelaAcesa });
+
+export const AudioCtx = window.AudioContext || window.webkitAudioContext;
 // Gestão global do Wake Lock sem colisão de TDZ
 window.screenWakeLock = null;;
 
-function playAppBeep(kind = 'click') {
+export function playAppBeep(kind = 'click') {
   if (typeof isSoundOn !== 'undefined' && !isSoundOn) return;
   try {
     if (!audioInst) audioInst = new AudioCtx();
@@ -44,9 +48,8 @@ function playAppBeep(kind = 'click') {
     console.debug('[beep] sem áudio:', err && err.message);
   }
 }
-window.playAppBeep = playAppBeep;
 
-function showAppToast(msg, type = 'info') {
+export function showAppToast(msg, type = 'info') {
   const s = document.getElementById('toastStack');
   if (!s) return;
   const t = document.createElement('div');
@@ -61,9 +64,8 @@ function showAppToast(msg, type = 'info') {
     setTimeout(() => t.remove(), 300);
   }, 2700);
 }
-window.showAppToast = showAppToast;
 
-function openCustomDialog(title, msg, pTxt, sTxt, onP, onS) {
+export function openCustomDialog(title, msg, pTxt, sTxt, onP, onS) {
   const d = document.getElementById('dialogCustom');
   if (!d) return;
   document.getElementById('dialogTitle').innerText = title;
@@ -85,9 +87,8 @@ function openCustomDialog(title, msg, pTxt, sTxt, onP, onS) {
   document.getElementById('dialogBtnCancel').onclick = () => d.classList.add('hidden');
   d.classList.remove('hidden');
 }
-window.openCustomDialog = openCustomDialog;
 
-function switchActiveTab(tabName) {
+export function switchActiveTab(tabName) {
   currentTab = tabName;
 
   const mapaAbas = {
@@ -169,9 +170,8 @@ function switchActiveTab(tabName) {
     atualizarEstadoFabMobile(tabName);
   }
 }
-window.switchActiveTab = switchActiveTab;
 
-function refreshActiveMarketUI() {
+export function refreshActiveMarketUI() {
   const sel = document.getElementById('selectActiveMarket');
   const lista = (typeof supermarkets !== 'undefined' && Array.isArray(supermarkets) && supermarkets.length > 0)
     ? supermarkets
@@ -199,9 +199,8 @@ function refreshActiveMarketUI() {
     }
   }
 }
-window.refreshActiveMarketUI = refreshActiveMarketUI;
 
-function abrirSupermercadoNoMaps(marketId, rotaDireta = true) {
+export function abrirSupermercadoNoMaps(marketId, rotaDireta = true) {
   if (typeof supermarkets === 'undefined') return;
   const m = supermarkets.find(x => x.id === marketId);
   if (!m || m.id === 'm-padrao' || !m.address) {
@@ -214,10 +213,9 @@ function abrirSupermercadoNoMaps(marketId, rotaDireta = true) {
     : `https://www.google.com/maps/search/?api=1&query=${destino}`;
   window.open(url, '_blank');
 }
-window.abrirSupermercadoNoMaps = abrirSupermercadoNoMaps;
 
 
-function atualizarEstadoFabMobile(tabName) {
+export function atualizarEstadoFabMobile(tabName) {
   const fab = document.getElementById('fabOpenAddItem');
   if (!fab) return;
 
@@ -227,9 +225,8 @@ function atualizarEstadoFabMobile(tabName) {
     fab.classList.add('hidden');
   }
 }
-window.atualizarEstadoFabMobile = atualizarEstadoFabMobile;
 
-function abrirModalBackup() {
+export function abrirModalBackup() {
   const m = document.getElementById('modalBackup');
   if (m) {
     const inputToken = document.getElementById('inputSecurityToken');
@@ -239,10 +236,9 @@ function abrirModalBackup() {
     m.classList.remove('hidden');
   }
 }
-window.abrirModalBackup = abrirModalBackup;
 
 // CONTROLE DE MODO ESCURO/CLARO (TEMA)
-function aplicarTemaInicial() {
+export function aplicarTemaInicial() {
   const isDark = Armazenamento.lerTexto(CHAVES.TEMA) === 'dark' || 
                  (!Armazenamento.existe(CHAVES.TEMA) && window.matchMedia('(prefers-color-scheme: dark)').matches);
   
@@ -257,7 +253,7 @@ function aplicarTemaInicial() {
   }
 }
 
-function alternarTemaApp() {
+export function alternarTemaApp() {
   const isDark = document.documentElement.classList.toggle('dark');
   Armazenamento.gravarTexto(CHAVES.TEMA, isDark ? 'dark' : 'light');
   
@@ -271,7 +267,6 @@ function alternarTemaApp() {
     showAppToast('Modo Claro ativado', 'info');
   }
 }
-window.alternarTemaApp = alternarTemaApp;
 
 // Observa mudanças automáticas no sistema operativo
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
@@ -282,7 +277,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 aplicarTemaInicial();
 
 // 2. Leitura da Hash da URL com diálogo de Substituir vs. Somar
-async function verificarImportacaoUrlHash() {
+export async function verificarImportacaoUrlHash() {
   const hash = window.location.hash;
   if (!hash || !hash.startsWith('#import=')) return;
 
@@ -345,14 +340,13 @@ async function verificarImportacaoUrlHash() {
     aplicarImportacao(!somar);
   }
 }
-window.verificarImportacaoUrlHash = verificarImportacaoUrlHash;
 // ==========================================
 // GESTÃO DE TELA ACESA (SCREEN WAKE LOCK API)
 // ==========================================
 let screenWakeLock = null;
 
 // GESTÃO DE TELA ACESA (SCREEN WAKE LOCK API)
-async function ativarTelaAcesa() {
+export async function ativarTelaAcesa() {
   if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
   try {
     if (!window.screenWakeLock) {
@@ -365,9 +359,8 @@ async function ativarTelaAcesa() {
     console.warn('Wake Lock bloqueado ou não suportado:', err);
   }
 }
-window.ativarTelaAcesa = ativarTelaAcesa;
 
-async function desativarTelaAcesa() {
+export async function desativarTelaAcesa() {
   if (window.screenWakeLock) {
     try {
       await window.screenWakeLock.release();
@@ -378,7 +371,6 @@ async function desativarTelaAcesa() {
     }
   }
 }
-window.desativarTelaAcesa = desativarTelaAcesa;
 
 // Reativa o bloqueio se o utilizador alternar entre apps e voltar ao navegador
 document.addEventListener('visibilitychange', () => {
@@ -456,3 +448,6 @@ Acoes.registrarClique({
 Acoes.registrarDigitacao({
   'zoom-valor':      el => aplicarZoomGlobal(el.value),
 });
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4): constantes e classes (só existem depois de declaradas) -----
+Object.assign(window, { AudioCtx });

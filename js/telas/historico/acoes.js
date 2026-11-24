@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - HISTÓRICO: AÇÕES DOS BOTÕES (delegação, ver js/ui/acoes.js) (js/telas/historico/acoes.js)
  */
 
@@ -29,3 +30,5 @@ Acoes.registrarMudanca({
   'historico-comparador-compra':    () => { atualizarMercadoPadraoDaCompra(); renderizarComparacaoHistoricaAtual(); },
   'historico-comparador-mercado':   () => renderizarComparacaoHistoricaAtual(),
 });
+
+export {};

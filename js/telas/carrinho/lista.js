@@ -1,9 +1,13 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: LISTA, FILTROS, TOTAIS E AÇÕES RÁPIDAS DOS ITENS (js/telas/carrinho/lista.js)
  */
 
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { setCartFilterMode, recalcularPrecosCarrinhoPorMercado, updateCartTotals, toggleCartItemCheck, stepCartQty, removeCartItem });
+
 // 3. FILTRAGEM DO CARRINHO (TODOS, NO CORREDOR, NO CARRINHO)
-function setCartFilterMode(mode) {
+export function setCartFilterMode(mode) {
   cartFilterMode = mode;
 
   const btnAll = document.getElementById('tabFilterAll');
@@ -21,9 +25,8 @@ function setCartFilterMode(mode) {
   if (typeof renderCartUI === 'function') renderCartUI();
   else if (window.AppTemplates && typeof window.AppTemplates.renderCart === 'function') window.AppTemplates.renderCart();
 }
-window.setCartFilterMode = setCartFilterMode;
 
-function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
+export function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
   if (!novoMercadoId) return;
   activeMarketId = novoMercadoId;
 
@@ -44,10 +47,9 @@ function recalcularPrecosCarrinhoPorMercado(novoMercadoId) {
   if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
   renderCartUI();
 }
-window.recalcularPrecosCarrinhoPorMercado = recalcularPrecosCarrinhoPorMercado;
 
 // 6. TOTALIZAÇÃO E AÇÕES RÁPIDAS
-function updateCartTotals(totalItems, checkedItems) {
+export function updateCartTotals(totalItems, checkedItems) {
   let grandTotal = 0;
   let totalSavings = 0;
   (cart || []).forEach(item => {
@@ -77,9 +79,8 @@ function updateCartTotals(totalItems, checkedItems) {
     }
   }
 }
-window.updateCartTotals = updateCartTotals;
 
-function toggleCartItemCheck(id) {
+export function toggleCartItemCheck(id) {
   const it = (cart || []).find(x => x.id === id);
   if (it) {
     it.checked = !it.checked;
@@ -88,9 +89,8 @@ function toggleCartItemCheck(id) {
     renderCartUI();
   }
 }
-window.toggleCartItemCheck = toggleCartItemCheck;
 
-function stepCartQty(id, delta) {
+export function stepCartQty(id, delta) {
   const it = (cart || []).find(x => x.id === id);
   if (!it) return;
   const step = it.unit === 'kg' ? 0.25 : 1;
@@ -103,9 +103,8 @@ function stepCartQty(id, delta) {
     renderCartUI();
   }
 }
-window.stepCartQty = stepCartQty;
 
-function removeCartItem(id) {
+export function removeCartItem(id) {
   const idx = (cart || []).findIndex(x => x.id === id);
   if (idx > -1) {
     cart.splice(idx, 1);
@@ -114,4 +113,3 @@ function removeCartItem(id) {
     showAppToast('Item removido', 'info');
   }
 }
-window.removeCartItem = removeCartItem;

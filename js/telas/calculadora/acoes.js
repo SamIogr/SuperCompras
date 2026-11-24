@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CALCULADORA: AÇÕES (delegação, ver js/ui/acoes.js) (js/telas/calculadora/acoes.js)
  */
 
@@ -16,3 +17,5 @@ Acoes.registrarMudanca({
 Acoes.registrarDigitacao({
   'calculadora-recalcular': () => calcularComparativoPrecos(),
 });
+
+export {};

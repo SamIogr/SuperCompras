@@ -1,22 +1,27 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CATÁLOGO: SUPERMERCADOS: FILTRO, TROCA DE ID, SELEÇÃO, EXCLUSÃO E MODAL (js/telas/catalogo/mercados.js)
  */
 
-// Filtro de origem da aba Mercados: 'todos' | 'planilha-drive' | 'planilha' | 'drive' | 'local'
-let mercadosOrigemFiltro = 'todos';
+import { variavelGlobal } from '../../compartilhado.js';
 
-function filtrarOrigemMercados(origem) {
+// ----- PONTE DA TRANSIÇÃO (etapa 4): funções publicadas logo no início, como num script comum -----
+Object.assign(window, { filtrarOrigemMercados, remapearIdMercado, selecionarMercado, excluirMercadoCatalogo, openMarketEditModal, closeMarketEditModal, salvarSupermercadoSubmit });
+
+// Filtro de origem da aba Mercados: 'todos' | 'planilha-drive' | 'planilha' | 'drive' | 'local'
+variavelGlobal('mercadosOrigemFiltro', 'todos');
+
+export function filtrarOrigemMercados(origem) {
   mercadosOrigemFiltro = origem;
   if (typeof renderMarketsUI === 'function') renderMarketsUI();
 }
-window.filtrarOrigemMercados = filtrarOrigemMercados;
 
 /**
  * Troca o id de um mercado em TODOS os lugares onde ele aparece. Usado quando um mercado
  * criado no aparelho (m-custom-...) vai para a planilha e recebe o id oficial (m-nome...).
  * Sem isso os preços cotados nele ficariam presos no id antigo e sumiriam da tela.
  */
-function remapearIdMercado(idAntigo, idNovo) {
+export function remapearIdMercado(idAntigo, idNovo) {
   if (!idAntigo || !idNovo || idAntigo === idNovo) return;
   const trocarChave = (obj) => {
     if (!obj || typeof obj !== 'object' || !Object.prototype.hasOwnProperty.call(obj, idAntigo)) return;
@@ -32,18 +37,16 @@ function remapearIdMercado(idAntigo, idNovo) {
   (purchaseHistory || []).forEach(c => { if (c && c.marketId === idAntigo) c.marketId = idNovo; });
   if (activeMarketId === idAntigo) activeMarketId = idNovo;
 }
-window.remapearIdMercado = remapearIdMercado;
 
-function selecionarMercado(id) {
+export function selecionarMercado(id) {
   recalcularPrecosCarrinhoPorMercado(id);
   switchActiveTab('compras');
   if (typeof showAppToast === 'function') {
     showAppToast(`Supermercado ativo alterado para ${getSelectedMarketName()}!`, 'success');
   }
 }
-window.selecionarMercado = selecionarMercado;
 
-function excluirMercadoCatalogo(marketId) {
+export function excluirMercadoCatalogo(marketId) {
   const m = (supermarkets || []).find(x => x.id === marketId);
   if (!m || m.id === 'm-padrao') return;
 
@@ -62,22 +65,19 @@ function excluirMercadoCatalogo(marketId) {
     }
   );
 }
-window.excluirMercadoCatalogo = excluirMercadoCatalogo;
 
-function openMarketEditModal(marketId = null) {
+export function openMarketEditModal(marketId = null) {
   const mercado = marketId ? (supermarkets || []).find(x => x.id === marketId) : null;
   if (window.AppTemplates && typeof window.AppTemplates.renderMarketEditModal === 'function') {
     window.AppTemplates.renderMarketEditModal(mercado);
   }
 }
-window.openMarketEditModal = openMarketEditModal;
 
-function closeMarketEditModal() {
+export function closeMarketEditModal() {
   document.querySelectorAll('#modalMarketEditDynamic').forEach(el => el.remove());
 }
-window.closeMarketEditModal = closeMarketEditModal;
 
-function salvarSupermercadoSubmit(e) {
+export function salvarSupermercadoSubmit(e) {
   if (e && e.preventDefault) e.preventDefault();
 
   const id = document.getElementById('dinMarketId')?.value;
@@ -115,7 +115,6 @@ function salvarSupermercadoSubmit(e) {
   closeMarketEditModal();
   if (typeof showAppToast === 'function') showAppToast('Supermercado salvo com sucesso!', 'success');
 }
-window.salvarSupermercadoSubmit = salvarSupermercadoSubmit;
 
 Object.assign(window.AppTemplates, {
   // 7. MODAL DINÂMICO DE SUPERMERCADO
