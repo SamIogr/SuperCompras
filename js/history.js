@@ -123,7 +123,7 @@ window.renderHistoricoUI = function() {
           <div class="flex items-center space-x-2.5 min-w-0 flex-1">
             <input type="checkbox" 
                    ${isChecked ? 'checked' : ''} 
-                   onchange="toggleSelectHistoryItem('${compraId}', this.checked)" 
+                   onchange="toggleSelectHistoryItem(${jsArg(compraId)}, this.checked)" 
                    class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0" />
             <div class="min-w-0 truncate cursor-pointer" onclick="abrirDetalhesCompraHistorico(${idx})">
               <strong class="text-xs font-black text-slate-800 block truncate">${esc(mercadoNome)}</strong>              <span class="text-[10px] text-slate-400 block">${dataFormatada}</span>
@@ -228,8 +228,8 @@ function abrirModalConfirmacaoDuplaHistorico(config) {
       </div>
 
       <div class="space-y-1.5 text-left">
-        <h3 id="tituloConfirmacaoDupla" class="font-black text-slate-800 text-base leading-tight">${config.titulo1}</h3>
-        <p id="msgConfirmacaoDupla" class="text-xs text-slate-600 leading-relaxed">${config.mensagem1}</p>
+        <h3 id="tituloConfirmacaoDupla" class="font-black text-slate-800 text-base leading-tight">${esc(config.titulo1)}</h3>
+        <p id="msgConfirmacaoDupla" class="text-xs text-slate-600 leading-relaxed">${esc(config.mensagem1)}</p>
       </div>
 
       <div id="caixaAcoesConfirmacao" class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
@@ -420,7 +420,7 @@ window.abrirDetalhesCompraHistorico = function(idx) {
         <div class="min-w-0 pr-3">
           <div class="flex items-center space-x-1.5 flex-wrap">
             <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md uppercase">Supermercado</span>
-            <h3 class="font-black text-slate-800 text-base truncate">${mercadoNome}</h3>
+            <h3 class="font-black text-slate-800 text-base truncate">${esc(mercadoNome)}</h3>
           </div>
           <p class="text-xs text-slate-500 mt-1">${dataFormatada} • ${itens.length} produto${itens.length === 1 ? '' : 's'}</p>
         </div>
@@ -582,7 +582,7 @@ window.abrirModalComparadorHistorico = function(indiceOpcional) {
   selectCompra.innerHTML = listaHistorico.map((compra, i) => {
     const dataFormatada = formatarDataHistoricoLegivel(compra.date || compra.data);
     const totalFormatado = (Number(compra.total) || 0).toFixed(2).replace('.', ',');
-    return `<option value="${i}">${compra.marketName || 'Supermercado'} • ${dataFormatada} (R$ ${totalFormatado})</option>`;
+    return `<option value="${i}">${esc(compra.marketName || 'Supermercado')} • ${dataFormatada} (R$ ${totalFormatado})</option>`;
   }).join('');
 
   const idxEscolhido = (indiceOpcional !== undefined && indiceOpcional !== null) ? Number(indiceOpcional) : 0;
@@ -597,8 +597,8 @@ window.abrirModalComparadorHistorico = function(indiceOpcional) {
   const mercadoOriginalId = compraAtual?.marketId || (typeof activeMarketId !== 'undefined' ? activeMarketId : '');
 
   selectMercado.innerHTML = listaMercados.map(m => `
-    <option value="${m.id}" ${m.id === mercadoOriginalId ? 'selected' : ''}>
-      ${m.name} ${m.id === mercadoOriginalId ? '(Mesmo da compra)' : ''}
+    <option value="${esc(m.id)}" ${m.id === mercadoOriginalId ? 'selected' : ''}>
+      ${esc(m.name)} ${m.id === mercadoOriginalId ? '(Mesmo da compra)' : ''}
     </option>
   `).join('');
 
@@ -966,8 +966,8 @@ window.renderizarComparacaoHistoricaAtual = function() {
         <div class="py-2 px-3 flex items-center justify-between gap-2.5 cursor-pointer active:scale-[0.99] transition-transform" onclick="toggleDetalhesComparadorItem(${it.idxItem})">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 truncate">
-              <span class="text-xs font-bold text-slate-900 dark:text-white truncate">${it.name}</span>
-              <span style="font-size: 9px; line-height: 1;" class="font-bold text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-600/40 px-1.5 py-0.5 rounded shrink-0">${it.brand}</span>
+              <span class="text-xs font-bold text-slate-900 dark:text-white truncate">${esc(it.name)}</span>
+              <span style="font-size: 9px; line-height: 1;" class="font-bold text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-600/40 px-1.5 py-0.5 rounded shrink-0">${esc(it.brand)}</span>
 ${it.estaNoCarrinho && modoComparacaoHistoricoAtual === 'catalogo' ? `<span style="font-size: 8.5px; line-height: 1;" class="font-bold text-slate-600 dark:text-slate-300 bg-slate-200/80 dark:bg-slate-700/80 border border-slate-300 dark:border-slate-600 px-1.5 py-0.5 rounded shrink-0">Na lista</span>` : ''}
             </div>
             <div class="text-[11px] mt-0.5 truncate text-slate-600 dark:text-slate-300">
@@ -989,13 +989,13 @@ ${it.estaNoCarrinho && modoComparacaoHistoricoAtual === 'catalogo' ? `<span styl
           <div class="bg-white dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/50 space-y-1">
             <div class="flex justify-between text-slate-400 font-bold uppercase tracking-wider text-[8.5px]">
               <span>REGISTRO ORIGINAL</span>
-              <span>${it.qtd} ${it.unit}</span>
+              <span>${it.qtd} ${esc(it.unit)}</span>
             </div>
             <div class="flex justify-between text-slate-700 dark:text-slate-300">
               <span>Preço unitário pago:</span>
               <span>
                 ${it.descontoItem > 0 ? `<span class="line-through text-slate-400 mr-1">R$ ${it.precoTabelaUnit.toFixed(2).replace('.', ',')}</span>` : ''}
-                <strong class="text-slate-900 dark:text-white font-bold">R$ ${it.precoEfetivoUnit.toFixed(2).replace('.', ',')}</strong> / ${it.unit}
+                <strong class="text-slate-900 dark:text-white font-bold">R$ ${it.precoEfetivoUnit.toFixed(2).replace('.', ',')}</strong> / ${esc(it.unit)}
               </span>
             </div>
             ${it.descontoItem > 0 ? `
@@ -1015,11 +1015,11 @@ ${it.estaNoCarrinho && modoComparacaoHistoricoAtual === 'catalogo' ? `<span styl
             <div class="bg-white dark:bg-slate-800/60 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700/50 space-y-1">
               <div class="flex justify-between text-slate-400 font-bold uppercase tracking-wider text-[8.5px]">
                 <span>COTAÇÃO (${destinoTexto})</span>
-                <span>${it.qtd} ${it.unit}</span>
+                <span>${it.qtd} ${esc(it.unit)}</span>
               </div>
               <div class="flex justify-between text-slate-700 dark:text-slate-300">
                 <span>Preço unitário hoje:</span>
-                <strong class="text-slate-900 dark:text-white font-bold">R$ ${it.precoComparadoUnit.toFixed(2).replace('.', ',')}</strong> / ${it.unit}
+                <strong class="text-slate-900 dark:text-white font-bold">R$ ${it.precoComparadoUnit.toFixed(2).replace('.', ',')}</strong> / ${esc(it.unit)}
               </div>
               <div class="flex justify-between text-slate-800 dark:text-slate-200 pt-1 border-t border-slate-100 dark:border-slate-700/50">
                 <span>Subtotal hoje:</span>
@@ -1034,7 +1034,7 @@ ${it.estaNoCarrinho && modoComparacaoHistoricoAtual === 'catalogo' ? `<span styl
             </div>
           ` : `
             <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-[9.5px]">
-              Item sem cotação registada para a marca <strong>${it.brand}</strong> no ${destinoTexto}.
+              Item sem cotação registada para a marca <strong>${esc(it.brand)}</strong> no ${destinoTexto}.
             </div>
           `}
 

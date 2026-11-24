@@ -289,7 +289,7 @@ window.AppTemplates = {
 
     return `
       <div class="bg-white rounded-2xl p-3.5 border ${isCurrent ? 'border-emerald-500 ring-2 ring-emerald-500/15 bg-emerald-50/10' : 'border-slate-200 hover:border-slate-300'} shadow-2xs transition-all my-2 flex items-center justify-between gap-3">
-        <div class="flex-1 min-w-0 cursor-pointer" onclick="selecionarMercado('${esc(market.id)}')">
+        <div class="flex-1 min-w-0 cursor-pointer" onclick="selecionarMercado(${jsArg(market.id)})">
           <div class="flex items-center space-x-2 flex-wrap">
             <strong class="font-extrabold text-sm text-slate-800 truncate">${esc(market.name)}</strong>
             ${isCurrent ? `<span class="bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Ativo</span>` : ''}
@@ -301,10 +301,10 @@ window.AppTemplates = {
 
         <div class="flex items-center space-x-1.5 shrink-0">
           ${market.address ? `
-            <button type="button" onclick="abrirSupermercadoNoMaps('${esc(market.id)}', true)" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-xl transition-colors cursor-pointer" title="Traçar rota no Maps">${this.icons.route}</button>` : ''}
-          <button type="button" onclick="openMarketEditModal('${esc(market.id)}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar rede">${this.icons.edit}</button>
+            <button type="button" onclick="abrirSupermercadoNoMaps(${jsArg(market.id)}, true)" class="p-2 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-700 rounded-xl transition-colors cursor-pointer" title="Traçar rota no Maps">${this.icons.route}</button>` : ''}
+          <button type="button" onclick="openMarketEditModal(${jsArg(market.id)})" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar rede">${this.icons.edit}</button>
           ${market.id !== 'm-padrao' ? `
-            <button type="button" onclick="excluirMercadoCatalogo('${esc(market.id)}')" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir rede">${this.icons.delete}</button>` : ''}
+            <button type="button" onclick="excluirMercadoCatalogo(${jsArg(market.id)})" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir rede">${this.icons.delete}</button>` : ''}
         </div>
       </div>`;
   },
@@ -348,7 +348,7 @@ window.AppTemplates = {
         <div class="flex items-center space-x-3 flex-1 min-w-0">
           <input type="checkbox" 
                  ${isChecked ? 'checked' : ''} 
-                 onchange="toggleSelectCatalogProduct('${esc(prod.id)}', this.checked)" 
+                 onchange="toggleSelectCatalogProduct(${jsArg(prod.id)}, this.checked)" 
                  class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0" />
           <div class="min-w-0 flex-1">
             <div class="flex items-center space-x-2 flex-wrap">
@@ -366,9 +366,9 @@ window.AppTemplates = {
         </div>
 
         <div class="flex items-center space-x-1.5 shrink-0">
-          <button type="button" onclick="openProductEditModal('${esc(prod.id)}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar produto">${this.icons.edit}</button>
-          <button type="button" onclick="askDeleteSingleProduct('${esc(prod.id)}')" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir produto">${this.icons.delete}</button>
-          <button type="button" onclick="quickAddToCartFromCatalog('${esc(prod.id)}')" class="p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer" title="Adicionar ao carrinho">${this.icons.add}</button>
+          <button type="button" onclick="openProductEditModal(${jsArg(prod.id)})" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors cursor-pointer" title="Editar produto">${this.icons.edit}</button>
+          <button type="button" onclick="askDeleteSingleProduct(${jsArg(prod.id)})" class="p-2 bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-colors cursor-pointer" title="Excluir produto">${this.icons.delete}</button>
+          <button type="button" onclick="quickAddToCartFromCatalog(${jsArg(prod.id)})" class="p-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl transition-all shadow-xs cursor-pointer" title="Adicionar ao carrinho">${this.icons.add}</button>
         </div>
       </div>`;
   },
@@ -438,7 +438,7 @@ window.AppTemplates = {
       <div class="bg-white rounded-2xl p-3.5 border ${isChecked ? 'border-emerald-200 bg-emerald-50/40 opacity-75' : 'border-slate-200 shadow-2xs hover:border-slate-300'} transition-all my-2">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <button type="button" onclick="toggleCartItemCheck('${esc(item.id)}')" class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-300'}">
+            <button type="button" onclick="toggleCartItemCheck(${jsArg(item.id)})" class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-slate-50 border-slate-300'}">
               <span class="${isChecked ? 'block' : 'hidden'}">${this.icons.check}</span>
             </button>
             <div class="min-w-0 flex-1">
@@ -460,11 +460,11 @@ window.AppTemplates = {
               ${calc.savings > 0 ? `<div class="text-[10px] font-bold text-emerald-600">-R$ ${formatBRL(calc.savings)}</div>` : ''}
             </div>
             <div class="flex items-center bg-slate-100 rounded-xl p-0.5">
-              <button type="button" onclick="stepCartQty('${esc(item.id)}', -1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">-</button>
-              <button type="button" onclick="stepCartQty('${esc(item.id)}', 1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">+</button>
+              <button type="button" onclick="stepCartQty(${jsArg(item.id)}, -1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">-</button>
+              <button type="button" onclick="stepCartQty(${jsArg(item.id)}, 1)" class="w-6 h-6 font-bold text-slate-600 hover:text-slate-900 text-xs cursor-pointer">+</button>
             </div>
-            <button type="button" onclick="openEditCartItemModal('${esc(item.id)}')" class="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" title="Editar item">${this.icons.edit}</button>
-            <button type="button" onclick="removeCartItem('${esc(item.id)}')" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Remover item">${this.icons.delete}</button>
+            <button type="button" onclick="openEditCartItemModal(${jsArg(item.id)})" class="p-2 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer" title="Editar item">${this.icons.edit}</button>
+            <button type="button" onclick="removeCartItem(${jsArg(item.id)})" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer" title="Remover item">${this.icons.delete}</button>
           </div>
         </div>
       </div>`;
@@ -534,7 +534,7 @@ window.AppTemplates = {
     ` + matches.map(p => {
       const pPrice = obterPrecoProdutoMarcaMercado(p, 'Padrão', activeMarketId) || p.basePrice;
       return `
-        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart('${esc(p.id)}')">
+        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart(${jsArg(p.id)})">
           <div class="min-w-0 pr-2">
             <span class="font-bold text-slate-800 block truncate">${esc(p.name)}</span>
             <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${esc(p.category || 'Geral')}</span>
@@ -617,7 +617,7 @@ window.AppTemplates = {
         <div class="flex items-center space-x-2.5 min-w-0 flex-1">
           <input type="checkbox" 
                  ${isChecked ? "checked" : ""} 
-                 onchange="toggleSelectHistoryItem('${esc(compraId)}', this.checked)" 
+                 onchange="toggleSelectHistoryItem(${jsArg(compraId)}, this.checked)" 
                  class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer">
           <div class="min-w-0 truncate cursor-pointer" onclick="abrirDetalhesCompraHistorico(${idx})">
             <strong class="text-xs font-black text-slate-800 dark:text-slate-100 block truncate">${esc(mercadoNome)}</strong>

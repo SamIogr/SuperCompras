@@ -207,4 +207,11 @@ function esc(v) {
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
 }
+
+// Argumento de texto para handlers inline (onclick="f(${jsArg(id)})").
+// esc() sozinho não basta ali: o navegador decodifica &#39; de volta para ' antes de rodar o JS.
+// JSON.stringify gera um literal JS seguro e esc() o protege dentro do atributo HTML.
+function jsArg(v) {
+  return esc(JSON.stringify(String(v ?? '')));
+}
 window.esc = esc;

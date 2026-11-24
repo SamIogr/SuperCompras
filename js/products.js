@@ -292,7 +292,7 @@ function renderizarSelectMarcasModal(prod) {
         ${marcasArr.map(m => `<option value="${esc(m)}" ${(!isNovaMarcaSelecionada && m.toLowerCase() === currentCompareBrand.toLowerCase()) ? 'selected' : ''}>${esc(m)}</option>`).join('')}
         <option value="__NOVA_MARCA__" ${isNovaMarcaSelecionada ? 'selected' : ''} class="font-extrabold text-emerald-700">+ Nova Marca...</option>
       </select>
-      ${isCustomBrand ? `<button type="button" onclick="excluirMarcaModalEdicao('${currentCompareBrand}')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-all border border-rose-200 shrink-0">Excluir</button>` : ''}
+      ${isCustomBrand ? `<button type="button" onclick="excluirMarcaModalEdicao(${jsArg(currentCompareBrand)})" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-bold transition-all border border-rose-200 shrink-0">Excluir</button>` : ''}
     </div>`;
 
   const boxInline = document.getElementById('containerNovaMarcaInline');
@@ -400,7 +400,7 @@ function renderizarComparativoPrecosModal(prod) {
         </div>
         <div class="flex items-center space-x-1.5 shrink-0">
           <span class="text-xs font-semibold text-slate-500">R$</span>
-          <input type="text" value="${preco > 0 ? formatBRL(preco) : ''}" placeholder="0,00" onchange="salvarPrecoDiretoModal('${m.id}', this.value)" class="w-20 px-2 py-1 text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-lg text-right focus:ring-2 focus:ring-emerald-500 outline-none">
+          <input type="text" value="${preco > 0 ? formatBRL(preco) : ''}" placeholder="0,00" onchange="salvarPrecoDiretoModal(${jsArg(m.id)}, this.value)" class="w-20 px-2 py-1 text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-lg text-right focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
       </div>`;
   }).join('');

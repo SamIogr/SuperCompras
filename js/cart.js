@@ -329,7 +329,7 @@ function openEditCartItemModal(id) {
   const selectBrand = document.getElementById('editCartItemBrand');
   if (selectBrand) {
     selectBrand.innerHTML = Array.from(marcas).map(m => `
-      <option value="${m}" ${m.toLowerCase() === (item.selectedBrandId || 'Padrão').toLowerCase() ? 'selected' : ''}>🏷️ ${m}</option>
+      <option value="${esc(m)}" ${m.toLowerCase() === (item.selectedBrandId || 'Padrão').toLowerCase() ? 'selected' : ''}>🏷️ ${esc(m)}</option>
     `).join('') + `<option value="__NOVA__">+ Nova marca...</option>`;
 
     selectBrand.onchange = function() {
@@ -776,14 +776,14 @@ inputProdName?.addEventListener('input', (e) => {
     ` + matches.map(p => {
       const pPrice = obterPrecoProdutoMarcaMercado(p, 'Padrão', activeMarketId) || p.basePrice;
       return `
-        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart('${p.id}')">
+        <div class="px-3.5 py-2.5 hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer flex items-center justify-between text-xs transition-colors" onclick="selectProductForCart(${jsArg(p.id)})">
           <div class="min-w-0 pr-2">
             <span class="font-bold text-slate-800 block truncate">${esc(p.name)}</span>
             <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">${esc(p.category || 'Geral')}</span>
           </div>
           <div class="text-right text-emerald-700 font-black shrink-0">
             ${pPrice > 0 ? 'R$ ' + formatBRL(pPrice) : 'A cotar'}
-            <span class="text-[10px] text-slate-500 font-normal"> / ${p.unit || 'un'}</span>
+            <span class="text-[10px] text-slate-500 font-normal"> / ${esc(p.unit || 'un')}</span>
           </div>
         </div>
       `;
@@ -1066,14 +1066,14 @@ window.abrirGuiaComparativoMercados = function() {
       <div class="p-2.5 rounded-xl border flex items-center justify-between gap-2 ${statusClass}">
         <div class="min-w-0 flex-1">
           <div class="flex items-center space-x-1.5 truncate">
-            <span class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${comp.name}</span>
+            <span class="text-xs font-bold text-slate-800 dark:text-slate-100 truncate">${esc(comp.name)}</span>
             ${diffBadge}
           </div>
           <p class="text-[11px] font-black text-slate-700 dark:text-slate-300 mt-0.5">Total: R$ ${comp.total.toFixed(2).replace('.', ',')}</p>
         </div>
         ${!comp.isAtivo ? `
           <button type="button" 
-                  onclick="trocarMercadoPelaGuia('${comp.id}')" 
+                  onclick="trocarMercadoPelaGuia(${jsArg(comp.id)})" 
                   class="px-2.5 py-1 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-white text-[10px] font-bold rounded-lg transition-all shrink-0 cursor-pointer">
             Mudar
           </button>
