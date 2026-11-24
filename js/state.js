@@ -36,7 +36,7 @@ window.ITENS_BASICOS_SUGERIDOS = [
   { name: 'Peito de Frango', category: 'Açougue e Carnes', unit: 'kg' },
   { name: 'Filé Sassami', category: 'Açougue e Carnes', unit: 'kg' },
   { name: 'Carne Moída de Primeira', category: 'Açougue e Carnes', unit: 'kg' },
-  { name: 'Acém em Pedaço', category: 'Açougue e Carnes', unit: 'kg' },
+  { name: 'Acém', category: 'Açougue e Carnes', unit: 'kg' },
   { name: 'Bisteca Suína', category: 'Açougue e Carnes', unit: 'kg' },
   { name: 'Linguiça Calabresa', category: 'Açougue e Carnes', unit: 'kg' },
 
