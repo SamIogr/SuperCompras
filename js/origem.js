@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - ORIGEM DOS ITENS (js/origem.js)
  *
  * De onde vem cada produto ou supermercado, usado pelos selos dos cards e pelos filtros
@@ -10,17 +11,17 @@
  *  - padrao:   o "Mercado" de referência embutido no app (não é planilha nem Drive)
  */
 
-const ORIGENS = Object.freeze({
+export const ORIGENS = Object.freeze({
   'planilha-drive': { rotulo: 'Planilha + Drive', filtro: 'Planilha + Drive', cor: 'bg-purple-100 text-purple-800 border-purple-200' },
   planilha:         { rotulo: 'Planilha',         filtro: 'Só Planilha',      cor: 'bg-sky-100 text-sky-800 border-sky-200' },
   drive:            { rotulo: 'Drive',            filtro: 'Só Drive',         cor: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
   local:            { rotulo: 'Local',            filtro: 'Local',            cor: 'bg-amber-100 text-amber-800 border-amber-200' },
   padrao:           { rotulo: 'Referência',       filtro: 'Referência',       cor: 'bg-slate-100 text-slate-600 border-slate-200' },
 });
-const ORDEM_FILTRO_ORIGEM = ['planilha-drive', 'planilha', 'drive', 'local'];
+export const ORDEM_FILTRO_ORIGEM = ['planilha-drive', 'planilha', 'drive', 'local'];
 
 /** tipo: 'produtos' | 'mercados' */
-function estaNaPlanilha(tipo, item) {
+export function estaNaPlanilha(tipo, item) {
   if (!item) return false;
   const id = String(item.id || '');
   if (tipo === 'mercados') {
@@ -30,7 +31,7 @@ function estaNaPlanilha(tipo, item) {
   return Boolean(item.inSheet || id.startsWith('PROD-'));
 }
 
-function obterOrigem(tipo, item) {
+export function obterOrigem(tipo, item) {
   if (tipo === 'mercados' && item && item.id === 'm-padrao') return 'padrao';
   const planilha = estaNaPlanilha(tipo, item);
   const drive = typeof driveEstaNoBackup === 'function' && driveEstaNoBackup(tipo, item);
@@ -41,17 +42,17 @@ function obterOrigem(tipo, item) {
 }
 
 // compatibilidade com o nome antigo (produtos)
-function obterOrigemItem(p) { return obterOrigem('produtos', p); }
+export function obterOrigemItem(p) { return obterOrigem('produtos', p); }
 
 // classeTamanho precisa ser a classe inteira ('text-[9px]'): o Tailwind só gera classes
 // que aparecem escritas por completo no código.
-function seloOrigemHtml(origem, classeTamanho = 'text-[10px]') {
+export function seloOrigemHtml(origem, classeTamanho = 'text-[10px]') {
   const o = ORIGENS[origem] || ORIGENS.local;
   return `<span class="${o.cor} ${classeTamanho} font-bold px-2 py-0.5 rounded-md border">${o.rotulo}</span>`;
 }
 
 /** { todos, 'planilha-drive', planilha, drive, local } — 'padrao' só entra em "todos" */
-function contarOrigens(tipo, lista) {
+export function contarOrigens(tipo, lista) {
   const contagens = { todos: 0, 'planilha-drive': 0, planilha: 0, drive: 0, local: 0 };
   (lista || []).forEach(item => {
     if (!item) return;
@@ -66,7 +67,7 @@ function contarOrigens(tipo, lista) {
  * Botões do filtro de origem (só aparecem as origens que têm itens).
  * alvo: 'produtos' | 'mercados' — vai em data-alvo; o clique é tratado pela delegação (templates.js).
  */
-function botoesFiltroOrigemHtml(alvo, contagens, filtroAtual) {
+export function botoesFiltroOrigemHtml(alvo, contagens, filtroAtual) {
   const opcoes = [{ id: 'todos', rotulo: 'Todos', n: contagens.todos }]
     .concat(ORDEM_FILTRO_ORIGEM.filter(id => contagens[id] > 0).map(id => ({ id, rotulo: ORIGENS[id].filtro, n: contagens[id] })));
   return opcoes.map(op => {
@@ -79,9 +80,11 @@ function botoesFiltroOrigemHtml(alvo, contagens, filtroAtual) {
 }
 
 /** Se o filtro escolhido ficou sem itens (ex.: depois de sincronizar), volta para "todos". */
-function filtroOrigemValido(filtroAtual, contagens) {
+export function filtroOrigemValido(filtroAtual, contagens) {
   return (filtroAtual !== 'todos' && !contagens[filtroAtual]) ? 'todos' : filtroAtual;
 }
 
-window.obterOrigem = obterOrigem;
-window.obterOrigemItem = obterOrigemItem;
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { ORIGENS, ORDEM_FILTRO_ORIGEM, estaNaPlanilha, obterOrigem, obterOrigemItem, seloOrigemHtml, contarOrigens, botoesFiltroOrigemHtml, filtroOrigemValido });

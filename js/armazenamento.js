@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - ARMAZENAMENTO LOCAL (js/armazenamento.js)
  *
  * ÚNICO arquivo do app que acessa o localStorage. Os outros usam Armazenamento.* com as
@@ -11,7 +12,7 @@
  * Carregue ANTES de state.js (é o primeiro script do app).
  */
 
-const CHAVES = Object.freeze({
+export const CHAVES = Object.freeze({
   // dados do app
   PRODUTOS: 'sc_products_v3',
   MERCADOS: 'sc_supermarkets_v3',
@@ -34,9 +35,9 @@ const CHAVES = Object.freeze({
 });
 
 // Versões antigas guardavam o histórico nestas chaves (em ordem de preferência).
-const CHAVES_HISTORICO_ANTIGAS = Object.freeze(['sc_purchase_history', 'supercompras_history', 'compras']);
+export const CHAVES_HISTORICO_ANTIGAS = Object.freeze(['sc_purchase_history', 'supercompras_history', 'compras']);
 
-const Armazenamento = {
+export const Armazenamento = {
   /** Texto guardado na chave, ou `padrao` se não existir / não der para ler. */
   lerTexto(chave, padrao = null) {
     try {
@@ -108,5 +109,8 @@ const Armazenamento = {
 };
 
 Armazenamento.migrarChavesAntigas();
-window.Armazenamento = Armazenamento;
-window.CHAVES = CHAVES;
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { CHAVES, CHAVES_HISTORICO_ANTIGAS, Armazenamento });

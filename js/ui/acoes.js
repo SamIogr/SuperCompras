@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - AÇÕES DA TELA POR DELEGAÇÃO (js/ui/acoes.js)
  *
  * Os elementos não têm onclick="..." embutido. Em vez disso levam:
@@ -14,7 +15,7 @@
  * Carregue logo depois de eventos.js, antes das telas.
  */
 
-const Acoes = (() => {
+export const Acoes = (() => {
   // click: toques | change: select/checkbox | input: cada tecla digitada | keydown: tecla pressionada (ex.: Enter) | submit: envio de formulário
   const mapas = { click: Object.create(null), change: Object.create(null), input: Object.create(null), keydown: Object.create(null), submit: Object.create(null) };
 
@@ -51,9 +52,11 @@ const Acoes = (() => {
 })();
 
 /** Para fundos de modal: só age se o toque foi no próprio fundo, não no conteúdo. */
-function noProprioElemento(fn) {
+export function noProprioElemento(fn) {
   return (el, evento) => { if (evento.target === el) fn(el, evento); };
 }
 
-window.Acoes = Acoes;
-window.noProprioElemento = noProprioElemento;
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { Acoes, noProprioElemento });

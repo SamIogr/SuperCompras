@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SuperCompras Pro</title>
+    <!-- ícone da aba (🛒 em SVG, sem arquivo; evita o 404 do favicon.ico) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9B%92%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="css/tailwind.css">
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -707,49 +709,49 @@
     <div id="toastStack" style="top: 62px;" class="fixed left-3 right-3 sm:left-auto sm:right-4 z-50 flex flex-col space-y-2 pointer-events-none sm:max-w-md"></div>
 
     <!-- SCRIPTS DE LÓGICA (CARREGAMENTO ESTÁTICO IMEDIATO) -->
-    <script src="js/eventos.js?v=5.8.0"></script>
-    <script src="js/ui/acoes.js?v=5.8.0"></script>
-    <script src="js/armazenamento.js?v=5.8.0"></script>
-    <script src="js/state.js?v=5.8.0"></script>
-    <script src="js/sync-coordenador.js?v=5.8.0"></script>
-    <script src="js/origem.js?v=5.8.0"></script>
-    <script src="js/templates.js?v=5.8.0"></script>
-    <script src="js/ui.js?v=5.8.0"></script>
-    <script src="js/api.js?v=5.8.0"></script>
-    <script src="js/io.js?v=5.8.0"></script>
+    <script type="module" src="js/eventos.js?v=6.0.0"></script>
+    <script type="module" src="js/ui/acoes.js?v=6.0.0"></script>
+    <script type="module" src="js/armazenamento.js?v=6.0.0"></script>
+    <script defer src="js/state.js?v=6.0.0"></script>
+    <script defer src="js/sync-coordenador.js?v=6.0.0"></script>
+    <script type="module" src="js/origem.js?v=6.0.0"></script>
+    <script defer src="js/templates.js?v=6.0.0"></script>
+    <script defer src="js/ui.js?v=6.0.0"></script>
+    <script defer src="js/api.js?v=6.0.0"></script>
+    <script defer src="js/io.js?v=6.0.0"></script>
     <!-- tela do histórico -->
-    <script src="js/telas/historico/dados.js?v=5.8.0"></script>
-    <script src="js/telas/historico/lista.js?v=5.8.0"></script>
-    <script src="js/telas/historico/exclusao.js?v=5.8.0"></script>
-    <script src="js/telas/historico/detalhes.js?v=5.8.0"></script>
-    <script src="js/telas/historico/comparador.js?v=5.8.0"></script>
-    <script src="js/telas/historico/acoes.js?v=5.8.0"></script>
-    <script src="js/drive-sync.js?v=5.8.0"></script>
+    <script defer src="js/telas/historico/dados.js?v=6.0.0"></script>
+    <script defer src="js/telas/historico/lista.js?v=6.0.0"></script>
+    <script defer src="js/telas/historico/exclusao.js?v=6.0.0"></script>
+    <script defer src="js/telas/historico/detalhes.js?v=6.0.0"></script>
+    <script defer src="js/telas/historico/comparador.js?v=6.0.0"></script>
+    <script defer src="js/telas/historico/acoes.js?v=6.0.0"></script>
+    <script defer src="js/drive-sync.js?v=6.0.0"></script>
     <!-- tela do carrinho -->
-    <script src="js/telas/carrinho/calculo.js?v=5.8.0"></script>
-    <script src="js/telas/carrinho/lista.js?v=5.8.0"></script>
-    <script src="js/telas/carrinho/formulario.js?v=5.8.0"></script>
-    <script src="js/telas/carrinho/edicao.js?v=5.8.0"></script>
-    <script src="js/telas/carrinho/finalizacao.js?v=5.8.0"></script>
-    <script src="js/telas/carrinho/comparativo.js?v=5.8.0"></script>
-    <script src="js/telas/carrinho/acoes.js?v=5.8.0"></script>
+    <script defer src="js/telas/carrinho/calculo.js?v=6.0.0"></script>
+    <script defer src="js/telas/carrinho/lista.js?v=6.0.0"></script>
+    <script defer src="js/telas/carrinho/formulario.js?v=6.0.0"></script>
+    <script defer src="js/telas/carrinho/edicao.js?v=6.0.0"></script>
+    <script defer src="js/telas/carrinho/finalizacao.js?v=6.0.0"></script>
+    <script defer src="js/telas/carrinho/comparativo.js?v=6.0.0"></script>
+    <script defer src="js/telas/carrinho/acoes.js?v=6.0.0"></script>
     <!-- tela do catálogo (produtos e mercados) -->
-    <script src="js/telas/catalogo/precos.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/layout.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/filtros.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/modal-produto.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/produtos.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/sugeridos.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/mercados.js?v=5.8.0"></script>
-    <script src="js/telas/catalogo/acoes.js?v=5.8.0"></script>
+    <script defer src="js/telas/catalogo/precos.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/layout.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/filtros.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/modal-produto.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/produtos.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/sugeridos.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/mercados.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/acoes.js?v=6.0.0"></script>
     <!-- calculadora -->
-    <script src="js/telas/calculadora/calculadora.js?v=5.8.0"></script>
-    <script src="js/telas/calculadora/modal.js?v=5.8.0"></script>
-    <script src="js/telas/calculadora/acoes.js?v=5.8.0"></script>
-    <script src="js/ui-loader.js?v=5.8.0"></script>
-    <script src="js/vendor/qrcode.js"></script>
-    <script src="js/vendor/jsQR.js"></script>
-    <script src="js/qrcode-sync.js?v=5.8.0"></script>
+    <script defer src="js/telas/calculadora/calculadora.js?v=6.0.0"></script>
+    <script defer src="js/telas/calculadora/modal.js?v=6.0.0"></script>
+    <script defer src="js/telas/calculadora/acoes.js?v=6.0.0"></script>
+    <script defer src="js/ui-loader.js?v=6.0.0"></script>
+    <script defer src="js/vendor/qrcode.js"></script>
+    <script defer src="js/vendor/jsQR.js"></script>
+    <script defer src="js/qrcode-sync.js?v=6.0.0"></script>
 
     <!-- INICIALIZAÇÃO DA APLICAÇÃO -->
     <script>

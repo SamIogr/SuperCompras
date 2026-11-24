@@ -6,7 +6,7 @@ const path = require('path');
 const { carregarApp } = require('./carregar-app');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const scripts = [...html.matchAll(/<script src="(js\/[^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]);
+const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="(js\/[^"?]+)(?:\?[^"]*)?"[^>]*><\/script>/g)].map(m => m[1]);
 
 test('index.html carrega os scripts locais esperados', () => {
   assert.ok(scripts.length >= 15, 'scripts encontrados: ' + scripts.join(', '));

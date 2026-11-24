@@ -65,10 +65,51 @@ function carregarApp(arquivos) {
   vm.createContext(ctx);
   for (const arq of arquivos) {
     const codigo = fs.readFileSync(path.join(RAIZ, arq), 'utf8');
-    vm.runInContext(codigo, ctx, { filename: arq });
+    vm.runInContext(ehModulo(codigo) ? comoScriptEstrito(codigo) : codigo, ctx, { filename: arq });
   }
   ctx.$ = expr => vm.runInContext(expr, ctx);
   return ctx;
+}
+
+/** Roda mais um arquivo do app num contexto já criado (scripts comuns ou módulos). */
+function rodarArquivo(ctx, arq) {
+  const codigo = fs.readFileSync(path.join(RAIZ, arq), 'utf8');
+  vm.runInContext(ehModulo(codigo) ? comoScriptEstrito(codigo) : codigo, ctx, { filename: arq });
+}
+
+// ===== Módulos (etapa 4, fase de transição) =====
+// Um arquivo é módulo se tem import/export no começo de alguma linha.
+function ehModulo(codigo) {
+  return /^\s*(import\s|export\s)/m.test(codigo);
+}
+
+/**
+ * Roda um módulo no mesmo contexto dos scripts comuns: remove as linhas de import e a
+ * palavra export, e liga o modo estrito (módulos sempre são estritos no navegador).
+ * Funciona porque, na transição, todo módulo também publica no window o que exporta
+ * (o teste tests/modulos.test.js garante isso), então quem importava encontra o mesmo nome.
+ * Só aceita import em uma linha: import { a, b } from './x.js';
+ */
+function comoScriptEstrito(codigo) {
+  const linhas = codigo.split(/\r?\n/).map(l => {
+    if (/^\s*import\s/.test(l)) {
+      if (!/;\s*$/.test(l)) throw new Error('import em várias linhas não é suportado pelo carregador de testes: ' + l);
+      return '';
+    }
+    if (/^\s*export\s*\{[^}]*\};?\s*$/.test(l)) return '';          // export { a, b };
+    return l.replace(/^(\s*)export\s+(default\s+)?/, '$1');           // export const/function/class
+  });
+  return '"use strict";\n' + linhas.join('\n');
+}
+
+/** Nomes exportados por um módulo (export const/let/function/class X e export { X, Y }). */
+function exportsDoModulo(codigo) {
+  const nomes = new Set();
+  for (const m of codigo.matchAll(/^\s*export\s+(?:async\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm)) nomes.add(m[1]);
+  for (const m of codigo.matchAll(/^\s*export\s*\{([^}]*)\}/gm)) {
+    m[1].split(',').map(s => s.trim().split(/\s+as\s+/).pop()).filter(Boolean).forEach(n => nomes.add(n));
+  }
+  return nomes;
 }
 
 // Arquivos da tela do catálogo (produtos e mercados), na ordem do index.html
@@ -86,7 +127,7 @@ const ARQUIVOS_HISTORICO = ['dados', 'lista', 'exclusao', 'detalhes', 'comparado
 /** Scripts locais do index.html, na ordem em que o navegador carrega (inclui js/vendor). */
 function scriptsDoIndex() {
   const html = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
-  return [...html.matchAll(/<script src="(js\/[^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(m => m[1]);
+  return [...html.matchAll(/<script\b[^>]*\bsrc="(js\/[^"?]+)(?:\?[^"]*)?"[^>]*><\/script>/g)].map(m => m[1]);
 }
 
 /** Todos os .js do app (inclui subpastas como js/telas e js/ui; ignora js/vendor). Caminhos 'js/...'. */
@@ -100,4 +141,4 @@ function listarArquivosJs(pasta = 'js') {
   return saida;
 }
 
-module.exports = { carregarApp, scriptsDoIndex, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };
+module.exports = { carregarApp, rodarArquivo, scriptsDoIndex, ehModulo, exportsDoModulo, ARQUIVOS_CATALOGO, ARQUIVOS_CARRINHO, ARQUIVOS_HISTORICO, listarArquivosJs, RAIZ };

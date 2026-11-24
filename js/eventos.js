@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - AVISOS ENTRE AS PARTES DO APP (js/eventos.js)
  *
  * Quem muda os dados AVISA ("os dados foram salvos"); quem precisa reagir OUVE.
@@ -16,12 +17,12 @@
  * Carregue ANTES de todos os outros scripts do app.
  */
 
-const AVISOS = Object.freeze({
+export const AVISOS = Object.freeze({
   DADOS_SALVOS: 'dados-salvos',
   CARRINHO_SALVO: 'carrinho-salvo',
 });
 
-const Eventos = (() => {
+export const Eventos = (() => {
   const ouvintes = new Map();   // nome -> Set de funções
 
   function ouvir(nome, fn) {
@@ -48,5 +49,7 @@ const Eventos = (() => {
   return Object.freeze({ ouvir, avisar });
 })();
 
-window.Eventos = Eventos;
-window.AVISOS = AVISOS;
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { AVISOS, Eventos });
