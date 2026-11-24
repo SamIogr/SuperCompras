@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO (Coordenação das sincronizações: Planilha do administrador x Google Drive)
  * Arquivo: js/sync-coordenador.js
  * Carregue LOGO DEPOIS de state.js: api.js e drive-sync.js chamam scRodar() diretamente.
@@ -17,7 +18,7 @@
 
 // ===== 1. FILA ÚNICA =====
 let _scFila = Promise.resolve();
-function scExclusivo(fn) {
+export function scExclusivo(fn) {
   const rodar = () => Promise.resolve().then(fn);
   const p = _scFila.then(rodar, rodar);
   _scFila = p.catch(() => {});
@@ -25,7 +26,7 @@ function scExclusivo(fn) {
 }
 
 // ===== 2. MODO ADMINISTRADOR (= ter a chave da planilha salva neste aparelho) =====
-function scEhAdmin() {
+export function scEhAdmin() {
   return typeof getSecurityToken === 'function' && !!getSecurityToken();
 }
 
@@ -33,7 +34,7 @@ function scEhAdmin() {
  * Roda fn na fila única.
  * soAdmin: sem chave salva, não chama a planilha (e avisa, a menos que silencioso).
  */
-function scRodar(soAdmin, silencioso, fn) {
+export function scRodar(soAdmin, silencioso, fn) {
   if (soAdmin && !scEhAdmin()) {
     if (!silencioso && typeof showAppToast === 'function') showAppToast('Recurso restrito ao administrador.', 'info');
     return Promise.resolve();
@@ -42,7 +43,7 @@ function scRodar(soAdmin, silencioso, fn) {
 }
 
 // ===== 3. TELA: esconde os controles da planilha de quem não é administrador =====
-function scAplicarModoAdmin() {
+export function scAplicarModoAdmin() {
   const admin = scEhAdmin();
   const ids = ['btnSyncPlanilha', 'btnPromoverProduto', 'btnPromoverMercado'];
   const alvos = ids.map(id => document.getElementById(id));
@@ -53,7 +54,7 @@ function scAplicarModoAdmin() {
 }
 
 let _scTimerAdmin = null;
-function scIniciarTela() {
+export function scIniciarTela() {
   scAplicarModoAdmin();
   // Os modais de edição são redesenhados ao abrir: reaplica só quando entra na tela algum
   // controle de administrador (antes rodava a cada mudança de qualquer lista).
@@ -68,3 +69,8 @@ function scIniciarTela() {
   }).observe(document.body, { childList: true, subtree: true });
 }
 window.addEventListener('load', scIniciarTela);
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { scExclusivo, scEhAdmin, scRodar, scAplicarModoAdmin, scIniciarTela });

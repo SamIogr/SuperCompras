@@ -1,4 +1,5 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO (Backup e Sincronização na conta Google do usuário)
  * Arquivo: js/drive-sync.js  (VERSÃO 2 - substitui o arquivo inteiro)
  *
@@ -7,20 +8,25 @@
  * Itens que vêm da planilha do administrador NÃO entram aqui (ver DRIVE_EXCLUIR_ITENS_DA_PLANILHA).
  */
 
+import { CHAVES, Armazenamento } from './armazenamento.js';
+import { Eventos, AVISOS } from './eventos.js';
+import { Acoes, noProprioElemento } from './ui/acoes.js';
+import { scRodar } from './sync-coordenador.js';
+
 // ===== CONFIGURAÇÃO =====
-const DRIVE_CLIENT_ID = '1005329591365-p2ibvui3iq1ssqgmrj4hb02pc3bqgabb.apps.googleusercontent.com';   // MANTENHA O SEU ID
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const DRIVE_ARQUIVO = 'supercompras_backup_v2.json';
-const DRIVE_ARQUIVO_ANTIGO = 'supercompras_backup.json';   // só para recuperação (versão 1)
-const DRIVE_META_KEY = CHAVES.DRIVE_META;
-const DRIVE_META_KEY_ANTIGA = CHAVES.DRIVE_META_ANTIGA;
-const DRIVE_FLAG_KEY = CHAVES.DRIVE_CONECTADO;
-const DRIVE_EMAIL_KEY = CHAVES.DRIVE_EMAIL;
-const DRIVE_TOMBSTONE_DIAS = 90;       // por quanto tempo lembrar o que foi apagado
-const DRIVE_ATRASO_SYNC_MS = 8000;     // espera após uma alteração para sincronizar sozinho
-const DRIVE_ATRASO_CARIMBO_MS = 1000;  // registra o horário das alterações
+export const DRIVE_CLIENT_ID = '1005329591365-p2ibvui3iq1ssqgmrj4hb02pc3bqgabb.apps.googleusercontent.com';   // MANTENHA O SEU ID
+export const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+export const DRIVE_ARQUIVO = 'supercompras_backup_v2.json';
+export const DRIVE_ARQUIVO_ANTIGO = 'supercompras_backup.json';   // só para recuperação (versão 1)
+export const DRIVE_META_KEY = CHAVES.DRIVE_META;
+export const DRIVE_META_KEY_ANTIGA = CHAVES.DRIVE_META_ANTIGA;
+export const DRIVE_FLAG_KEY = CHAVES.DRIVE_CONECTADO;
+export const DRIVE_EMAIL_KEY = CHAVES.DRIVE_EMAIL;
+export const DRIVE_TOMBSTONE_DIAS = 90;       // por quanto tempo lembrar o que foi apagado
+export const DRIVE_ATRASO_SYNC_MS = 8000;     // espera após uma alteração para sincronizar sozinho
+export const DRIVE_ATRASO_CARIMBO_MS = 1000;  // registra o horário das alterações
 // true = produtos (PROD-...) e mercados que vêm da planilha ficam fora do Drive (quem manda neles é a planilha)
-const DRIVE_EXCLUIR_ITENS_DA_PLANILHA = true;
+export const DRIVE_EXCLUIR_ITENS_DA_PLANILHA = true;
 
 let _driveToken = null;
 let _driveTokenExp = 0;
@@ -32,9 +38,9 @@ let _driveTimerCarimbo = null;
 
 // ===== 1. LOGIN COM GOOGLE (a biblioteca só é baixada quando precisa) =====
 // Regra: o popup de login do Google SÓ abre quando o usuário toca num botão (o navegador bloqueia o resto).
-function driveTokenValido() { return !!_driveToken && Date.now() < _driveTokenExp - 60000; }
+export function driveTokenValido() { return !!_driveToken && Date.now() < _driveTokenExp - 60000; }
 
-function driveCarregarGIS() {
+export function driveCarregarGIS() {
   return new Promise((resolve, reject) => {
     if (window.google && google.accounts && google.accounts.oauth2) return resolve();
     const s = document.createElement('script');
@@ -46,7 +52,7 @@ function driveCarregarGIS() {
   });
 }
 
-async function driveObterToken(interativo) {
+export async function driveObterToken(interativo) {
   if (_driveToken && Date.now() < _driveTokenExp - 60000) return _driveToken;
   if (String(DRIVE_CLIENT_ID).startsWith('COLE_AQUI')) {
     throw new Error('Configure o DRIVE_CLIENT_ID em js/drive-sync.js');
@@ -74,7 +80,7 @@ async function driveObterToken(interativo) {
 }
 
 // ===== 2. API DO DRIVE (pasta oculta appDataFolder) =====
-async function driveFetch(url, opcoes, token) {
+export async function driveFetch(url, opcoes, token) {
   const op = opcoes || {};
   const r = await fetch(url, { ...op, headers: { ...(op.headers || {}), Authorization: 'Bearer ' + token } });
   if (r.status === 401) { _driveToken = null; throw new Error('sessao_expirada'); }
@@ -82,7 +88,7 @@ async function driveFetch(url, opcoes, token) {
   return r;
 }
 
-async function driveAcharArquivo(token, nome) {
+export async function driveAcharArquivo(token, nome) {
   const q = encodeURIComponent("name='" + (nome || DRIVE_ARQUIVO) + "'");
   const r = await driveFetch(
     'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=' + q + '&fields=files(id,name)&pageSize=1',
@@ -91,12 +97,12 @@ async function driveAcharArquivo(token, nome) {
   return (j.files && j.files[0]) || null;
 }
 
-async function driveBaixarArquivo(token, id) {
+export async function driveBaixarArquivo(token, id) {
   const r = await driveFetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media', {}, token);
   return r.json();
 }
 
-async function driveCriarArquivo(token, conteudo) {
+export async function driveCriarArquivo(token, conteudo) {
   const limite = 'sc' + Math.random().toString(36).slice(2);
   const meta = { name: DRIVE_ARQUIVO, parents: ['appDataFolder'], mimeType: 'application/json' };
   const corpo =
@@ -110,7 +116,7 @@ async function driveCriarArquivo(token, conteudo) {
   return (await r.json()).id;
 }
 
-async function driveAtualizarArquivo(token, id, conteudo) {
+export async function driveAtualizarArquivo(token, id, conteudo) {
   await driveFetch(
     'https://www.googleapis.com/upload/drive/v3/files/' + id + '?uploadType=media',
     { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: conteudo },
@@ -118,24 +124,24 @@ async function driveAtualizarArquivo(token, id, conteudo) {
 }
 
 // ===== 3. O QUE É SINCRONIZADO =====
-function driveNormalizarNome(s) {
+export function driveNormalizarNome(s) {
   return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
 /** Produto que veio da planilha do administrador (id PROD-... ou p-cloud-...). */
-function driveProdutoDaPlanilha(p) { return /^(PROD-|p-cloud-)/i.test(String((p && p.id) || '')); }
+export function driveProdutoDaPlanilha(p) { return /^(PROD-|p-cloud-)/i.test(String((p && p.id) || '')); }
 /** Mercado que veio da planilha (qualquer um que não seja criado no aparelho). */
-function driveMercadoDaPlanilha(m) { return !String((m && m.id) || '').startsWith('m-custom-'); }
+export function driveMercadoDaPlanilha(m) { return !String((m && m.id) || '').startsWith('m-custom-'); }
 
 /** A lista de histórico em uso (history.js troca o array a cada salvamento). */
-function driveHistoricoAtual() {
+export function driveHistoricoAtual() {
   if (typeof purchaseHistory !== 'undefined' && Array.isArray(purchaseHistory)) return purchaseHistory;
   if (Array.isArray(window.purchaseHistory)) return window.purchaseHistory;
   return [];
 }
 
-function driveEntidades() {
+export function driveEntidades() {
   const fora = DRIVE_EXCLUIR_ITENS_DA_PLANILHA;
   const idDe = (v) => (v != null && v !== '') ? String(v) : '';
   return [
@@ -161,7 +167,7 @@ function driveEntidades() {
   ];
 }
 
-function driveHash(obj) {
+export function driveHash(obj) {
   const s = JSON.stringify(obj);
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
@@ -169,7 +175,7 @@ function driveHash(obj) {
 }
 
 // ===== 4. METADADOS LOCAIS (horário de cada alteração e o que foi apagado) =====
-function driveLerMeta() {
+export function driveLerMeta() {
   let m = {};
   m = Armazenamento.lerJSON(DRIVE_META_KEY, {}) || {};
   m.ents = m.ents || {};
@@ -177,7 +183,7 @@ function driveLerMeta() {
   return m;
 }
 
-function driveGravarMeta(m) {
+export function driveGravarMeta(m) {
   Armazenamento.gravarJSON(DRIVE_META_KEY, m);
   _driveMetaCache = null;
 }
@@ -189,7 +195,7 @@ function driveGravarMeta(m) {
  * tipo: 'produtos' (chave = nome normalizado) | 'mercados' (chave = id)
  */
 let _driveMetaCache = null;
-function driveEstaNoBackup(tipo, item) {
+export function driveEstaNoBackup(tipo, item) {
   if (!item || !Armazenamento.existe(DRIVE_FLAG_KEY)) return false;
   if (!_driveMetaCache) _driveMetaCache = driveLerMeta();
   const meta = _driveMetaCache;
@@ -198,10 +204,9 @@ function driveEstaNoBackup(tipo, item) {
   const reg = chave && meta.ents[tipo] && meta.ents[tipo][chave];
   return Boolean(reg && reg.t <= meta.ultimaSync);
 }
-window.driveEstaNoBackup = driveEstaNoBackup;
 
 /** Compara o estado atual com o último sincronizado: marca o que mudou e o que foi apagado. */
-function driveCarimbar(meta, agora, remoto) {
+export function driveCarimbar(meta, agora, remoto) {
   const local = {};
   const primeiraVez = !meta.ultimaSync;
   driveEntidades().forEach(ent => {
@@ -237,7 +242,7 @@ function driveCarimbar(meta, agora, remoto) {
 }
 
 /** Junta local e nuvem: para cada item vale o registro mais recente. Empate: vale a nuvem. */
-function driveMesclar(local, remoto) {
+export function driveMesclar(local, remoto) {
   const limite = Date.now() - DRIVE_TOMBSTONE_DIAS * 86400000;
   const res = {};
   driveEntidades().forEach(ent => {
@@ -255,7 +260,7 @@ function driveMesclar(local, remoto) {
 }
 
 /** Grava o resultado da junção nas listas do app (sem trocar os arrays, só o conteúdo). */
-function driveAplicar(meta, mesclado) {
+export function driveAplicar(meta, mesclado) {
   driveEntidades().forEach(ent => {
     const lista = ent.lista;
     const reg = mesclado[ent.nome] || {};
@@ -291,7 +296,7 @@ function driveAplicar(meta, mesclado) {
 }
 
 // ===== 5. PERSISTÊNCIA LOCAL E TELAS =====
-function driveSalvarLocal() {
+export function driveSalvarLocal() {
   try { if (typeof saveAllLocalData === 'function') saveAllLocalData(); }
   catch (e) { console.warn('[Drive] Falha ao salvar localmente:', e); }
   try {
@@ -300,7 +305,7 @@ function driveSalvarLocal() {
   } catch (e) { console.warn('[Drive] Falha ao salvar o histórico:', e); }
 }
 
-function driveAtualizarTelas() {
+export function driveAtualizarTelas() {
   try {
     if (typeof activeMarketId !== 'undefined' && typeof supermarkets !== 'undefined' &&
         Array.isArray(supermarkets) && supermarkets.length &&
@@ -315,7 +320,7 @@ function driveAtualizarTelas() {
 }
 
 // ===== 6. INTERFACE =====
-function driveStatus(texto, erro) {
+export function driveStatus(texto, erro) {
   const el = document.getElementById('driveSyncStatus');
   if (!el) return;
   el.textContent = texto;
@@ -323,7 +328,7 @@ function driveStatus(texto, erro) {
   el.classList.toggle('text-slate-500', !erro);
 }
 
-function driveMostrarConta() {
+export function driveMostrarConta() {
   const conectado = Armazenamento.existe(DRIVE_FLAG_KEY);
   const email = Armazenamento.lerTexto(DRIVE_EMAIL_KEY);
   const elConta = document.getElementById('driveSyncConta');
@@ -334,7 +339,7 @@ function driveMostrarConta() {
 }
 
 /** Botão do Google no topo: pisca durante a sincronização e mostra um ponto quando conectado. */
-function driveAtualizarBotao(sincronizando) {
+export function driveAtualizarBotao(sincronizando) {
   const btn = document.getElementById('btnDriveSync');
   if (!btn) return;
   const conectado = Armazenamento.existe(DRIVE_FLAG_KEY);
@@ -353,7 +358,7 @@ function driveAtualizarBotao(sincronizando) {
                       : 'Sincronizar com o Google Drive (' + email + ')');
 }
 
-async function driveAtualizarConta(token) {
+export async function driveAtualizarConta(token) {
   try {
     const r = await driveFetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)', {}, token);
     const u = (await r.json()).user || {};
@@ -362,7 +367,7 @@ async function driveAtualizarConta(token) {
   driveMostrarConta();
 }
 
-function driveMensagemErro(e) {
+export function driveMensagemErro(e) {
   const m = String((e && e.message) || e);
   if (!navigator.onLine || /Failed to fetch|NetworkError|Sem internet/i.test(m)) {
     return 'Sem internet. As alterações ficam salvas aqui e sincronizam depois.';
@@ -375,7 +380,7 @@ function driveMensagemErro(e) {
 
 // ===== 7. SINCRONIZAÇÃO =====
 // Pública: passa pela fila única do sync-coordenador.js (nunca junto com a planilha).
-function driveSincronizar(interativo) { return scRodar(false, false, () => _driveSincronizarAgora(interativo)); }
+export function driveSincronizar(interativo) { return scRodar(false, false, () => _driveSincronizarAgora(interativo)); }
 
 async function _driveSincronizarAgora(interativo) {
   if (_driveSincronizando) return;
@@ -438,7 +443,7 @@ async function _driveSincronizarAgora(interativo) {
   }
 }
 
-function driveDesconectar() {
+export function driveDesconectar() {
   try {
     if (_driveToken && window.google && google.accounts && google.accounts.oauth2) {
       google.accounts.oauth2.revoke(_driveToken, () => {});
@@ -454,7 +459,7 @@ function driveDesconectar() {
 }
 
 /** Recupera compras do histórico que ainda existam no backup ANTIGO (versão 1) do Drive. */
-async function driveRecuperarHistoricoAntigo() {
+export async function driveRecuperarHistoricoAntigo() {
   const token = await driveObterToken(true);
   const arq = await driveAcharArquivo(token, DRIVE_ARQUIVO_ANTIGO);
   if (!arq) { driveStatus('Nenhum backup antigo encontrado no Drive.'); return 0; }
@@ -474,14 +479,14 @@ async function driveRecuperarHistoricoAntigo() {
 
 // ===== 8. SINCRONIZAÇÃO AUTOMÁTICA =====
 /** Registra o horário real das alterações (só depois da 1ª sincronização). */
-function driveCarimbarAlteracoes() {
+export function driveCarimbarAlteracoes() {
   const meta = driveLerMeta();
   if (!meta.ultimaSync) return;
   driveCarimbar(meta, Date.now(), null);
   driveGravarMeta(meta);
 }
 
-function driveAgendarSync() {
+export function driveAgendarSync() {
   if (_driveAplicando || !Armazenamento.existe(DRIVE_FLAG_KEY)) return;
   _drivePendente = true;
   driveAtualizarBotao(_driveSincronizando);
@@ -493,7 +498,7 @@ function driveAgendarSync() {
 
 let _drivePararDeOuvir = null;
 
-function driveIniciar() {
+export function driveIniciar() {
   Armazenamento.remover(DRIVE_META_KEY_ANTIGA);
   // Toda vez que os dados forem salvos, agenda a sincronização. Começa a ouvir só aqui
   // (evento 'load', depois da carga inicial dos dados) para o app não sincronizar sozinho
@@ -506,19 +511,16 @@ window.addEventListener('online', () => {
   if (Armazenamento.existe(DRIVE_FLAG_KEY) && driveTokenValido()) driveSincronizar(false);
 });
 
-window.driveSincronizar = driveSincronizar;
-window.driveDesconectar = driveDesconectar;
-window.driveRecuperarHistoricoAntigo = driveRecuperarHistoricoAntigo;
 
 // ===== 9. VER O QUE ESTÁ GUARDADO NO BACKUP =====
-async function driveLerBackup(nomeArquivo) {
+export async function driveLerBackup(nomeArquivo) {
   const token = await driveObterToken(true);
   const arq = await driveAcharArquivo(token, nomeArquivo || DRIVE_ARQUIVO);
   if (!arq) return null;
   return driveBaixarArquivo(token, arq.id);
 }
 
-function driveResumirBackup(j) {
+export function driveResumirBackup(j) {
   const d = (j && j.dados) || {};
   const vivos = (m) => Object.values(m || {}).filter(r => r && !r.d && r.v).map(r => r.v);
   const apagados = (m) => Object.values(m || {}).filter(r => r && r.d).length;
@@ -530,7 +532,7 @@ function driveResumirBackup(j) {
 }
 
 /** Quantos itens PESSOAIS este aparelho tem (é o que o Drive deveria ter). */
-function driveContarLocal() {
+export function driveContarLocal() {
   const r = {};
   driveEntidades().forEach(ent => {
     r[ent.nome] = ent.lista.filter(it => it && ent.incluir(it) && ent.chave(it)).length;
@@ -538,7 +540,7 @@ function driveContarLocal() {
   return r;
 }
 
-function driveDescreverCompra(c) {
+export function driveDescreverCompra(c) {
   const data = c.date || c.dataISO || c.data || '';
   const dt = new Date(data);
   const quando = (data && !isNaN(dt)) ? dt.toLocaleDateString('pt-BR') : String(data);
@@ -549,14 +551,14 @@ function driveDescreverCompra(c) {
   return [quando, mercado, itens + ' item(ns)', total].filter(Boolean).join(' · ');
 }
 
-function driveCriarEl(tag, texto, classe) {
+export function driveCriarEl(tag, texto, classe) {
   const el = document.createElement(tag);
   if (texto != null) el.textContent = texto;          // sempre textContent: nomes vindos do backup nunca viram HTML
   if (classe) el.className = classe;
   return el;
 }
 
-function driveCriarLista(titulo, linhas) {
+export function driveCriarLista(titulo, linhas) {
   const det = driveCriarEl('details', null, 'mt-1');
   det.appendChild(driveCriarEl('summary', titulo + ' (' + linhas.length + ')', 'text-xs font-bold text-slate-700 cursor-pointer'));
   const ul = driveCriarEl('ul', null, 'mt-1 ml-4 list-disc text-[11px] text-slate-500 max-h-40 overflow-y-auto');
@@ -567,7 +569,7 @@ function driveCriarLista(titulo, linhas) {
 }
 
 /** Mostra, no cartão da aba Dados, o que o Drive guarda hoje (precisa de um toque: abre o login se preciso). */
-async function driveVerBackup() {
+export async function driveVerBackup() {
   const caixa = document.getElementById('driveBackupResumo');
   try {
     driveStatus('Lendo o backup no Drive...');
@@ -615,7 +617,7 @@ async function driveVerBackup() {
 }
 
 /** Baixa uma cópia do backup (.json) para o seu aparelho. O arquivo contém TODOS os seus dados pessoais do app. */
-async function driveBaixarBackup(antigo) {
+export async function driveBaixarBackup(antigo) {
   try {
     const j = await driveLerBackup(antigo ? DRIVE_ARQUIVO_ANTIGO : DRIVE_ARQUIVO);
     if (!j) { driveStatus('Esse backup não existe no Drive.'); return false; }
@@ -636,25 +638,21 @@ async function driveBaixarBackup(antigo) {
   }
 }
 
-window.driveVerBackup = driveVerBackup;
-window.driveBaixarBackup = driveBaixarBackup;
 
 // ===== 10. JANELA DO DRIVE (botão da nuvem no topo) =====
-function openDriveSyncModal() {
+export function openDriveSyncModal() {
   const m = document.getElementById('modalDriveSync');
   if (!m) { driveSincronizar(true); return; }       // sem a janela no HTML: o botão sincroniza direto
   driveMostrarConta();
   m.classList.remove('hidden');
 }
 
-function closeDriveSyncModal() {
+export function closeDriveSyncModal() {
   const m = document.getElementById('modalDriveSync');
   if (m) m.classList.add('hidden');
 }
 
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDriveSyncModal(); });
-window.openDriveSyncModal = openDriveSyncModal;
-window.closeDriveSyncModal = closeDriveSyncModal;
 
 // ===== AÇÕES DA JANELA DO GOOGLE DRIVE (delegação, ver js/ui/acoes.js) =====
 Acoes.registrarClique({
@@ -666,3 +664,8 @@ Acoes.registrarClique({
   'drive-ver-backup':    () => driveVerBackup(),
   'drive-baixar-backup': () => driveBaixarBackup(),
 });
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { DRIVE_CLIENT_ID, DRIVE_SCOPE, DRIVE_ARQUIVO, DRIVE_ARQUIVO_ANTIGO, DRIVE_META_KEY, DRIVE_META_KEY_ANTIGA, DRIVE_FLAG_KEY, DRIVE_EMAIL_KEY, DRIVE_TOMBSTONE_DIAS, DRIVE_ATRASO_SYNC_MS, DRIVE_ATRASO_CARIMBO_MS, DRIVE_EXCLUIR_ITENS_DA_PLANILHA, driveTokenValido, driveCarregarGIS, driveObterToken, driveFetch, driveAcharArquivo, driveBaixarArquivo, driveCriarArquivo, driveAtualizarArquivo, driveNormalizarNome, driveProdutoDaPlanilha, driveMercadoDaPlanilha, driveHistoricoAtual, driveEntidades, driveHash, driveLerMeta, driveGravarMeta, driveEstaNoBackup, driveCarimbar, driveMesclar, driveAplicar, driveSalvarLocal, driveAtualizarTelas, driveStatus, driveMostrarConta, driveAtualizarBotao, driveAtualizarConta, driveMensagemErro, driveSincronizar, driveDesconectar, driveRecuperarHistoricoAntigo, driveCarimbarAlteracoes, driveAgendarSync, driveIniciar, driveLerBackup, driveResumirBackup, driveContarLocal, driveDescreverCompra, driveCriarEl, driveCriarLista, driveVerBackup, driveBaixarBackup, openDriveSyncModal, closeDriveSyncModal });

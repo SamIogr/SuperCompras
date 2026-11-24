@@ -1,9 +1,10 @@
 /**
+ * (MÓDULO ES: import/export)
  * SUPERCOMPRAS PRO - CARRINHO: CÁLCULO DE SUBTOTAL, DESCONTO E ATACADO (js/telas/carrinho/calculo.js)
  */
 
 // 1. CÁLCULO FINANCEIRO DE ITENS (PADRÃO, DESCONTO E ATACADO)
-function computeItemFinancials(qty, unitPrice, promo = {}) {
+export function computeItemFinancials(qty, unitPrice, promo = {}) {
   qty = Math.max(0, Number(qty) || 0);
   unitPrice = Math.max(0, Number(unitPrice) || 0);
   const standardSubtotal = qty * unitPrice;
@@ -45,4 +46,8 @@ function computeItemFinancials(qty, unitPrice, promo = {}) {
     badgeText
   };
 }
-window.computeItemFinancials = computeItemFinancials;
+
+// ----- PONTE DA TRANSIÇÃO (etapa 4) -----
+// Os arquivos que ainda não são módulos usam estes nomes como globais.
+// Quando todos eles passarem a usar import, esta linha sai.
+Object.assign(window, { computeItemFinancials });

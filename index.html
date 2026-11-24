@@ -708,50 +708,65 @@
     <!-- CONTAINER DE TOASTS -->
     <div id="toastStack" style="top: 62px;" class="fixed left-3 right-3 sm:left-auto sm:right-4 z-50 flex flex-col space-y-2 pointer-events-none sm:max-w-md"></div>
 
-    <!-- SCRIPTS DE LÓGICA (CARREGAMENTO ESTÁTICO IMEDIATO) -->
-    <script type="module" src="js/eventos.js?v=6.0.0"></script>
-    <script type="module" src="js/ui/acoes.js?v=6.0.0"></script>
-    <script type="module" src="js/armazenamento.js?v=6.0.0"></script>
-    <script defer src="js/state.js?v=6.0.0"></script>
-    <script defer src="js/sync-coordenador.js?v=6.0.0"></script>
-    <script type="module" src="js/origem.js?v=6.0.0"></script>
-    <script defer src="js/templates.js?v=6.0.0"></script>
-    <script defer src="js/ui.js?v=6.0.0"></script>
-    <script defer src="js/api.js?v=6.0.0"></script>
-    <script defer src="js/io.js?v=6.0.0"></script>
+    <!-- SCRIPTS DO APP: todos rodam depois da leitura da página, na ordem abaixo (defer e type="module") -->
+    <!-- IMPORT MAP: todo "import ... from './x.js'" usa o mesmo endereço (com ?v=) da tag abaixo,
+         então cada módulo é carregado uma única vez. Atualize as versões com: npm run versao -->
+    <script type="importmap">
+      {
+        "imports": {
+          "./js/eventos.js": "./js/eventos.js?v=6.1.0",
+          "./js/ui/acoes.js": "./js/ui/acoes.js?v=6.1.0",
+          "./js/armazenamento.js": "./js/armazenamento.js?v=6.1.0",
+          "./js/sync-coordenador.js": "./js/sync-coordenador.js?v=6.1.0",
+          "./js/origem.js": "./js/origem.js?v=6.1.0",
+          "./js/drive-sync.js": "./js/drive-sync.js?v=6.1.0",
+          "./js/telas/carrinho/calculo.js": "./js/telas/carrinho/calculo.js?v=6.1.0"
+        }
+      }
+    </script>
+    <script type="module" src="js/eventos.js?v=6.1.0"></script>
+    <script type="module" src="js/ui/acoes.js?v=6.1.0"></script>
+    <script type="module" src="js/armazenamento.js?v=6.1.0"></script>
+    <script defer src="js/state.js?v=6.1.0"></script>
+    <script type="module" src="js/sync-coordenador.js?v=6.1.0"></script>
+    <script type="module" src="js/origem.js?v=6.1.0"></script>
+    <script defer src="js/templates.js?v=6.1.0"></script>
+    <script defer src="js/ui.js?v=6.1.0"></script>
+    <script defer src="js/api.js?v=6.1.0"></script>
+    <script defer src="js/io.js?v=6.1.0"></script>
     <!-- tela do histórico -->
-    <script defer src="js/telas/historico/dados.js?v=6.0.0"></script>
-    <script defer src="js/telas/historico/lista.js?v=6.0.0"></script>
-    <script defer src="js/telas/historico/exclusao.js?v=6.0.0"></script>
-    <script defer src="js/telas/historico/detalhes.js?v=6.0.0"></script>
-    <script defer src="js/telas/historico/comparador.js?v=6.0.0"></script>
-    <script defer src="js/telas/historico/acoes.js?v=6.0.0"></script>
-    <script defer src="js/drive-sync.js?v=6.0.0"></script>
+    <script defer src="js/telas/historico/dados.js?v=6.1.0"></script>
+    <script defer src="js/telas/historico/lista.js?v=6.1.0"></script>
+    <script defer src="js/telas/historico/exclusao.js?v=6.1.0"></script>
+    <script defer src="js/telas/historico/detalhes.js?v=6.1.0"></script>
+    <script defer src="js/telas/historico/comparador.js?v=6.1.0"></script>
+    <script defer src="js/telas/historico/acoes.js?v=6.1.0"></script>
+    <script type="module" src="js/drive-sync.js?v=6.1.0"></script>
     <!-- tela do carrinho -->
-    <script defer src="js/telas/carrinho/calculo.js?v=6.0.0"></script>
-    <script defer src="js/telas/carrinho/lista.js?v=6.0.0"></script>
-    <script defer src="js/telas/carrinho/formulario.js?v=6.0.0"></script>
-    <script defer src="js/telas/carrinho/edicao.js?v=6.0.0"></script>
-    <script defer src="js/telas/carrinho/finalizacao.js?v=6.0.0"></script>
-    <script defer src="js/telas/carrinho/comparativo.js?v=6.0.0"></script>
-    <script defer src="js/telas/carrinho/acoes.js?v=6.0.0"></script>
+    <script type="module" src="js/telas/carrinho/calculo.js?v=6.1.0"></script>
+    <script defer src="js/telas/carrinho/lista.js?v=6.1.0"></script>
+    <script defer src="js/telas/carrinho/formulario.js?v=6.1.0"></script>
+    <script defer src="js/telas/carrinho/edicao.js?v=6.1.0"></script>
+    <script defer src="js/telas/carrinho/finalizacao.js?v=6.1.0"></script>
+    <script defer src="js/telas/carrinho/comparativo.js?v=6.1.0"></script>
+    <script defer src="js/telas/carrinho/acoes.js?v=6.1.0"></script>
     <!-- tela do catálogo (produtos e mercados) -->
-    <script defer src="js/telas/catalogo/precos.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/layout.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/filtros.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/modal-produto.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/produtos.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/sugeridos.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/mercados.js?v=6.0.0"></script>
-    <script defer src="js/telas/catalogo/acoes.js?v=6.0.0"></script>
+    <script defer src="js/telas/catalogo/precos.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/layout.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/filtros.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/modal-produto.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/produtos.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/sugeridos.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/mercados.js?v=6.1.0"></script>
+    <script defer src="js/telas/catalogo/acoes.js?v=6.1.0"></script>
     <!-- calculadora -->
-    <script defer src="js/telas/calculadora/calculadora.js?v=6.0.0"></script>
-    <script defer src="js/telas/calculadora/modal.js?v=6.0.0"></script>
-    <script defer src="js/telas/calculadora/acoes.js?v=6.0.0"></script>
-    <script defer src="js/ui-loader.js?v=6.0.0"></script>
+    <script defer src="js/telas/calculadora/calculadora.js?v=6.1.0"></script>
+    <script defer src="js/telas/calculadora/modal.js?v=6.1.0"></script>
+    <script defer src="js/telas/calculadora/acoes.js?v=6.1.0"></script>
+    <script defer src="js/ui-loader.js?v=6.1.0"></script>
     <script defer src="js/vendor/qrcode.js"></script>
     <script defer src="js/vendor/jsQR.js"></script>
-    <script defer src="js/qrcode-sync.js?v=6.0.0"></script>
+    <script defer src="js/qrcode-sync.js?v=6.1.0"></script>
 
     <!-- INICIALIZAÇÃO DA APLICAÇÃO -->
     <script>
