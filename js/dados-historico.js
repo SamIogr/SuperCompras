@@ -1,11 +1,11 @@
 /**
  * (MÓDULO ES: import/export)
- * SUPERCOMPRAS PRO - HISTÓRICO: LEITURA, GRAVAÇÃO E DADOS AUXILIARES DAS COMPRAS (js/telas/historico/dados.js)
+ * SUPERCOMPRAS PRO - DADOS DO HISTÓRICO: LEITURA, GRAVAÇÃO E AUXILIARES DAS COMPRAS (js/dados-historico.js)
  */
 
-import { AVISOS, Eventos } from '../../eventos.js';
-import { Armazenamento, CHAVES } from '../../armazenamento.js';
-import { normalizarCompra } from '../../state.js';
+import { AVISOS, Eventos } from './eventos.js';
+import { Armazenamento, CHAVES } from './armazenamento.js';
+import { normalizarCompra } from './state.js';
 
 export function obterHistoricoLocal() {
   try {

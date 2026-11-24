@@ -1,15 +1,15 @@
 /**
  * (MÓDULO ES: import/export)
- * SUPERCOMPRAS PRO - TEMPLATES DO CARRINHO (js/templates.js)
+ * SUPERCOMPRAS PRO - CARRINHO: CARDS DOS ITENS E LISTA (js/telas/carrinho/cards.js)
  * Cards dos itens e a lista do carrinho; acrescentados ao registro AppTemplates (js/ui/templates-base.js).
  */
 
-import { AVISOS, Eventos } from './eventos.js';
-import { esc, formatBRL, formatQty } from './state.js';
-import { AppTemplates } from './ui/templates-base.js';
-import { computeItemFinancials } from './telas/carrinho/calculo.js';
-import { updateCartTotals } from './telas/carrinho/lista.js';
-import { analisarMelhorMercado } from './telas/carrinho/comparativo.js';
+import { AVISOS, Eventos, aoPedirRedesenho } from '../../eventos.js';
+import { esc, formatBRL, formatQty } from '../../state.js';
+import { computeItemFinancials } from '../../calculo.js';
+import { AppTemplates } from '../../ui/templates-base.js';
+import { updateCartTotals } from './lista.js';
+import { analisarMelhorMercado } from './comparativo.js';
 
 Object.assign(AppTemplates, {
   // 4. CARRINHO DE COMPRAS
@@ -110,3 +110,6 @@ export function renderCartUI() {
   }
 };
 
+// Pedidos de redesenho vindos de fora (planilha, Drive, backup) e troca para a aba Compras.
+aoPedirRedesenho('carrinho', () => renderCartUI());
+Eventos.ouvir(AVISOS.ABA_ABERTA, ({ aba }) => { if (aba === 'compras') renderCartUI(); });

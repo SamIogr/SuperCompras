@@ -8,16 +8,13 @@
  * Itens que vêm da planilha do administrador NÃO entram aqui (ver DRIVE_EXCLUIR_ITENS_DA_PLANILHA).
  */
 
-import { AVISOS, Eventos } from './eventos.js';
+import { AVISOS, Eventos, pedirRedesenho } from './eventos.js';
 import { Acoes, noProprioElemento } from './ui/acoes.js';
 import { Armazenamento, CHAVES } from './armazenamento.js';
 import { formatBRL, saveAllLocalData } from './state.js';
+import { resolverNomeMercado, salvarHistoricoLocal } from './dados-historico.js';
 import { scRodar } from './sync-coordenador.js';
-import { renderCartUI } from './templates.js';
 import { refreshActiveMarketUI, showAppToast } from './ui.js';
-import { resolverNomeMercado, salvarHistoricoLocal } from './telas/historico/dados.js';
-import { renderHistoricoUI } from './telas/historico/lista.js';
-import { renderCatalogUI, renderMarketsUI } from './telas/catalogo/layout.js';
 
 // ===== CONFIGURAÇÃO =====
 export const DRIVE_CLIENT_ID = '1005329591365-p2ibvui3iq1ssqgmrj4hb02pc3bqgabb.apps.googleusercontent.com';   // MANTENHA O SEU ID
@@ -319,10 +316,9 @@ export function driveAtualizarTelas() {
       activeMarketId = supermarkets[0].id;                       // o mercado ativo foi apagado em outro aparelho
     }
   } catch (e) { /* activeMarketId pode ser constante em alguma versão */ }
-  [renderCatalogUI, renderMarketsUI, renderHistoricoUI, renderCartUI, refreshActiveMarketUI].forEach(fn => {
-    try { fn(); }
-    catch (e) { console.warn('[Drive] Falha ao atualizar a tela (' + fn.name + '):', e); }
-  });
+  pedirRedesenho('catalogo', 'mercados', 'historico', 'carrinho');
+  try { refreshActiveMarketUI(); }
+  catch (e) { console.warn('[Drive] Falha ao atualizar o mercado ativo:', e); }
 }
 
 // ===== 6. INTERFACE =====
@@ -432,8 +428,7 @@ async function _driveSincronizarAgora(interativo) {
     _drivePendente = false;
     Armazenamento.gravarTexto(DRIVE_FLAG_KEY, '1');
     // redesenha de novo: agora os itens enviados ganham o selo "Drive"
-    if (typeof renderCatalogUI === 'function') renderCatalogUI();
-    if (typeof renderMarketsUI === 'function') renderMarketsUI();
+    pedirRedesenho('catalogo', 'mercados');
     await driveAtualizarConta(token);
     driveStatus('Sincronizado às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
     if (interativo && typeof showAppToast === 'function') showAppToast('Backup sincronizado com o Google Drive.', 'success');

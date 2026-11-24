@@ -4,6 +4,7 @@
  */
 
 import { variavelGlobal } from '../../compartilhado.js';
+import { AVISOS, Eventos } from '../../eventos.js';
 import { esc, formatBRL, novoId, parseNumberInput, saveAllLocalData } from '../../state.js';
 import { AppTemplates } from '../../ui/templates-base.js';
 import { showAppToast } from '../../ui.js';
@@ -362,3 +363,6 @@ export function salvarEdicaoProdutoForm(e) {
   closeProductEditModal();
   showAppToast(`Produto "${nome}" salvo!`, 'success');
 }
+
+// Depois que o produto foi enviado à planilha, o modal se fecha.
+Eventos.ouvir(AVISOS.PLANILHA_CONCLUIU, ({ tipo }) => { if (tipo === 'produto') closeProductEditModal(); });

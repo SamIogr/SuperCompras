@@ -4,10 +4,10 @@
  */
 
 import { formatBRL, saveAllLocalData, saveCartData } from '../../state.js';
+import { computeItemFinancials } from '../../calculo.js';
 import { AppTemplates } from '../../ui/templates-base.js';
-import { renderCartUI } from '../../templates.js';
 import { playAppBeep, refreshActiveMarketUI, showAppToast } from '../../ui.js';
-import { computeItemFinancials } from './calculo.js';
+import { renderCartUI } from './cards.js';
 import { obterPrecoProdutoMarcaMercado } from '../catalogo/precos.js';
 
 // 3. FILTRAGEM DO CARRINHO (TODOS, NO CORREDOR, NO CARRINHO)

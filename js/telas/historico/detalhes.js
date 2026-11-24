@@ -4,10 +4,10 @@
  */
 
 import { esc, formatBRL, novoId, saveAllLocalData, saveCartData } from '../../state.js';
-import { renderCartUI } from '../../templates.js';
+import { obterHistoricoLocal, resolverNomeMercado } from '../../dados-historico.js';
 import { refreshActiveMarketUI, showAppToast, switchActiveTab } from '../../ui.js';
-import { obterHistoricoLocal, resolverNomeMercado } from './dados.js';
 import { fecharModalConfirmacaoDupla } from './exclusao.js';
+import { renderCartUI } from '../carrinho/cards.js';
 
 // MODAL DE CUPOM (ESTRUTURA IMUTÁVEL)
 export function abrirDetalhesCompraHistorico(idx) {

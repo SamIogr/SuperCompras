@@ -4,8 +4,8 @@
  */
 
 import { esc } from '../../state.js';
+import { obterHistoricoLocal, obterIdCompra, resolverNomeMercado, salvarHistoricoLocal } from '../../dados-historico.js';
 import { showAppToast } from '../../ui.js';
-import { obterHistoricoLocal, obterIdCompra, resolverNomeMercado, salvarHistoricoLocal } from './dados.js';
 import { renderHistoricoUI } from './lista.js';
 
 /**

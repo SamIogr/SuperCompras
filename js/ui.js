@@ -3,13 +3,10 @@
  * SUPERCOMPRAS PRO - INTERFACE, NAVEGAÇÃO, TOASTS E MODAIS (js/ui.js)
  */
 
+import { AVISOS, Eventos } from './eventos.js';
 import { Acoes } from './ui/acoes.js';
 import { Armazenamento, CHAVES } from './armazenamento.js';
-import { esc, getSecurityToken, saveAllLocalData, saveCartData } from './state.js';
-import { renderCartUI } from './templates.js';
-import { renderHistoricoUI } from './telas/historico/lista.js';
-import { setSubTabDados } from './telas/catalogo/layout.js';
-import { desserializarQRParaCarrinho, mesclarItensNoCarrinho } from './qrcode-sync.js';
+import { esc, getSecurityToken } from './state.js';
 
 export const AudioCtx = window.AudioContext || window.webkitAudioContext;
 
@@ -161,14 +158,8 @@ export function switchActiveTab(tabName) {
     if (typeof desativarTelaAcesa === "function") desativarTelaAcesa();
   }
 
-  if (tabName === "compras" && typeof renderCartUI === "function") {
-    renderCartUI();
-  } else if (tabName === "historico" && typeof renderHistoricoUI === "function") {
-    renderHistoricoUI();
-  } else if (tabName === "dados") {
-    const subAtiva = window.currentSubTabDados || "produtos";
-    setSubTabDados(subAtiva);
-  }
+  // cada tela ouve e se redesenha (carrinho, histórico, catálogo)
+  Eventos.avisar(AVISOS.ABA_ABERTA, { aba: tabName });
   if (typeof atualizarEstadoFabMobile === "function") {
     atualizarEstadoFabMobile(tabName);
   }
@@ -278,70 +269,6 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 // Aplica imediatamente ao carregar o ficheiro
 aplicarTemaInicial();
 
-// 2. Leitura da Hash da URL com diálogo de Substituir vs. Somar
-export async function verificarImportacaoUrlHash() {
-  const hash = window.location.hash;
-  if (!hash || !hash.startsWith('#import=')) return;
-
-  const payloadCodificado = decodeURIComponent(hash.replace('#import=', ''));
-  if (!payloadCodificado) return;
-
-  // Limpa a hash da barra de endereço imediatamente para evitar reimportações ao atualizar (F5)
-  history.replaceState(null, document.title, window.location.pathname + window.location.search);
-
-  if (typeof desserializarQRParaCarrinho !== 'function') return;
-
-  const dados = await desserializarQRParaCarrinho(payloadCodificado);
-  if (!dados || !Array.isArray(dados.items) || dados.items.length === 0) {
-    if (typeof showAppToast === 'function') showAppToast('Link de importação inválido ou vazio.', 'error');
-    return;
-  }
-
-  const qtdNovos = dados.items.length;
-
-  const aplicarImportacao = (substituir) => {
-    if (substituir) {
-      cart = dados.items;
-    } else {
-      mesclarItensNoCarrinho(dados.items);
-    }
-
-    if (dados.marketId && dados.marketId !== 'm-padrao') {
-      activeMarketId = dados.marketId;
-    }
-
-    saveCartData();
-    saveAllLocalData();
-    renderCartUI();
-
-    if (typeof showAppToast === 'function') {
-      showAppToast(substituir ? 'Carrinho substituído com sucesso!' : 'Itens somados ao carrinho com sucesso!', 'success');
-    }
-  };
-
-  // Se o carrinho estiver vazio, importa diretamente
-  if (!cart || cart.length === 0) {
-    aplicarImportacao(true);
-    return;
-  }
-
-  // Se já houver itens no carrinho, exibe a escolha entre Substituir ou Somar
-  if (typeof openCustomDialog === 'function') {
-    openCustomDialog(
-      'Importar Lista de Compras',
-      `Seu carrinho já tem ${cart.length} item(ns). A lista recebida contém ${qtdNovos} item(ns). Como deseja prosseguir?`,
-      'Substituir Carrinho',
-      'Somar aos Existentes',
-      () => aplicarImportacao(true),
-      () => aplicarImportacao(false)
-    );
-  } else {
-    const somar = confirm(
-      `Deseja somar os ${qtdNovos} itens recebidos ao seu carrinho atual?\n\n[OK] = Somar aos itens existentes\n[Cancelar] = Substituir carrinho atual`
-    );
-    aplicarImportacao(!somar);
-  }
-}
 // ==========================================
 // GESTÃO DE TELA ACESA (SCREEN WAKE LOCK API)
 // ==========================================
@@ -440,12 +367,8 @@ Acoes.registrarClique({
   'zoom-painel':     () => toggleBarraZoomGlobal(),
   'zoom-passo':      el => alterarZoomGlobal(Number(el.dataset.passo)),
   'zoom-restaurar':  () => aplicarZoomGlobal(100),
-  // troca de aba; ao entrar no Histórico redesenha a lista (antes um ouvinte no index.html
-  // procurava "Histórico" no texto ou no onclick de qualquer botão)
-  'aba':             el => {
-    switchActiveTab(el.dataset.aba);
-    if (el.dataset.aba === 'historico' && typeof renderHistoricoUI === 'function') setTimeout(renderHistoricoUI, 50);
-  },
+  // troca de aba; a tela aberta se redesenha ao ouvir o aviso aba-aberta
+  'aba':             el => switchActiveTab(el.dataset.aba),
 });
 Acoes.registrarDigitacao({
   'zoom-valor':      el => aplicarZoomGlobal(el.value),

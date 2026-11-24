@@ -4,6 +4,7 @@
  */
 
 import { variavelGlobal } from '../../compartilhado.js';
+import { AVISOS, Eventos } from '../../eventos.js';
 import { esc, getSelectedMarketName, novoId, saveAllLocalData } from '../../state.js';
 import { scEhAdmin } from '../../sync-coordenador.js';
 import { obterOrigem } from '../../origem.js';
@@ -18,28 +19,6 @@ variavelGlobal('mercadosOrigemFiltro', 'todos');
 export function filtrarOrigemMercados(origem) {
   mercadosOrigemFiltro = origem;
   if (typeof renderMarketsUI === 'function') renderMarketsUI();
-}
-
-/**
- * Troca o id de um mercado em TODOS os lugares onde ele aparece. Usado quando um mercado
- * criado no aparelho (m-custom-...) vai para a planilha e recebe o id oficial (m-nome...).
- * Sem isso os preços cotados nele ficariam presos no id antigo e sumiriam da tela.
- */
-export function remapearIdMercado(idAntigo, idNovo) {
-  if (!idAntigo || !idNovo || idAntigo === idNovo) return;
-  const trocarChave = (obj) => {
-    if (!obj || typeof obj !== 'object' || !Object.prototype.hasOwnProperty.call(obj, idAntigo)) return;
-    if (!Object.prototype.hasOwnProperty.call(obj, idNovo)) obj[idNovo] = obj[idAntigo];
-    delete obj[idAntigo];
-  };
-  (supermarkets || []).forEach(m => { if (m && m.id === idAntigo) m.id = idNovo; });
-  (products || []).forEach(p => {
-    if (!p) return;
-    trocarChave(p.marketPrices);
-    (Array.isArray(p.brands) ? p.brands : []).forEach(b => b && trocarChave(b.marketPrices));
-  });
-  (purchaseHistory || []).forEach(c => { if (c && c.marketId === idAntigo) c.marketId = idNovo; });
-  if (activeMarketId === idAntigo) activeMarketId = idNovo;
 }
 
 export function selecionarMercado(id) {
@@ -173,3 +152,6 @@ Object.assign(AppTemplates, {
     setTimeout(() => document.getElementById('dinMarketName')?.focus(), 50);
   }
 });
+
+// Depois que o mercado foi enviado à planilha, o modal se fecha.
+Eventos.ouvir(AVISOS.PLANILHA_CONCLUIU, ({ tipo }) => { if (tipo === 'mercado') closeMarketEditModal(); });

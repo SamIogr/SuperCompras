@@ -4,9 +4,9 @@
  */
 
 import { ehUnidadeDePeso, esc, formatBRL, opcoesUnidadeHtml, parseNumberInput, saveCartData } from '../../state.js';
-import { renderCartUI } from '../../templates.js';
+import { computeItemFinancials } from '../../calculo.js';
 import { showAppToast } from '../../ui.js';
-import { computeItemFinancials } from './calculo.js';
+import { renderCartUI } from './cards.js';
 
 // 4. MODAL DE EDIÇÃO DE ITEM DO CARRINHO (COMPATIBILIZADO)
 let editingCartItemId = null;

@@ -3,15 +3,12 @@
  * SUPERCOMPRAS PRO - MÓDULO ÚNICO DE BACKUP E EXPORTAÇÃO (js/io.js)
  */
 
+import { pedirRedesenho } from './eventos.js';
 import { Acoes, noProprioElemento } from './ui/acoes.js';
 import { MERCADO_PADRAO_GENERICO, formatBRL, formatQty, getSelectedMarketName, normalizarDados, novoId, saveAllLocalData, saveCartData } from './state.js';
-import { renderCartUI } from './templates.js';
+import { computeItemFinancials } from './calculo.js';
 import { abrirModalBackup, openCustomDialog, refreshActiveMarketUI, showAppToast } from './ui.js';
 import { salvarChaveSeguranca } from './api.js';
-import { renderHistoricoUI } from './telas/historico/lista.js';
-import { computeItemFinancials } from './telas/carrinho/calculo.js';
-import { compartilharCarrinhoWhatsApp } from './telas/carrinho/finalizacao.js';
-import { renderCatalogUI, renderMarketsUI } from './telas/catalogo/layout.js';
 import { abrirModalQRCode, desserializarQRParaCarrinho, mesclarItensNoCarrinho, serializarCarrinhoParaQR } from './qrcode-sync.js';
 
 export function baixarArquivo(conteudo, nomeArquivo, tipoMime) {
@@ -148,10 +145,7 @@ export function handleRestoreJSON(e) {
       normalizarDados();
       saveAllLocalData();
       refreshActiveMarketUI();
-      renderCartUI();
-      renderCatalogUI();
-      renderMarketsUI();
-      if (typeof renderHistoricoUI === 'function') renderHistoricoUI();
+      pedirRedesenho('carrinho', 'catalogo', 'mercados', 'historico');
 
       showAppToast(`Backup restaurado: ${products.length} produtos carregados!`, 'success');
       document.getElementById('modalBackup')?.classList.add('hidden');
@@ -291,9 +285,8 @@ export async function colarTextoImportacao() {
       activeMarketId = dados.marketId;
     }
 
-    saveCartData();
+    saveCartData();          // avisa carrinho-salvo: a tela do carrinho se redesenha
     saveAllLocalData();
-    renderCartUI();
     showAppToast(substituir ? 'Carrinho substituido com sucesso!' : 'Itens somados ao carrinho!', 'success');
   };
 
@@ -327,7 +320,6 @@ Acoes.registrarClique({
   'exportar-fundo':       noProprioElemento(() => closeExportOptionsModal()),
   'exportar-fechar':      () => closeExportOptionsModal(),
   // mesma ordem de antes: compartilhar/copiar/CSV agem e depois fecham; QR e colar fecham antes
-  'exportar-whatsapp':    () => { compartilharCarrinhoWhatsApp(); closeExportOptionsModal(); },
   'exportar-copiar':      () => { copyCartToWhatsApp(); closeExportOptionsModal(); },
   'exportar-csv':         () => { exportCartCSV(); closeExportOptionsModal(); },
   'exportar-qr-gerar':    _fecharExportarE(() => abrirModalQRCode('gerar')),

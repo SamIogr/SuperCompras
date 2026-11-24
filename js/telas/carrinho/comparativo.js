@@ -4,8 +4,8 @@
  */
 
 import { esc, formatBRL, saveAllLocalData } from '../../state.js';
-import { renderCartUI } from '../../templates.js';
 import { showAppToast } from '../../ui.js';
+import { renderCartUI } from './cards.js';
 
 // 1. FUNÇÃO AUXILIAR: CALCULA O PREÇO REAL DO PRODUTO POR SUPERMERCADO
 export function obterPrecoItemMercado(itemCarrinho, mercadoId) {

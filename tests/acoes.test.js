@@ -140,17 +140,36 @@ test('nenhum HTML do app chama funções direto (onclick, oninput, onchange, onk
   assert.deepEqual(achados, [], 'use data-acao + Acoes.registrar... (js/ui/acoes.js)');
 });
 
-test('trocar para a aba Histórico redesenha a lista; outras abas não', async () => {
+test('trocar de aba avisa aba-aberta e só a tela aberta se redesenha (uma vez)', () => {
   const app = carregarApp(scriptsDoIndex());
-  const abas = [];
-  let redesenhos = 0;
-  app.switchActiveTab = aba => abas.push(aba);
-  app.renderHistoricoUI = () => redesenhos++;
-  app.Acoes.despachar('click', { target: elemento({ acao: 'aba', aba: 'dados' }) });
+  const desenhos = [];
+  app.renderHistoricoUI = () => desenhos.push('historico');
+  app.renderCartUI = () => desenhos.push('carrinho');
+  app.setSubTabDados = sub => desenhos.push('catalogo:' + sub);
   app.Acoes.despachar('click', { target: elemento({ acao: 'aba', aba: 'historico' }) });
-  await new Promise(r => setTimeout(r, 80));
-  assert.deepEqual(abas, ['dados', 'historico']);
-  assert.equal(redesenhos, 1);
+  app.Acoes.despachar('click', { target: elemento({ acao: 'aba', aba: 'compras' }) });
+  app.Acoes.despachar('click', { target: elemento({ acao: 'aba', aba: 'dados' }) });
+  assert.deepEqual(desenhos, ['historico', 'carrinho', 'catalogo:produtos']);
+});
+
+test('pedirRedesenho: cada tela só redesenha quando é pedida', () => {
+  const app = carregarApp(scriptsDoIndex());
+  const desenhos = [];
+  app.renderHistoricoUI = () => desenhos.push('historico');
+  app.renderCartUI = () => desenhos.push('carrinho');
+  app.renderCatalogUI = () => desenhos.push('catalogo');
+  app.renderMarketsUI = () => desenhos.push('mercados');
+  app.pedirRedesenho('mercados', 'historico');
+  assert.deepEqual(desenhos.sort(), ['historico', 'mercados']);
+});
+
+test('enviar à planilha fecha o modal certo pelo aviso planilha-concluiu', () => {
+  const app = carregarApp(scriptsDoIndex());
+  const fechados = [];
+  app.closeProductEditModal = () => fechados.push('produto');
+  app.closeMarketEditModal = () => fechados.push('mercado');
+  app.Eventos.avisar(app.AVISOS.PLANILHA_CONCLUIU, { tipo: 'mercado' });
+  assert.deepEqual(fechados, ['mercado']);
 });
 
 test('exportar: compartilhar age antes de fechar; QR fecha antes de abrir (mesma ordem de antes)', () => {

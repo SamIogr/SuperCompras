@@ -5,14 +5,16 @@
 
 import { Acoes, noProprioElemento } from '../../ui/acoes.js';
 import { abrirSupermercadoNoMaps } from '../../ui.js';
-import { openExportOptionsModal } from '../../io.js';
+import { closeExportOptionsModal, openExportOptionsModal } from '../../io.js';
 import { removeCartItem, setCartFilterMode, stepCartQty, toggleCartItemCheck } from './lista.js';
 import { abrirSheetAdicionarItem, aoMudarSelectMarcaInline, atualizarAtalhosQuantidade, cancelarNovaMarcaInline, confirmarNovaMarcaInline, fecharSheetAdicionarItem, selectProductForCart, setCartPromoMode, setCartQuickQty, updateCartItemPreview } from './formulario.js';
 import { atualizarAtalhosEdicao, atualizarSubtotalModalEdicao, cancelarNovaMarcaModalEdicao, closeEditCartItemModal, confirmarNovaMarcaModalEdicao, openEditCartItemModal, salvarEdicaoItemCarrinho, setEditPromoType, setEditQty } from './edicao.js';
-import { askClearCart, askFinishPurchase } from './finalizacao.js';
+import { askClearCart, askFinishPurchase, compartilharCarrinhoWhatsApp } from './finalizacao.js';
 import { abrirGuiaComparativoMercados, fecharGuiaComparativoMercados, trocarMercadoPelaGuia } from './comparativo.js';
 
 Acoes.registrarClique({
+  // janela "Exportar / compartilhar" (js/io.js registra as outras opções)
+  'exportar-whatsapp':              () => { compartilharCarrinhoWhatsApp(); closeExportOptionsModal(); },
   // itens da lista (cards montados em templates.js)
   'carrinho-marcar':                el => toggleCartItemCheck(el.dataset.id),
   'carrinho-qtd':                   el => stepCartQty(el.dataset.id, Number(el.dataset.passo)),

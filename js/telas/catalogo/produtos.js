@@ -4,9 +4,9 @@
  */
 
 import { getSecurityToken, novoId, saveAllLocalData, saveCartData } from '../../state.js';
-import { renderCartUI } from '../../templates.js';
 import { openCustomDialog, playAppBeep, showAppToast } from '../../ui.js';
 import { apiChamar } from '../../api.js';
+import { renderCartUI } from '../carrinho/cards.js';
 import { obterPrecoProdutoMarcaMercado } from './precos.js';
 import { renderCatalogUI } from './layout.js';
 import { obterListaProdutosFiltrada } from './filtros.js';

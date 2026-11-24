@@ -156,11 +156,11 @@ const ARQUIVOS_CATALOGO = ['precos', 'layout', 'filtros', 'modal-produto', 'prod
   .map(n => `js/telas/catalogo/${n}.js`);
 
 // Arquivos da tela do carrinho, na ordem do index.html
-const ARQUIVOS_CARRINHO = ['calculo', 'lista', 'formulario', 'edicao', 'finalizacao', 'comparativo', 'acoes']
+const ARQUIVOS_CARRINHO = ['cards', 'lista', 'formulario', 'edicao', 'finalizacao', 'comparativo', 'acoes']
   .map(n => `js/telas/carrinho/${n}.js`);
 
 // Arquivos da tela do histórico, na ordem do index.html
-const ARQUIVOS_HISTORICO = ['dados', 'lista', 'exclusao', 'detalhes', 'comparador', 'acoes']
+const ARQUIVOS_HISTORICO = ['lista', 'exclusao', 'detalhes', 'comparador', 'acoes']
   .map(n => `js/telas/historico/${n}.js`);
 
 /** Scripts locais do index.html, na ordem em que o navegador carrega (inclui js/vendor). */

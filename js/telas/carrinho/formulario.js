@@ -4,9 +4,9 @@
  */
 
 import { ehUnidadeDePeso, esc, formatBRL, novoId, parseNumberInput, saveAllLocalData, saveCartData } from '../../state.js';
-import { renderCartUI } from '../../templates.js';
+import { computeItemFinancials } from '../../calculo.js';
 import { playAppBeep, showAppToast } from '../../ui.js';
-import { computeItemFinancials } from './calculo.js';
+import { renderCartUI } from './cards.js';
 import { recalcularPrecosCarrinhoPorMercado } from './lista.js';
 import { obterPrecoProdutoMarcaMercado } from '../catalogo/precos.js';
 import { renderCatalogUI } from '../catalogo/layout.js';

@@ -7,7 +7,6 @@
 
 import { Acoes } from './ui/acoes.js';
 import { novoId, saveAllLocalData, saveCartData } from './state.js';
-import { renderCartUI } from './templates.js';
 import { openCustomDialog, playAppBeep, refreshActiveMarketUI, showAppToast, switchActiveTab } from './ui.js';
 
 // ===== CONFIGURAÇÕES =====
@@ -531,9 +530,8 @@ export async function processarResultadoLeitura(conteudoQR) {
 }
 
 export function concluirImportacaoQR(mensagem) {
-  saveCartData();
+  saveCartData();          // avisa carrinho-salvo: a tela do carrinho se redesenha
   refreshActiveMarketUI();
-  if (typeof renderCartUI === 'function') renderCartUI();
   if (typeof switchActiveTab === 'function') switchActiveTab('compras');
   if (typeof showAppToast === 'function') {
     showAppToast(mensagem || 'Lista importada com sucesso via QR Code!', 'success');
@@ -587,3 +585,68 @@ Acoes.registrarMudanca({
   'qr-arquivo': el => lerQRCodeDeArquivo(el),
 });
 
+// ===== IMPORTAR LISTA RECEBIDA POR LINK (#import=...) =====
+// Abrir o app por um link de QR code com #import=... traz a lista: substitui ou soma ao carrinho.
+// (Estava em ui.js; é assunto do QR code e fazia a UI depender deste serviço.)
+export async function verificarImportacaoUrlHash() {
+  const hash = window.location.hash;
+  if (!hash || !hash.startsWith('#import=')) return;
+
+  const payloadCodificado = decodeURIComponent(hash.replace('#import=', ''));
+  if (!payloadCodificado) return;
+
+  // Limpa a hash da barra de endereço imediatamente para evitar reimportações ao atualizar (F5)
+  history.replaceState(null, document.title, window.location.pathname + window.location.search);
+
+  if (typeof desserializarQRParaCarrinho !== 'function') return;
+
+  const dados = await desserializarQRParaCarrinho(payloadCodificado);
+  if (!dados || !Array.isArray(dados.items) || dados.items.length === 0) {
+    if (typeof showAppToast === 'function') showAppToast('Link de importação inválido ou vazio.', 'error');
+    return;
+  }
+
+  const qtdNovos = dados.items.length;
+
+  const aplicarImportacao = (substituir) => {
+    if (substituir) {
+      cart = dados.items;
+    } else {
+      mesclarItensNoCarrinho(dados.items);
+    }
+
+    if (dados.marketId && dados.marketId !== 'm-padrao') {
+      activeMarketId = dados.marketId;
+    }
+
+    saveCartData();          // avisa carrinho-salvo: a tela do carrinho se redesenha
+    saveAllLocalData();
+
+    if (typeof showAppToast === 'function') {
+      showAppToast(substituir ? 'Carrinho substituído com sucesso!' : 'Itens somados ao carrinho com sucesso!', 'success');
+    }
+  };
+
+  // Se o carrinho estiver vazio, importa diretamente
+  if (!cart || cart.length === 0) {
+    aplicarImportacao(true);
+    return;
+  }
+
+  // Se já houver itens no carrinho, exibe a escolha entre Substituir ou Somar
+  if (typeof openCustomDialog === 'function') {
+    openCustomDialog(
+      'Importar Lista de Compras',
+      `Seu carrinho já tem ${cart.length} item(ns). A lista recebida contém ${qtdNovos} item(ns). Como deseja prosseguir?`,
+      'Substituir Carrinho',
+      'Somar aos Existentes',
+      () => aplicarImportacao(true),
+      () => aplicarImportacao(false)
+    );
+  } else {
+    const somar = confirm(
+      `Deseja somar os ${qtdNovos} itens recebidos ao seu carrinho atual?\n\n[OK] = Somar aos itens existentes\n[Cancelar] = Substituir carrinho atual`
+    );
+    aplicarImportacao(!somar);
+  }
+}

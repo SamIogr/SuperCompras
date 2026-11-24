@@ -24,7 +24,7 @@ function elDom(extra = {}) {
 
 function appCarrinho() {
   return carregarApp(['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js',
-    'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', ...ARQUIVOS_CARRINHO]);
+    'js/sync-coordenador.js', 'js/origem.js', ...ARQUIVOS_CARRINHO]);
 }
 
 // ------------------------------------------------------------ estrutura
@@ -55,7 +55,7 @@ test('tela do carrinho e modal de edição sem onclick/oninput/onchange/onsubmit
 test('o código antigo saiu de onde estava', () => {
   assert.ok(!fs.existsSync(path.join(RAIZ, 'js/cart.js')));
   assert.doesNotMatch(ler('js/ui.js'), /function (abrirSheetAdicionarItem|fecharSheetAdicionarItem|atualizarAtalhosQuantidade)\b/);
-  assert.doesNotMatch(ler('js/templates.js'), /renderCartAutocomplete/, 'autocomplete morto do templates.js');
+  assert.doesNotMatch(ler('js/telas/carrinho/cards.js'), /renderCartAutocomplete/, 'autocomplete morto (era do templates.js)');
 });
 
 // ------------------------------------------------------------ marca no formulário

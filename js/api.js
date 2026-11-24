@@ -3,16 +3,13 @@
  * SUPERCOMPRAS PRO - SERVIÇOS DE REDE E SINCRONIZAÇÃO GOOGLE SHEETS
  */
 
+import { AVISOS, Eventos, pedirRedesenho } from './eventos.js';
 import { Acoes } from './ui/acoes.js';
 import { Armazenamento, CHAVES } from './armazenamento.js';
-import { API_GOOGLE_SHEETS_URL, API_TOKEN_VIA_POST, MERCADO_PADRAO_GENERICO, esc, getSecurityToken, novoId, parseNumberInput, saveAllLocalData } from './state.js';
+import { API_GOOGLE_SHEETS_URL, API_TOKEN_VIA_POST, MERCADO_PADRAO_GENERICO, esc, getSecurityToken, novoId, parseNumberInput, remapearIdMercado, saveAllLocalData } from './state.js';
 import { scAplicarModoAdmin, scEhAdmin, scRodar } from './sync-coordenador.js';
 import { estaNaPlanilha } from './origem.js';
-import { renderCartUI } from './templates.js';
 import { openCustomDialog, refreshActiveMarketUI, showAppToast } from './ui.js';
-import { renderCatalogUI, renderMarketsUI } from './telas/catalogo/layout.js';
-import { closeProductEditModal } from './telas/catalogo/modal-produto.js';
-import { closeMarketEditModal, remapearIdMercado } from './telas/catalogo/mercados.js';
 
 /**
  * Ponto único de chamada à planilha (Apps Script).
@@ -110,9 +107,7 @@ async function _sincronizarComPlanilha() {
 
       saveAllLocalData();
       if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
-      if (typeof renderCartUI === 'function') renderCartUI();
-      if (typeof renderCatalogUI === 'function') renderCatalogUI();
-      if (typeof renderMarketsUI === 'function') renderMarketsUI();
+      pedirRedesenho('carrinho', 'catalogo', 'mercados');
       
       const totalRedesReais = supermarkets.filter(m => m.id !== 'm-padrao').length;
       if (typeof showAppToast === 'function') {
@@ -360,9 +355,7 @@ export function syncSingleItemNow(type, identifier) {
 
   saveAllLocalData();
   refreshActiveMarketUI();
-  if (typeof renderMarketsUI === 'function') renderMarketsUI();
-  if (typeof renderCatalogUI === 'function') renderCatalogUI();
-  if (typeof renderCartUI === 'function') renderCartUI();
+  pedirRedesenho('mercados', 'catalogo', 'carrinho');
 }
 
 export function applySelectiveSync() {
@@ -407,9 +400,7 @@ export function applySelectiveSync() {
 
   saveAllLocalData();
   refreshActiveMarketUI();
-  if (typeof renderMarketsUI === 'function') renderMarketsUI();
-  if (typeof renderCatalogUI === 'function') renderCatalogUI();
-  if (typeof renderCartUI === 'function') renderCartUI();
+  pedirRedesenho('mercados', 'catalogo', 'carrinho');
   closeSelectiveSyncModal();
 
   showAppToast(`Sincronizados com sucesso: ${contadorProd} produtos e ${contadorMerc} mercados.`, 'success');
@@ -449,8 +440,8 @@ async function _promoverProdutoEmEdicaoParaPlanilha() {
       p.basePrice = json.basePrice;
 
       saveAllLocalData();
-      if (typeof renderCatalogUI === 'function') renderCatalogUI();
-      closeProductEditModal();
+      pedirRedesenho('catalogo');
+      Eventos.avisar(AVISOS.PLANILHA_CONCLUIU, { tipo: 'produto' });   // o modal do produto se fecha
       showAppToast(`"${json.name}" registrado na planilha Google!`, 'success');
     }
   } catch (err) {
@@ -511,9 +502,8 @@ async function _enviarMercadoParaPlanilha(id) {
     }
 
     if (typeof refreshActiveMarketUI === 'function') refreshActiveMarketUI();
-    if (typeof renderMarketsUI === 'function') renderMarketsUI();
-    if (typeof renderCatalogUI === 'function') renderCatalogUI();
-    if (typeof closeMarketEditModal === 'function') closeMarketEditModal();
+    pedirRedesenho('mercados', 'catalogo');
+    Eventos.avisar(AVISOS.PLANILHA_CONCLUIU, { tipo: 'mercado' });     // o modal do mercado se fecha
     showAppToast(`"${m.name}" está na planilha (coluna ${json.colIndex})${precosEnviados ? ` e ${precosEnviados} preço(s) foram enviados` : ''}.`, 'success');
   } catch (err) {
     showAppToast('Não foi possível enviar para a planilha: ' + err.message, 'error');
@@ -644,7 +634,7 @@ async function _sincronizarCatalogoDireto() {
 
     // Limpa a seleção e atualiza a interface
     if (window.selectedCatalogProductIds) window.selectedCatalogProductIds.clear();
-    if (typeof renderCatalogUI === 'function') renderCatalogUI();
+    pedirRedesenho('catalogo');
 
     if (typeof showAppToast === 'function') {
       showAppToast(`Sincronizado! ${locaisPromovidos} adicionado(s) à nuvem e ${nuvemAtualizados} atualizado(s).`, 'success');

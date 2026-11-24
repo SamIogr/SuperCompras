@@ -4,8 +4,9 @@
  */
 
 import { variavelGlobal } from '../../compartilhado.js';
+import { AVISOS, Eventos, aoPedirRedesenho } from '../../eventos.js';
 import { esc, formatBRL } from '../../state.js';
-import { obterHistoricoLocal, obterIdCompra, resolverNomeMercado } from './dados.js';
+import { obterHistoricoLocal, obterIdCompra, resolverNomeMercado } from '../../dados-historico.js';
 
 variavelGlobal('selectedHistoryIds', new Set());
 
@@ -150,3 +151,7 @@ export function atualizarBarraSelecaoHistorico() {
     }
   }
 }
+
+// Pedidos de redesenho vindos de fora (Drive, backup) e troca para a aba Histórico.
+aoPedirRedesenho('historico', () => renderHistoricoUI());
+Eventos.ouvir(AVISOS.ABA_ABERTA, ({ aba }) => { if (aba === 'historico') renderHistoricoUI(); });

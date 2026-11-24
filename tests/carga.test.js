@@ -10,8 +10,9 @@ const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="(js\/[^"?]+)(?:\?[^"]*)?
 
 test('index.html carrega os scripts locais esperados', () => {
   assert.ok(scripts.length >= 15, 'scripts encontrados: ' + scripts.join(', '));
-  assert.ok(scripts.indexOf('js/sync-coordenador.js') === scripts.indexOf('js/state.js') + 1,
-    'o coordenador precisa vir logo depois do state.js');
+  // com módulos, a ordem entre eles vem dos imports; o que a ordem das tags ainda decide:
+  assert.equal(scripts[0], 'js/compartilhado.js', 'compartilhado.js (variavelGlobal) é o primeiro');
+  assert.equal(scripts[scripts.length - 1], 'js/main.js', 'main.js (inicialização) é o último');
 });
 
 test('todos os scripts carregam na ordem do index.html sem erro', () => {

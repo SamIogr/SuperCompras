@@ -3,6 +3,7 @@
  * SUPERCOMPRAS PRO - CATÁLOGO: ESTRUTURA DA ABA, CARDS E LISTAS DE PRODUTOS E MERCADOS (js/telas/catalogo/layout.js)
  */
 
+import { AVISOS, Eventos, aoPedirRedesenho } from '../../eventos.js';
 import { esc, formatBRL, getSelectedMarketName } from '../../state.js';
 import { scEhAdmin } from '../../sync-coordenador.js';
 import { botoesFiltroOrigemHtml, contarOrigens, filtroOrigemValido, obterOrigem, seloOrigemHtml } from '../../origem.js';
@@ -316,3 +317,8 @@ export function setSubTabDados(subTab = 'produtos') {
     if (typeof renderMarketsUI === 'function') renderMarketsUI();
   }
 }
+
+// Pedidos de redesenho vindos de fora (planilha, Drive, backup) e troca para a aba Catálogo.
+aoPedirRedesenho('catalogo', () => renderCatalogUI());
+aoPedirRedesenho('mercados', () => renderMarketsUI());
+Eventos.ouvir(AVISOS.ABA_ABERTA, ({ aba }) => { if (aba === 'dados') setSubTabDados(window.currentSubTabDados || 'produtos'); });

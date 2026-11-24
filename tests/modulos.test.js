@@ -145,3 +145,15 @@ test('variavelGlobal: ler e alterar de qualquer arquivo; criar o mesmo nome duas
   assert.equal(app.$('teste_compartilhado'), 42);
   assert.throws(() => app.variavelGlobal('teste_compartilhado', 0), /já foi criada/);
 });
+
+test('camadas: núcleo, serviços e UI não importam das telas (só o main.js, que inicia o app)', () => {
+  const violacoes = [];
+  for (const m of modulos) {
+    if (m.startsWith('js/telas/') || m === 'js/main.js') continue;
+    for (const imp of ler(m).matchAll(/^import \{[^}]*\} from '([^']+)';/gm)) {
+      const destino = path.posix.normalize(path.posix.join(path.posix.dirname(m), imp[1]));
+      if (destino.startsWith('js/telas/')) violacoes.push(`${m} importa ${destino}`);
+    }
+  }
+  assert.deepEqual(violacoes, [], 'para redesenhar uma tela, use pedirRedesenho(...) (js/eventos.js)');
+});

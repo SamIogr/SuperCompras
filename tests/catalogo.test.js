@@ -12,7 +12,7 @@ function elemento(dataset, extra = {}) {
 }
 function appCatalogo() {
   return carregarApp(['js/eventos.js', 'js/ui/acoes.js', 'js/armazenamento.js', 'js/state.js',
-    'js/sync-coordenador.js', 'js/origem.js', 'js/templates.js', ...ARQUIVOS_CATALOGO]);
+    'js/sync-coordenador.js', 'js/origem.js', ...ARQUIVOS_CATALOGO]);
 }
 
 // ------------------------------------------------------------ estrutura
@@ -23,7 +23,7 @@ test('catálogo sem handlers embutidos (onclick, oninput, onkeydown, onsubmit...
 test('código antigo saiu: products.js, markets.js, partes do templates.js e setSubTabDados do ui.js', () => {
   assert.ok(!fs.existsSync(path.join(RAIZ, 'js/products.js')));
   assert.ok(!fs.existsSync(path.join(RAIZ, 'js/markets.js')));
-  const tpl = ler('js/templates.js');
+  const tpl = ler('js/telas/carrinho/cards.js');   // o antigo templates.js
   for (const m of ['ensureTabDadosLayout', 'productCard', 'marketCard', 'renderCatalog', 'renderMarkets', 'renderProductEditModal', 'renderMarketEditModal', 'configurarScrollRetratilCatalogo']) {
     assert.ok(!tpl.includes(m), `templates.js ainda tem ${m}`);
   }

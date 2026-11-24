@@ -4,8 +4,8 @@
  */
 
 import { esc, formatBRL } from '../../state.js';
+import { formatarDataHistoricoLegivel, obterListaHistoricoComparador } from '../../dados-historico.js';
 import { showAppToast } from '../../ui.js';
-import { formatarDataHistoricoLegivel, obterListaHistoricoComparador } from './dados.js';
 
 // ============================================================================
 // COMPARADOR HISTÓRICO CONSOLIDADO (DESIGN RESPONSIVO, CORES E TEMA)

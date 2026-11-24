@@ -4,11 +4,11 @@
  */
 
 import { formatBRL, getSelectedMarketName, novoId, saveAllLocalData, saveCartData } from '../../state.js';
-import { renderCartUI } from '../../templates.js';
+import { computeItemFinancials } from '../../calculo.js';
 import { openCustomDialog, playAppBeep, showAppToast } from '../../ui.js';
 import { enviarProdutoParaPlanilha } from '../../api.js';
 import { renderHistoricoUI } from '../historico/lista.js';
-import { computeItemFinancials } from './calculo.js';
+import { renderCartUI } from './cards.js';
 import { renderCatalogUI, renderMarketsUI } from '../catalogo/layout.js';
 import { serializarCarrinhoParaQR } from '../../qrcode-sync.js';
 

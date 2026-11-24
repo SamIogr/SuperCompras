@@ -54,11 +54,11 @@ test('o app inteiro carrega como ES modules de verdade, na ordem do index.html, 
   ns['js/state.js'].saveCartData();
   assert.equal(JSON.parse(globalThis.localStorage.getItem('sc_cart_v3'))[0].name, 'Arroz');
 
-  ns['js/templates.js'].renderCartUI();
+  ns['js/telas/carrinho/cards.js'].renderCartUI();
   ns['js/telas/catalogo/layout.js'].renderCatalogUI();
   ns['js/telas/catalogo/layout.js'].renderMarketsUI();
   ns['js/telas/historico/lista.js'].renderHistoricoUI();
-  assert.equal(ns['js/telas/carrinho/calculo.js'].computeItemFinancials(2, 10, { type: 'discount', mode: 'percent', value: 10 }).finalSubtotal, 18);
+  assert.equal(ns['js/calculo.js'].computeItemFinancials(2, 10, { type: 'discount', mode: 'percent', value: 10 }).finalSubtotal, 18);
 
   // o registro de templates recebeu os métodos de todas as telas
   const { AppTemplates } = ns['js/ui/templates-base.js'];

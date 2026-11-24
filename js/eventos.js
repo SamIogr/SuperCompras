@@ -13,6 +13,13 @@
  *   dados-salvos     produtos, mercados, carrinho e histórico gravados no aparelho
  *                    info.quais: 'tudo' (saveAllLocalData) | 'historico' (salvarHistoricoLocal)
  *   carrinho-salvo   só o carrinho foi gravado (saveCartData)
+ *   dados-recarregados  os dados mudaram por fora (planilha, Drive, backup, QR code):
+ *                    info.quais = telas a redesenhar ('carrinho', 'catalogo', 'mercados', 'historico').
+ *                    Use pedirRedesenho(...) para avisar e aoPedirRedesenho(tela, fn) para ouvir.
+ *                    É separado de dados-salvos de propósito: o Drive ouve dados-salvos para
+ *                    sincronizar, e redesenhar não pode disparar outra sincronização.
+ *   aba-aberta       o usuário trocou de aba (info.aba: 'compras' | 'historico' | 'dados')
+ *   planilha-concluiu um produto ou mercado foi enviado à planilha (info.tipo: 'produto' | 'mercado')
  *
  * Carregue ANTES de todos os outros scripts do app.
  */
@@ -20,6 +27,9 @@
 export const AVISOS = Object.freeze({
   DADOS_SALVOS: 'dados-salvos',
   CARRINHO_SALVO: 'carrinho-salvo',
+  DADOS_RECARREGADOS: 'dados-recarregados',
+  ABA_ABERTA: 'aba-aberta',
+  PLANILHA_CONCLUIU: 'planilha-concluiu',
 });
 
 export const Eventos = (() => {
@@ -49,3 +59,14 @@ export const Eventos = (() => {
   return Object.freeze({ ouvir, avisar });
 })();
 
+/** Pede às telas que se redesenhem: pedirRedesenho('catalogo', 'mercados'). */
+export function pedirRedesenho(...quais) {
+  Eventos.avisar(AVISOS.DADOS_RECARREGADOS, { quais });
+}
+
+/** Na tela: aoPedirRedesenho('catalogo', renderCatalogUI) redesenha quando alguém pedir. */
+export function aoPedirRedesenho(tela, redesenhar) {
+  return Eventos.ouvir(AVISOS.DADOS_RECARREGADOS, info => {
+    if (info && Array.isArray(info.quais) && info.quais.includes(tela)) redesenhar();
+  });
+}
